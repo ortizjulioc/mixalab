@@ -2,6 +2,8 @@
 import React, { useEffect } from 'react';
 import * as THREE from 'three';
 import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
+import { CiMusicNote1 } from "react-icons/ci";
+import Link from 'next/link';
 
 export default function Login() {
     useEffect(() => {
@@ -80,7 +82,13 @@ export default function Login() {
         <div className="bg-black text-white h-screen overflow-hidden">
             {/* Contenedor para el canvas de la animación */}
             <div id="bg-animation-canvas-container" className="absolute top-0 left-0 w-full h-full z-0 opacity-20"></div>
-
+            {/* Botón de login de creadores */}
+            <div className="absolute top-4 right-4 z-20">
+                <Link href="/creators" className="bg-white/20 block hover:bg-white/30 transition-colors duration-300 text-white font-semibold py-2 px-4 rounded-md backdrop-blur-md">
+                    <CiMusicNote1 className="inline h-6 mr-2" />
+                    Login creators
+                </Link>
+            </div>
             <div className="relative z-10 min-h-screen flex flex-col items-center justify-center p-4 font-poppins">
 
                 {/* Título y logo */}
