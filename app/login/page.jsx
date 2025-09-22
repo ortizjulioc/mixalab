@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default function Login() {
   useEffect(() => {
-    // --- THREE: escena básica para el fondo de partículas ---
+    // --- THREE: escena con notas musicales y animación de entrada ---
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -22,41 +22,125 @@ export default function Login() {
     const canvasContainer = document.getElementById("bg-animation-canvas-container");
     if (canvasContainer) canvasContainer.appendChild(renderer.domElement);
 
-    const particleCount = 2000;
-    const particles = new THREE.BufferGeometry();
-    const positions = [];
-    const colors = [];
-    const color = new THREE.Color();
+    // --- texturas de notas musicales ---
+    const makeNoteTexture = (glyph) => {
+      const size = 128;
+      const c = document.createElement("canvas");
+      c.width = size;
+      c.height = size;
+      const ctx = c.getContext("2d");
+      ctx.clearRect(0, 0, size, size);
+      ctx.shadowColor = "rgba(255,255,255,0.6)";
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = "#ffffff";
+      ctx.font = Math.floor(size * 0.8) + 'px "Segoe UI Symbol","Apple Color Emoji","Noto Color Emoji",Arial';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(glyph, size / 2, size / 2 + size * 0.05);
+      const tex = new THREE.CanvasTexture(c);
+      const getMaxAniso = renderer.capabilities.getMaxAnisotropy
+        ? renderer.capabilities.getMaxAnisotropy()
+        : 1;
+      tex.anisotropy = Math.min(getMaxAniso, 8);
+      tex.needsUpdate = true;
+      return tex;
+    };
 
-    for (let i = 0; i < particleCount; i++) {
-      positions.push(Math.random() * 2000 - 1000);
-      positions.push(Math.random() * 2000 - 1000);
-      positions.push(Math.random() * 2000 - 1000);
+    const glyphs = ["♪", "♫", "♩", "♬"];
+    const textures = glyphs.map(makeNoteTexture);
 
-      color.setHSL(0, 0, Math.random() * 0.5 + 0.5); // grises
-      colors.push(color.r, color.g, color.b);
+    // --- grupos de puntos ---
+    const total = 2000;
+    const groups = glyphs.length;
+    const perGroup = Math.ceil(total / groups);
+    const systems = [];
+    const materials = [];
+    const geometries = [];
+
+    // opacidad objetivo para el fade-in
+    const TARGET_OPACITY = 0.95;
+
+    for (let g = 0; g < groups; g++) {
+      const count = g === groups - 1 ? total - perGroup * (groups - 1) : perGroup;
+      const positions = [];
+      const colors = [];
+      const color = new THREE.Color();
+
+      for (let i = 0; i < count; i++) {
+        positions.push(Math.random() * 2000 - 1000);
+        positions.push(Math.random() * 2000 - 1000);
+        positions.push(Math.random() * 2000 - 1000);
+
+        // blancos/grises (tema oscuro, look original)
+        color.setHSL(0, 0, Math.random() * 0.5 + 0.5);
+        colors.push(color.r, color.g, color.b);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+
+      const mat = new THREE.PointsMaterial({
+        size: 26,
+        map: textures[g],
+        vertexColors: true,
+        transparent: true,
+        depthWrite: false,
+        opacity: 0, // empieza en 0 para el fade-in
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true,
+      });
+
+      const pts = new THREE.Points(geo, mat);
+      // ligera variación inicial
+      pts.rotation.x = Math.random() * Math.PI;
+      pts.rotation.y = Math.random() * Math.PI;
+
+      scene.add(pts);
+      systems.push(pts);
+      materials.push(mat);
+      geometries.push(geo);
     }
 
-    particles.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    particles.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+    // cámara con zoom-in de entrada
+    const START_Z = 800;
+    const END_Z = 500;
+    camera.position.z = START_Z;
 
-    const particleMaterial = new THREE.PointsMaterial({
-      size: 20,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.8,
-      blending: THREE.AdditiveBlending,
-    });
+    // interacción con mouse (parallax suave)
+    let mouseX = 0,
+      mouseY = 0;
+    const handleMouseMove = (e) => {
+      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
+    };
+    window.addEventListener("mousemove", handleMouseMove);
 
-    const particleSystem = new THREE.Points(particles, particleMaterial);
-    scene.add(particleSystem);
-    camera.position.z = 500;
-
+    // animación
+    const startTime = performance.now();
     let rafId;
+
     const animate = () => {
       rafId = requestAnimationFrame(animate);
-      particleSystem.rotation.x += 0.0001;
-      particleSystem.rotation.y += 0.0002;
+
+      // progreso del intro (1.2s) con easeOutQuad
+      const elapsed = performance.now() - startTime;
+      const t = Math.min(1, elapsed / 1200);
+      const ease = 1 - (1 - t) * (1 - t);
+
+      // fade-in de partículas
+      materials.forEach((m) => (m.opacity = TARGET_OPACITY * ease));
+
+      // zoom-in de cámara
+      camera.position.z = START_Z + (END_Z - START_Z) * ease;
+
+      // rotación base + parallax por mouse
+      systems.forEach((sys, i) => {
+        const f = 0.0005 + i * 0.00015;
+        sys.rotation.y += (mouseX * 0.005 - sys.rotation.y) * 0.02 + f * 0.5;
+        sys.rotation.x += (mouseY * 0.005 - sys.rotation.x) * 0.02 + f * 0.25;
+      });
+
       renderer.render(scene, camera);
     };
     animate();
@@ -71,12 +155,18 @@ export default function Login() {
 
     return () => {
       window.removeEventListener("resize", handleResize);
+      window.removeEventListener("mousemove", handleMouseMove);
       if (rafId) cancelAnimationFrame(rafId);
       if (canvasContainer && renderer.domElement.parentNode === canvasContainer) {
         canvasContainer.removeChild(renderer.domElement);
       }
-      particles.dispose();
-      particleMaterial.dispose();
+      systems.forEach((s) => scene.remove(s));
+      geometries.forEach((g) => g.dispose());
+      materials.forEach((m) => {
+        if (m.map) m.map.dispose();
+        m.dispose();
+      });
+      textures.forEach((t) => t.dispose());
       renderer.dispose();
     };
   }, []);
@@ -90,7 +180,7 @@ export default function Login() {
         style={{ contain: "layout paint size" }}
       />
 
-      {/* HEADER: reserva espacio para el botón (evita que tape el logo) */}
+      {/* HEADER */}
       <header className="relative z-20 h-12 sm:h-14 px-2 sm:px-4 pt-[env(safe-area-inset-top)]">
         <div className="absolute inset-y-0 right-2 sm:right-4 flex items-center">
           <Link
@@ -100,13 +190,12 @@ export default function Login() {
                      py-1 px-2 sm:py-1.5 sm:px-3 rounded-md backdrop-blur-md leading-none"
           >
             <CiMusicNote1 className="w-4 h-4" />
-            {/* oculta el texto si el viewport es < 360px para que no empuje */}
             <span className="max-[360px]:hidden ">Login creators</span>
           </Link>
         </div>
       </header>
 
-      {/* MAIN: centrado vertical usando el espacio restante */}
+      {/* MAIN */}
       <main className="relative z-10 min-h-[calc(100dvh-3rem)] sm:min-h-[calc(100dvh-3.5rem)] flex flex-col items-center justify-center p-4 font-poppins">
         {/* Título / logo */}
         <div className="text-center mb-6 sm:mb-10">

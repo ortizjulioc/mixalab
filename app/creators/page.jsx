@@ -3,10 +3,11 @@ import React, { useEffect } from 'react';
 import * as THREE from 'three';
 import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 import { CiMusicNote1 } from "react-icons/ci";
+import Link from 'next/link';
 
 export default function CreatorLogin() {
   useEffect(() => {
-    // --- Fondo de partículas (mismo look, mejoras leves de rendimiento) ---
+    // --- Fondo de partículas: notas musicales ---
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(
       75,
@@ -21,37 +22,89 @@ export default function CreatorLogin() {
     const canvasContainer = document.getElementById('bg-animation-canvas-container-creators');
     if (canvasContainer) canvasContainer.appendChild(renderer.domElement);
 
-    const particleCount = 2000;
-    const particles = new THREE.BufferGeometry();
-    const positions = [];
-    const colors = [];
-    const color = new THREE.Color();
+    // --- Genera una textura de nota musical (glyph) en un canvas 2D ---
+    const makeNoteTexture = (glyph) => {
+      const size = 128;
+      const c = document.createElement('canvas');
+      c.width = size;
+      c.height = size;
+      const ctx = c.getContext('2d');
+      // fondo transparente
+      ctx.clearRect(0, 0, size, size);
+      // ligera sombra para dar brillo suave
+      ctx.shadowColor = 'rgba(0,0,0,0.25)';
+      ctx.shadowBlur = 10;
+      // dibuja el glifo en blanco (el color final lo dan los vertexColors)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = Math.floor(size * 0.8) + 'px "Segoe UI Symbol","Apple Color Emoji","Noto Color Emoji",Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(glyph, size / 2, size / 2 + size * 0.05);
 
-    for (let i = 0; i < particleCount; i++) {
-      positions.push(Math.random() * 2000 - 1000);
-      positions.push(Math.random() * 2000 - 1000);
-      positions.push(Math.random() * 2000 - 1000);
-      // negros/grises oscuros sobre fondo blanco
-      color.setHSL(0, 0, Math.random() * 0.2);
-      colors.push(color.r, color.g, color.b);
+      const tex = new THREE.CanvasTexture(c);
+      const maxAniso = renderer.capabilities.getMaxAnisotropy ? renderer.capabilities.getMaxAnisotropy() : 1;
+      tex.anisotropy = Math.min(maxAniso, 8);
+      tex.needsUpdate = true;
+      return tex;
+    };
+
+    const glyphs = ['♪', '♫', '♩', '♬'];
+    const textures = glyphs.map(makeNoteTexture);
+
+    // --- Crea 4 grupos de puntos con distintas texturas ---
+    const total = 2000;
+    const groups = glyphs.length;
+    const perGroup = Math.ceil(total / groups);
+    const systems = [];
+    const materials = [];
+    const geometries = [];
+
+    for (let g = 0; g < groups; g++) {
+      const count = g === groups - 1 ? total - perGroup * (groups - 1) : perGroup;
+
+      const positions = [];
+      const colors = [];
+      const color = new THREE.Color();
+
+      for (let i = 0; i < count; i++) {
+        positions.push(Math.random() * 2000 - 1000);
+        positions.push(Math.random() * 2000 - 1000);
+        positions.push(Math.random() * 2000 - 1000);
+
+        // negros/grises oscuros para verse bien sobre fondo blanco
+        color.setHSL(0, 0, Math.random() * 0.02); // 0–0.2 = oscuro
+        colors.push(color.r, color.g, color.b);
+      }
+
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+      const mat = new THREE.PointsMaterial({
+        size: 22,
+        map: textures[g],         // textura con forma de nota
+        vertexColors: true,       // los colores dan el tono oscuro
+        transparent: true,
+        depthWrite: false,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+        sizeAttenuation: true
+      });
+
+      const pts = new THREE.Points(geo, mat);
+      // rotaciones iniciales variadas
+      pts.rotation.x = Math.random() * Math.PI;
+      pts.rotation.y = Math.random() * Math.PI;
+
+      scene.add(pts);
+      systems.push(pts);
+      materials.push(mat);
+      geometries.push(geo);
     }
-
-    particles.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-    particles.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-    const particleMaterial = new THREE.PointsMaterial({
-      size: 20,
-      vertexColors: true,
-      transparent: true,
-      opacity: 0.8,
-      blending: THREE.AdditiveBlending
-    });
-
-    const particleSystem = new THREE.Points(particles, particleMaterial);
-    scene.add(particleSystem);
 
     camera.position.z = 500;
 
+    // Interacción con mouse (suave)
     let mouseX = 0, mouseY = 0;
     const handleMouseMove = (e) => {
       mouseX = (e.clientX / window.innerWidth) * 2 - 1;
@@ -62,10 +115,12 @@ export default function CreatorLogin() {
     let rafId;
     const animate = () => {
       rafId = requestAnimationFrame(animate);
-      // rotación suave guiada por mouse
-      particleSystem.rotation.y += (mouseX * 0.005 - particleSystem.rotation.y) * 0.05;
-      particleSystem.rotation.x += (mouseY * 0.005 - particleSystem.rotation.x) * 0.05;
-      particleSystem.rotation.z += 0.0002;
+      systems.forEach((sys, i) => {
+        const f = 0.0005 + i * 0.00015;
+        // rotación base + pequeña influencia del mouse
+        sys.rotation.y += (mouseX * 0.005 - sys.rotation.y) * 0.02 + f * 0.5;
+        sys.rotation.x += (mouseY * 0.005 - sys.rotation.x) * 0.02 + f * 0.25;
+      });
       renderer.render(scene, camera);
     };
     animate();
@@ -85,8 +140,13 @@ export default function CreatorLogin() {
       if (canvasContainer && renderer.domElement.parentNode === canvasContainer) {
         canvasContainer.removeChild(renderer.domElement);
       }
-      particles.dispose();
-      particleMaterial.dispose();
+      systems.forEach((s) => scene.remove(s));
+      geometries.forEach((g) => g.dispose());
+      materials.forEach((m) => {
+        if (m.map) m.map.dispose();
+        m.dispose();
+      });
+      textures.forEach((t) => t.dispose());
       renderer.dispose();
     };
   }, []);
@@ -100,21 +160,22 @@ export default function CreatorLogin() {
         style={{ contain: 'layout paint size' }}
       />
 
-      {/* HEADER: reserva espacio para el botón (no tapa el logo) */}
+      {/* HEADER */}
       <header className="relative z-20 h-12 sm:h-14 px-2 sm:px-4 pt-[env(safe-area-inset-top)]">
         <div className="absolute inset-y-0 right-2 sm:right-4 flex items-center">
-          <button
+          <Link
+            href="/login"
             className="flex items-center gap-1 bg-black/10 hover:bg-black/20 transition-colors duration-300
                        text-xs sm:text-sm font-medium sm:font-semibold text-black
                        py-1 px-2 sm:py-1.5 sm:px-3 rounded-md backdrop-blur-md leading-none"
           >
             <CiMusicNote1 className="w-4 h-4" />
             <span className="max-[360px]:hidden">Login artists</span>
-          </button>
+          </Link>
         </div>
       </header>
 
-      {/* MAIN: centrado real del contenido restando la altura del header */}
+      {/* MAIN */}
       <main className="relative z-10 min-h-[calc(100dvh-3rem)] sm:min-h-[calc(100dvh-3.5rem)]
                        flex flex-col items-center justify-center p-4 font-poppins">
         {/* Título / logo */}
