@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { FaApple, FaFacebook, FaGoogle } from "react-icons/fa";
 import * as THREE from "three";
 
 // Componente principal de Registro
@@ -244,19 +245,19 @@ export default function Register() {
             {/* Botón Google */}
             <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-[1.03]">
                 {/* Google SVG */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M12 11.5v3h3.5c-.19 1.4-1.51 3.52-3.5 3.5c-2.48 0-4.5-2.02-4.5-4.5s2.02-4.5 4.5-4.5c1.19 0 2.19.49 2.94 1.29l2.25-2.25C15.42 5.67 13.88 5 12 5c4.42 0 8 3.58 8 8s-3.58 8-8 8s-8-3.58-8-8s3.58-8 8-8c2.48 0 4.7 1.13 6.25 2.95l-2.25 2.25c-.75-.8-1.75-1.29-2.94-1.29z"/></svg>
+                <FaGoogle />
                 <span>Registrarse con Google</span>
             </button>
             {/* Botón Facebook */}
             <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-[1.03]">
                 {/* Facebook SVG */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M14 6h3v-3h-3c-3.1 0-4 2.1-4 4v3H7v3h3v7h4v-7h3l1-3h-4v-3c0-.8.2-2 2-2z"/></svg>
                 <span>Registrarse con Facebook</span>
+                <FaFacebook />
             </button>
             {/* Botón Apple */}
             <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg active:scale-[1.03]">
                 {/* Apple SVG */}
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="currentColor" d="M18 10c.84 0 1.63.15 2.37.45-.6-.94-.85-2.28-.75-3.61c.15-2.05 1.51-3.64 3.01-4.38-1.48-1.87-3.79-2.06-4.9-.76-.75.87-1.12 2.34-.73 3.96c.35 1.43 1.07 2.65 1.95 3.65m-5.06 13.56c-1.26 0-2.33-.82-2.86-1.89-1.27-.47-2.61-.31-3.77.34-.34-.94-.52-2.14.36-3.8c.67-1.3.94-2.84.72-4.36-.2-1.45-1.04-2.67-2.03-3.23.2-.23.47-.5.73-.78 1.43-1.45 3.32-2.17 5.21-2.17 3.52 0 6.64 2.8 6.72 6.88.07 3.7-2.38 6.75-5.32 6.75z"/></svg>
+                <FaApple />
                 <span>Registrarse con Apple</span>
             </button>
           </div>
