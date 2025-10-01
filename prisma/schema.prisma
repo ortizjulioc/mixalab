@@ -6,7 +6,6 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
 }
 
 datasource db {
@@ -15,7 +14,7 @@ datasource db {
 }
 
 model User {
-  id         String     @id @default(cuid())
+  id         String     @id @default(uuid())
   name       String?
   email      String     @unique
   password   String? // hash (solo si es registro tradicional)
@@ -33,14 +32,14 @@ model User {
 }
 
 model Account {
-  id                String  @id @default(cuid())
+  id                String  @id @default(uuid())
   userId            String  @map("user_id")
   user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   provider          String // "google" | "icloud" | "credentials"
   providerAccountId String // ID único que da el proveedor
-  access_token      String? @map("access_token")
-  refresh_token     String? @map("refresh_token")
-  expires_at        Int?    @map("expires_at")
+  accessToken      String? @map("access_token")
+  refreshToken     String? @map("refresh_token")
+  expiresAt        Int?    @map("expires_at")
 
   deleted   Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
@@ -51,10 +50,29 @@ model Account {
 }
 
 model VerificationToken {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   identifier String // ej: el email
   token      String   @unique
   expires    DateTime
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("verification_tokens")
+}
+
+model File {
+  id        String   @id @default(uuid())
+  name      String   // Nombre original del archivo (ej: portada.png)
+  mimeType  String   @map("mime_type") // Tipo MIME (ej: image/png, audio/mpeg, application/pdf)
+  extension String   // Extensión (ej: png, mp3, pdf)
+  size      Int      // Tamaño en bytes
+  path      String   // Ruta relativa en el sistema de archivos (/uploads/cursos/xxxx.png)
+  url       String   // URL pública del archivo
+  folder    String   // Carpeta lógica donde se guarda (ej: cursos, audios, usuarios)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("files")
 }
 
 enum UserRole {
