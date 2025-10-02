@@ -71,3 +71,30 @@ export async function POST(request) {
     return handleError(error);
   }
 }
+
+export async function GET(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const pageSize = parseInt(searchParams.get("pageSize") || "10", 10);
+
+    const [files, totalFiles] = await Promise.all([
+      prisma.file.findMany({
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.file.count(),
+    ]);
+
+    return NextResponse.json({
+      files,
+      pagination: {
+        total: totalFiles,
+        page,
+        pageSize,
+      },
+    });
+  } catch (error) {
+    return handleError(error);
+  }
+}
