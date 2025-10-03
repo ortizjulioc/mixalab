@@ -30,8 +30,8 @@ model Account {
   userId            String   @map("user_id")
   provider          String
   providerAccountId String
-  access_token      String?  @map("access_token")
-  refresh_token     String?  @map("refresh_token")
+  access_token      String?  @db.Text @map("access_token")
+  refresh_token     String?  @db.Text @map("refresh_token")
   expires_at        Int?     @map("expires_at")
   deleted           Boolean  @default(false)
   createdAt         DateTime @default(now()) @map("created_at")
@@ -42,6 +42,7 @@ model Account {
   @@index([userId], map: "accounts_user_id_fkey")
   @@map("accounts")
 }
+
 
 model verificationtoken {
   id         String   @id

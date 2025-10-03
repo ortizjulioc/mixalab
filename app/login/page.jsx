@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 import { CiMusicNote1 } from "react-icons/ci";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
 export default function Login() {
   useEffect(() => {
@@ -210,10 +211,15 @@ export default function Login() {
 
           {/* Social login */}
           <div className="flex flex-col space-y-3">
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
+            <button 
+              onClick={() => {
+                signIn("google", { callbackUrl: "/" });
+              }}
+            className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
               <FaGoogle />
               <span>Continuar con Google</span>
             </button>
+            {/* /------------------------------------------------------------------------------------------------------- */}
             <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
               <FaFacebook />
               <span>Continuar con Facebook</span>
