@@ -11,7 +11,7 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
     const role = searchParams.get("role");
 
-    // Validar el rol recibido
+    // Validar rol
     if (!role || !Object.values(UserRole).includes(role)) {
       return NextResponse.json(
         { error: "Rol inválido o no especificado." },
@@ -19,7 +19,7 @@ export async function GET(req) {
       );
     }
 
-    // Obtener sesión activa
+    // Obtener sesión
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
       return NextResponse.json(
@@ -40,14 +40,30 @@ export async function GET(req) {
       );
     }
 
-    // Actualizar el rol del usuario
+    // Actualizar rol
     await db.user.update({
       where: { email: session.user.email },
       data: { role },
     });
 
-    // Redirigir al dashboard correspondiente
-    return NextResponse.redirect(new URL(`/dashboard?role=${role}`, req.url));
+    // Definir redirección según el rol
+    let redirectUrl;
+    switch (role) {
+      case UserRole.ARTIST:
+        redirectUrl = "/artists/home";
+        break;
+      case UserRole.CREATOR:
+        redirectUrl = "/creators/home";
+        break;
+      case UserRole.ADMIN:
+        redirectUrl = "/admin/dashboard"; // Puedes ajustarlo a tu ruta real
+        break;
+      default:
+        redirectUrl = "/";
+        break;
+    }
+
+    return NextResponse.redirect(new URL(redirectUrl, req.url));
   } catch (error) {
     console.error("❌ Error en finalize:", error);
     return NextResponse.json(
