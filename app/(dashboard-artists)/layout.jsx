@@ -1,6 +1,8 @@
 import React from 'react';
 // Íconos para la navegación del Dashboard
 import { Home, Settings, User, LogOut, Menu, Bell, Search, Zap, Music, Aperture } from 'lucide-react';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Ajusta la ruta según tu estructura de proyecto
 
 // --- Componentes Reutilizables de Estilo Liquid Glass ---
 
@@ -32,11 +34,15 @@ const GlassLink = ({ icon: Icon, label, href, isSelected = false }) => (
 /**
  * Layout principal del dashboard con estilo Liquid Glass (Glassmorphism).
  * Incluye barra lateral, menú superior y área de contenido para hijos (children).
+ * Usa getServerSession para obtener datos del usuario en componentes del servidor.
  */
-const DashboardLayout = ({ children }) => {
+const DashboardLayout = async ({ children }) => {
+    // Obtener la sesión del servidor
+    const session = await getServerSession(authOptions);
 
-    // Placeholder para el usuario
-    const userName = "Mixa Dev";
+    // Datos del usuario desde la sesión
+    const userName = session?.user?.name || "User";
+    const userImage = session?.user?.image;
 
     return (
         // Main container with dark, atmospheric background
@@ -122,7 +128,11 @@ const DashboardLayout = ({ children }) => {
                         <div className="flex items-center space-x-4 text-white">
                             <Bell className="w-6 h-6 hover:text-white/80 transition cursor-pointer" />
                             <div className="flex items-center space-x-3 cursor-pointer p-2 rounded-full hover:bg-white/10 transition">
-                                <User className="w-6 h-6" />
+                                {userImage ? (
+                                    <img src={userImage} alt="User avatar" className="w-6 h-6 rounded-full" />
+                                ) : (
+                                    <User className="w-6 h-6" />
+                                )}
                                 <span className="text-sm font-semibold hidden md:block">{userName}</span>
                             </div>
                         </div>
