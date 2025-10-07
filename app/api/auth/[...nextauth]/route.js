@@ -3,9 +3,14 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import db from "@/utils/lib/prisma";
 import bcrypt from "bcrypt";
-import { UserStatus } from "@/app/generated/prisma";
+import { UserStatus } from "@prisma/client";
+
 
 export const authOptions = {
+  pages: {
+    signIn: "/login",
+    
+  },
   providers: [
     CredentialsProvider({
       name: "Credentials",
