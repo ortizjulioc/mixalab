@@ -3,13 +3,11 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import db from "@/utils/lib/prisma";
 import bcrypt from "bcrypt";
-import { UserStatus } from "@prisma/client";
-
+import { UserStatus, UserRole } from "@prisma/client";
 
 export const authOptions = {
   pages: {
     signIn: "/login",
-    
   },
   providers: [
     CredentialsProvider({
@@ -47,6 +45,23 @@ export const authOptions = {
   callbacks: {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
+        // Parsear el state para obtener role
+        let userRole = UserRole.ARTIST; // Valor por defecto si no hay state
+        if (account.state) {
+          try {
+            const stateData = JSON.parse(account.state);
+            const roleString = stateData.role;
+            if (roleString === "creator") {
+              userRole = UserRole.CREATOR;
+            } else if (roleString === "artist") {
+              userRole = UserRole.ARTIST;
+            }
+            // Ignorar otros valores para seguridad
+          } catch (error) {
+            console.error("Error parsing state:", error);
+          }
+        }
+
         // Verificar si ya existe en BD
         let dbUser = await db.user.findUnique({
           where: { email: user.email },
@@ -54,12 +69,13 @@ export const authOptions = {
         });
 
         if (!dbUser) {
-          // Crear usuario y cuenta en la misma transacción
+          // Crear usuario con role
           dbUser = await db.user.create({
             data: {
               email: user.email,
               name: user.name,
               image: user.image,
+              role: userRole, // <-- Aquí usas el parámetro
               isVerified: true,
               status: UserStatus.ACTIVE,
               accounts: {
@@ -75,6 +91,15 @@ export const authOptions = {
             include: { accounts: true },
           });
         } else {
+          // Si ya existe, opcional: actualizar role si es necesario
+          // (Solo si quieres sobrescribir; coméntalo si prefieres no cambiar roles existentes)
+          if (dbUser.role !== userRole) {
+            await db.user.update({
+              where: { id: dbUser.id },
+              data: { role: userRole },
+            });
+          }
+
           // Si ya existe el User pero no la Account -> crearla
           const existingAccount = dbUser.accounts.find(
             (a) => a.provider === account.provider && a.providerAccountId === account.providerAccountId
@@ -110,7 +135,9 @@ export const authOptions = {
     async session({ session, token }) {
       if (token?.id) {
         session.user.id = token.id;
+        session.user.role = token.role;
       }
+      
       return session;
     },
   },
