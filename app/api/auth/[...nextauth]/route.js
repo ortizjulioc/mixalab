@@ -10,6 +10,7 @@ export const authOptions = {
     signIn: "/login",
   },
   providers: [
+    // --- Provider de credenciales ------------------------------------------------------------------
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -35,7 +36,7 @@ export const authOptions = {
       },
     }),
 
-    // --- Google Provider --------------------------------------------------------------------------------------------------------
+    // --- Provider de Google ------------------------------------------------------------------------
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -43,39 +44,26 @@ export const authOptions = {
   ],
 
   callbacks: {
+    // 🔹 SIGN IN -----------------------------------------------------------------------------------
     async signIn({ user, account }) {
       if (account?.provider === "google") {
-        // Parsear el state para obtener role
-        let userRole = UserRole.ARTIST; // Valor por defecto si no hay state
-        if (account.state) {
-          try {
-            const stateData = JSON.parse(account.state);
-            const roleString = stateData.role;
-            if (roleString === "creator") {
-              userRole = UserRole.CREATOR;
-            } else if (roleString === "artist") {
-              userRole = UserRole.ARTIST;
-            }
-            // Ignorar otros valores para seguridad
-          } catch (error) {
-            console.error("Error parsing state:", error);
-          }
-        }
+        // Valor por defecto
+        let userRole = UserRole.ARTIST;
 
-        // Verificar si ya existe en BD
+        // Verificar si ya existe en la BD
         let dbUser = await db.user.findUnique({
           where: { email: user.email },
           include: { accounts: true },
         });
 
         if (!dbUser) {
-          // Crear usuario con role
+          // Crear usuario nuevo
           dbUser = await db.user.create({
             data: {
               email: user.email,
               name: user.name,
               image: user.image,
-              role: userRole, // <-- Aquí usas el parámetro
+              role: userRole,
               isVerified: true,
               status: UserStatus.ACTIVE,
               accounts: {
@@ -91,18 +79,11 @@ export const authOptions = {
             include: { accounts: true },
           });
         } else {
-          // Si ya existe, opcional: actualizar role si es necesario
-          // (Solo si quieres sobrescribir; coméntalo si prefieres no cambiar roles existentes)
-          if (dbUser.role !== userRole) {
-            await db.user.update({
-              where: { id: dbUser.id },
-              data: { role: userRole },
-            });
-          }
-
-          // Si ya existe el User pero no la Account -> crearla
+          // Si ya existe, asegurarse de que tenga la cuenta de Google registrada
           const existingAccount = dbUser.accounts.find(
-            (a) => a.provider === account.provider && a.providerAccountId === account.providerAccountId
+            (a) =>
+              a.provider === account.provider &&
+              a.providerAccountId === account.providerAccountId
           );
 
           if (!existingAccount) {
@@ -125,6 +106,23 @@ export const authOptions = {
       return true;
     },
 
+    // 🔹 REDIRECT -----------------------------------------------------------------------------------
+    async redirect({ url, baseUrl }) {
+      try {
+        const parsedUrl = new URL(url, baseUrl);
+        const role = parsedUrl.searchParams.get("role");
+
+        if (role) {
+          return `${baseUrl}/api/auth/finalize?role=${role}`;
+        }
+
+        return baseUrl;
+      } catch {
+        return baseUrl;
+      }
+    },
+
+    // 🔹 JWT ----------------------------------------------------------------------------------------
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
@@ -132,17 +130,16 @@ export const authOptions = {
       return token;
     },
 
+    // 🔹 SESSION ------------------------------------------------------------------------------------
     async session({ session, token }) {
       if (token?.id) {
         session.user.id = token.id;
         session.user.role = token.role;
       }
-      
       return session;
     },
   },
 };
 
 const handler = NextAuth(authOptions);
-
 export { handler as GET, handler as POST };
