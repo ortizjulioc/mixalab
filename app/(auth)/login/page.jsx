@@ -185,7 +185,7 @@ export default function Login() {
       <header className="relative z-20 h-12 sm:h-14 px-2 sm:px-4 pt-[env(safe-area-inset-top)]">
         <div className="absolute inset-y-0 right-2 sm:right-4 flex items-center">
           <Link
-            href="/creators"
+            href="/login/creators"
             className="flex items-center gap-1 bg-white/20 hover:bg-white/30 transition-colors duration-300
                      text-xs sm:text-sm font-medium sm:font-semibold text-white
                      py-1 px-2 sm:py-1.5 sm:px-3 rounded-md backdrop-blur-md leading-none"
