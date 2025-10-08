@@ -4,6 +4,7 @@ import React from 'react';
 // Íconos para la navegación del Dashboard
 import { Home, Settings, User, LogOut, Menu, Bell, Search, Zap, Music, Aperture } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
+import Logo from '../components/Logo';
 
 // --- Componentes Reutilizables de Estilo Liquid Glass ---
 
@@ -93,10 +94,11 @@ const DashboardLayout = ({ children }) => {
                      shadow-xl transition-all duration-300"
                 >
                     {/* Logo/Title Area */}
-                    <div className="flex items-center justify-center lg:justify-start h-16 border-b border-white/20 pb-4">
-                        <Zap className="w-8 h-8 text-white" />
-                        <h2 className="hidden lg:block text-white text-xl font-bold ml-2">Mixa Studio</h2>
+                    <div className="flex items-center  lg:justify-start h-16 border-b border-white/20 pb-4">
+                        <Logo />
+                        <h2 className="hidden lg:block text-white text-2xl font-bold ml-2">Mixa Studio</h2>
                     </div>
+
 
                     {/* Navigation Links */}
                     <nav className="flex-1 space-y-2">
@@ -113,9 +115,9 @@ const DashboardLayout = ({ children }) => {
 
                     {/* Logout Button */}
                     <div className="mt-auto pt-4 border-t border-white/20">
-                        <GlassLink 
-                            icon={LogOut} 
-                            label="Sign Out" 
+                        <GlassLink
+                            icon={LogOut}
+                            label="Sign Out"
                             onClick={() => signOut({ callbackUrl: '/' })}
                         />
                     </div>
