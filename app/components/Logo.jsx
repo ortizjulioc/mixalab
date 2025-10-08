@@ -8,8 +8,8 @@ export default function Logo({ src = "/mixaLabLogo.png", alt = "MixaLab Logo", t
       <Image
         src={src}
         alt={alt}
-        width={65}
-        height={65}
+        width={38}
+        height={38}
         priority
         className="flex-shrink-0"
       />

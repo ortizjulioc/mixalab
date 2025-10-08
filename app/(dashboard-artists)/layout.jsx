@@ -1,8 +1,9 @@
+'use client';
+
 import React from 'react';
 // Íconos para la navegación del Dashboard
 import { Home, Settings, User, LogOut, Menu, Bell, Search, Zap, Music, Aperture } from 'lucide-react';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'; // Ajusta la ruta según tu estructura de proyecto
+import { useSession, signOut } from 'next-auth/react';
 import Logo from '../components/Logo';
 
 // --- Componentes Reutilizables de Estilo Liquid Glass ---
@@ -18,16 +19,16 @@ const navItems = [
 /**
  * Componente que representa un enlace o botón con estilo Liquid Glass.
  */
-const GlassLink = ({ icon: Icon, label, href, isSelected = false }) => (
-    <a
-        href={href}
+const GlassLink = ({ icon: Icon, label, href, isSelected = false, onClick }) => (
+    <button
+        onClick={onClick}
         className={`flex items-center space-x-4 p-3 rounded-xl transition duration-300 ease-in-out 
-                text-white font-medium hover:bg-white/10 hover:shadow-md 
+                text-white font-medium hover:bg-white/10 hover:shadow-md w-full text-left
                 ${isSelected ? 'bg-white/15 border-l-4 border-white' : ''}`}
     >
         <Icon className="w-5 h-5 text-white/80" />
         <span className="hidden lg:block">{label}</span>
-    </a>
+    </button>
 );
 
 // --- Componente Principal de Layout (DashboardLayout) ---
@@ -35,11 +36,26 @@ const GlassLink = ({ icon: Icon, label, href, isSelected = false }) => (
 /**
  * Layout principal del dashboard con estilo Liquid Glass (Glassmorphism).
  * Incluye barra lateral, menú superior y área de contenido para hijos (children).
- * Usa getServerSession para obtener datos del usuario en componentes del servidor.
+ * Usa useSession para obtener datos del usuario en componentes del cliente.
  */
-const DashboardLayout = async ({ children }) => {
-    // Obtener la sesión del servidor
-    const session = await getServerSession(authOptions);
+const DashboardLayout = ({ children }) => {
+    const { data: session, status } = useSession();
+
+    console.log(session);
+
+    // Manejar estado de carga
+    if (status === 'loading') {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+                <div className="text-white">Loading...</div>
+            </div>
+        );
+    }
+
+    // Si no hay sesión, redirigir o mostrar algo, pero por ahora asumir autenticado
+    if (!session) {
+        return null; // O redirigir con useRouter si es necesario
+    }
 
     // Datos del usuario desde la sesión
     const userName = session?.user?.name || "User";
@@ -79,9 +95,10 @@ const DashboardLayout = async ({ children }) => {
                 >
                     {/* Logo/Title Area */}
                     <div className="flex items-center  lg:justify-start h-16 border-b border-white/20 pb-4">
-                        <Logo/>
+                        <Logo />
                         <h2 className="hidden lg:block text-white text-2xl font-bold ml-2">Mixa Studio</h2>
                     </div>
+
 
                     {/* Navigation Links */}
                     <nav className="flex-1 space-y-2">
@@ -98,7 +115,11 @@ const DashboardLayout = async ({ children }) => {
 
                     {/* Logout Button */}
                     <div className="mt-auto pt-4 border-t border-white/20">
-                        <GlassLink icon={LogOut} label="Sign Out" href="#logout" />
+                        <GlassLink
+                            icon={LogOut}
+                            label="Sign Out"
+                            onClick={() => signOut({ callbackUrl: '/' })}
+                        />
                     </div>
                 </aside>
 
