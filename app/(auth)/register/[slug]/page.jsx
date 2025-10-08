@@ -1,6 +1,9 @@
 'use client';
 import React, { useState } from 'react';
 import { Chrome, Mail, Lock, User, CheckCircle } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
+import { signIn } from 'next-auth/react';
+
 
 // Componente para los botones de acceso social con estilo Liquid Glass
 const SocialGlassButton = ({ icon: Icon, label, bgColor, textColor, shadowColor }) => (
@@ -42,11 +45,17 @@ const GlassInput = ({ id, name, type, label, placeholder, value, onChange, icon:
 
 // Main component containing the registration form with "Liquid Glass" (Glassmorphism) style
 const App = () => {
+    const router = useRouter();
+
+    const { slug } = useParams();
+    const [loading, setLoading] = useState(false);
+
     const [formData, setFormData] = useState({
-        fullName: '',
+        name: '',
         email: '',
         password: '',
         confirmPassword: '',
+        role: slug
     });
     const [message, setMessage] = useState('');
 
@@ -57,17 +66,55 @@ const App = () => {
     };
 
     // Simulates form submission
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
+
         if (formData.password !== formData.confirmPassword) {
-            setMessage('Passwords do not match.');
+            setMessage("Passwords do not match.");
             return;
         }
-        // Simulated registration logic
-        console.log('Registration Data:', formData);
-        setMessage('Registration successful! (Simulation)');
-        setFormData({ fullName: '', email: '', password: '', confirmPassword: '' });
+
+        setLoading(true);
+        setMessage("");
+
+        const dataSend = {
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+            role: formData.role
+        }
+
+        try {
+            const response = await fetch("/api/auth/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(dataSend),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setMessage("Registration successful!");
+             
+                await signIn("credentials", {
+                    email:formData.email,
+                    password:formData.password,
+                    callbackUrl: `/api/auth/finalize?role=${slug}`,
+                });
+
+            } else {
+                setMessage(data.message || "Error during registration.");
+            }
+        } catch (error) {
+            console.error("Registration error:", error);
+            setMessage("Something went wrong. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     };
+
 
 
     return (
@@ -127,11 +174,11 @@ const App = () => {
 
                     <GlassInput
                         id="fullName"
-                        name="fullName"
+                        name="name"
                         type="text"
                         label="Full Name"
                         placeholder="e.g., Your Stage Name"
-                        value={formData.fullName}
+                        value={formData.name}
                         onChange={handleChange}
                         icon={User}
                     />
@@ -179,12 +226,40 @@ const App = () => {
                     {/* Submit Button (White, with an ethereal glow) */}
                     <button
                         type="submit"
-                        className="w-full bg-white hover:bg-gray-100 text-gray-900 font-bold py-3 px-4 rounded-xl 
-                       transition duration-300 ease-in-out transform hover:scale-[1.02] 
-                       shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:shadow-[0_0_20px_rgba(255,255,255,0.8)]
-                       focus:outline-none focus:ring-4 focus:ring-white/50"
+                        disabled={loading}
+                        className={`w-full bg-white text-gray-900 font-bold py-3 px-4 rounded-xl 
+  transition duration-300 ease-in-out transform hover:scale-[1.02] 
+  shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:shadow-[0_0_20px_rgba(255,255,255,0.8)]
+  focus:outline-none focus:ring-4 focus:ring-white/50
+  ${loading ? "opacity-70 cursor-not-allowed hover:scale-100" : "hover:bg-gray-100"}`}
                     >
-                        Sign Up
+                        {loading ? (
+                            <div className="flex items-center justify-center gap-2">
+                                <svg
+                                    className="animate-spin h-5 w-5 text-gray-900"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                    ></circle>
+                                    <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                    ></path>
+                                </svg>
+                                <span>Loading...</span>
+                            </div>
+                        ) : (
+                            "Sign Up"
+                        )}
                     </button>
                 </form>
             </div>

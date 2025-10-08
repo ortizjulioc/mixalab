@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import * as THREE from "three";
 import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 import { CiMusicNote1 } from "react-icons/ci";
@@ -7,6 +7,12 @@ import Link from "next/link";
 import { signIn } from "next-auth/react";
 
 export default function Login() {
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   useEffect(() => {
     // --- THREE: escena con notas musicales y animación de entrada ---
     const scene = new THREE.Scene();
@@ -171,6 +177,25 @@ export default function Login() {
       renderer.dispose();
     };
   }, []);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const res = await signIn("credentials", {
+      email,
+      password,
+      callbackUrl: `/api/auth/finalize?role=ARTIST`,
+    });
+
+    setLoading(false);
+
+    if (res?.error) {
+      setError("Credenciales inválidas.");
+    } else if (res?.ok && res.url) {
+      window.location.href = res.url; // redirige al callbackUrl
+    }
+  };
 
   return (
     <div className="bg-black text-white min-h-dvh overflow-hidden relative">
@@ -211,11 +236,11 @@ export default function Login() {
 
           {/* Social login */}
           <div className="flex flex-col space-y-3">
-            <button 
+            <button
               onClick={() => {
-                signIn("google", { callbackUrl: "/" });
+                signIn("google", { callbackUrl: `/api/auth/finalize?role=ARTIST` })
               }}
-            className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
+              className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
               <FaGoogle />
               <span>Continuar con Google</span>
             </button>
@@ -241,23 +266,34 @@ export default function Login() {
           </div>
 
           {/* Form */}
-          <form className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <input
               type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               placeholder="Correo electrónico"
               className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40"
+              required
             />
             <input
               type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder="Contraseña"
               className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40"
+              required
             />
+
             <button
               type="submit"
-              className="w-full p-3 rounded-lg bg-white text-black font-semibold tracking-wide transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              disabled={loading}
+              className={`w-full p-3 rounded-lg bg-white text-black font-semibold tracking-wide transition-all duration-300 hover:scale-105 hover:shadow-lg ${loading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
             >
-              Iniciar sesión
+              {loading ? "Cargando..." : "Iniciar sesión"}
             </button>
+
+            {error && <p className="text-red-400 text-sm">{error}</p>}
           </form>
 
           <div className="mt-6 text-center text-sm">
@@ -265,8 +301,8 @@ export default function Login() {
               ¿Olvidaste tu contraseña?
             </a>
           </div>
-           <div className="mt-6 text-center text-sm">
-            <Link href="/register/artists" className="text-white/80 hover:underline">
+          <div className="mt-6 text-center text-sm">
+            <Link href="/register/ARTIST" className="text-white/80 hover:underline">
               Don’t have an account? Sign up.
             </Link>
           </div>

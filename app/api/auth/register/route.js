@@ -35,6 +35,7 @@ export async function POST(request) {
   
     return NextResponse.json({ user: userWithoutPassword }, { status: 201 });
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ message: "Error interno del servidor" }, { status: 500 });
   }
 }

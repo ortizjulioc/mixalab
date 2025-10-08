@@ -248,7 +248,7 @@ export default function CreatorLogin() {
             <a href="#" className="text-black/80 hover:underline">Forgot password?</a>
           </div>
            <div className="mt-6 text-center text-sm">
-            <Link href="/register/creators" className="text-black/80 hover:underline">
+            <Link href="/register/CREATOR" className="text-black/80 hover:underline">
               Don’t have an account? Sign up.
             </Link>
           </div>
