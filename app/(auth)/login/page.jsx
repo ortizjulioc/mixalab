@@ -265,6 +265,11 @@ export default function Login() {
               ¿Olvidaste tu contraseña?
             </a>
           </div>
+           <div className="mt-6 text-center text-sm">
+            <Link href="/register/artists" className="text-white/80 hover:underline">
+              Don’t have an account? Sign up.
+            </Link>
+          </div>
         </div>
       </main>
     </div>

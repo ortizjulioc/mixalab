@@ -32,6 +32,7 @@ export const authOptions = {
           name: userFound.name,
           email: userFound.email,
           image: userFound.image,
+          role: userFound.role, // Agregar el rol aquí para que se propague
         };
       },
     }),
@@ -98,7 +99,13 @@ export const authOptions = {
               },
             });
           }
+          // Actualizar el rol si es necesario (por defecto ARTIST, pero podría ser otro)
+          userRole = dbUser.role;
         }
+
+        // Propagar id y rol al objeto user para los callbacks posteriores
+        user.id = dbUser.id;
+        user.role = userRole;
 
         return true;
       }
@@ -126,6 +133,7 @@ export const authOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.role = user.role; // Agregar el rol al token desde el user
       }
       return token;
     },
@@ -134,7 +142,19 @@ export const authOptions = {
     async session({ session, token }) {
       if (token?.id) {
         session.user.id = token.id;
+      }
+      if (token?.role) {
         session.user.role = token.role;
+      }
+      // Para asegurar que siempre tengamos el rol más actualizado (ej. después de finalize),
+      // consultar la BD aquí (se ejecuta en cada getSession)
+      if (session.user.email) {
+        const dbUser = await db.user.findUnique({
+          where: { email: session.user.email },
+        });
+        if (dbUser) {
+          session.user.role = dbUser.role;
+        }
       }
       return session;
     },
