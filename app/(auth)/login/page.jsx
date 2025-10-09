@@ -232,7 +232,7 @@ export default function Login() {
 
         {/* Panel de inicio de sesión */}
         <div className="bg-black/40 backdrop-blur-lg p-6 sm:p-10 rounded-3xl shadow-2xl w-full max-w-sm border border-white/20">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">¡Bienvenido!</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Welcome!</h2>
 
           {/* Social login */}
           <div className="flex flex-col space-y-3">
@@ -242,16 +242,7 @@ export default function Login() {
               }}
               className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
               <FaGoogle />
-              <span>Continuar con Google</span>
-            </button>
-            {/* /------------------------------------------------------------------------------------------------------- */}
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <FaFacebook />
-              <span>Continuar con Facebook</span>
-            </button>
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <FaApple />
-              <span>Continuar con Apple</span>
+              <span>Login with Google</span>
             </button>
           </div>
 
@@ -271,7 +262,7 @@ export default function Login() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="Correo electrónico"
+              placeholder="Email"
               className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40"
               required
             />
@@ -279,7 +270,7 @@ export default function Login() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Contraseña"
+              placeholder="Password"
               className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40"
               required
             />
@@ -298,7 +289,7 @@ export default function Login() {
 
           <div className="mt-6 text-center text-sm">
             <a href="#" className="text-white/80 hover:underline">
-              ¿Olvidaste tu contraseña?
+              Forgot your password?
             </a>
           </div>
           <div className="mt-6 text-center text-sm">

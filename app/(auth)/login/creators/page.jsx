@@ -204,14 +204,6 @@ export default function CreatorLogin() {
               <FaGoogle />
               <span>Login with Google</span>
             </button>
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-black/30 bg-black text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <FaFacebook />
-              <span>Login with Facebook</span>
-            </button>
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-black/30 bg-black text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <FaApple />
-              <span>Login with Apple</span>
-            </button>
           </div>
 
           {/* Separador */}

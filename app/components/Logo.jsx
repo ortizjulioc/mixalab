@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 
-export default function Logo({ src = "/mixaLabLogo.png", alt = "MixaLab Logo", text = "MixaLab", href = "/" }) {
+export default function Logo({ src = "/mixaLabLogo.png", alt = "MixaLab Logo", text = "MixaLab", href = "/", className = "" }) {
   return (
     <Link href={href} className="flex items-center gap-1 flex-shrink-0">
       <Image
@@ -11,7 +11,7 @@ export default function Logo({ src = "/mixaLabLogo.png", alt = "MixaLab Logo", t
         width={38}
         height={38}
         priority
-        className="flex-shrink-0"
+        className={`flex-shrink-0 ${className}`}
       />
      
     </Link>
