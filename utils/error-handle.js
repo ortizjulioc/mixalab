@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { AppError } from "./errors";
+import { ValidationError } from "yup";
 
 export function handleError(error) {
   if (error instanceof AppError) {
@@ -13,6 +14,18 @@ export function handleError(error) {
         },
       },
       { status: error.statusCode }
+    );
+  }
+
+  if (error instanceof ValidationError) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          code: "VALIDATION_ERROR",
+          message: error.errors.join(", "),
+        },
+      }, { status: 400 }
     );
   }
 
