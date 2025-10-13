@@ -4,6 +4,7 @@ import * as THREE from 'three';
 import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 import { CiMusicNote1 } from "react-icons/ci";
 import Link from 'next/link';
+import { signIn } from 'next-auth/react';
 
 export default function CreatorLogin() {
   useEffect(() => {
@@ -150,6 +151,10 @@ export default function CreatorLogin() {
       renderer.dispose();
     };
   }, []);
+  const handleGoogleLogin = (role) => {
+    const callbackUrl = `/auth/redirect?role=${role}`; // puedes redirigir a donde quieras
+    signIn("google", { callbackUrl });
+  };
 
   return (
     <div className="bg-white text-black min-h-dvh overflow-hidden relative">
@@ -191,17 +196,13 @@ export default function CreatorLogin() {
 
           {/* Social login */}
           <div className="flex flex-col space-y-3">
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-black/30 bg-black text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
+            <button
+              onClick={() =>
+                signIn("google", { callbackUrl: `/api/auth/finalize?role=CREATOR`})
+              }
+              className="flex items-center justify-center gap-3 p-3 rounded-lg border border-black/30 bg-black text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
               <FaGoogle />
               <span>Login with Google</span>
-            </button>
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-black/30 bg-black text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <FaFacebook />
-              <span>Login with Facebook</span>
-            </button>
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-black/30 bg-black text-white font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <FaApple />
-              <span>Login with Apple</span>
             </button>
           </div>
 
@@ -237,6 +238,11 @@ export default function CreatorLogin() {
 
           <div className="mt-6 text-center text-sm">
             <a href="#" className="text-black/80 hover:underline">Forgot password?</a>
+          </div>
+           <div className="mt-6 text-center text-sm">
+            <Link href="/register/CREATOR" className="text-black/80 hover:underline">
+              Don’t have an account? Sign up.
+            </Link>
           </div>
         </div>
       </main>

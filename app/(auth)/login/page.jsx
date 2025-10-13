@@ -1,11 +1,18 @@
 "use client";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import * as THREE from "three";
 import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 import { CiMusicNote1 } from "react-icons/ci";
 import Link from "next/link";
+import { signIn } from "next-auth/react";
 
 export default function Login() {
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   useEffect(() => {
     // --- THREE: escena con notas musicales y animación de entrada ---
     const scene = new THREE.Scene();
@@ -170,6 +177,25 @@ export default function Login() {
       renderer.dispose();
     };
   }, []);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const res = await signIn("credentials", {
+      email,
+      password,
+      callbackUrl: `/api/auth/finalize?role=ARTIST`,
+    });
+
+    setLoading(false);
+
+    if (res?.error) {
+      setError("Credenciales inválidas.");
+    } else if (res?.ok && res.url) {
+      window.location.href = res.url; // redirige al callbackUrl
+    }
+  };
 
   return (
     <div className="bg-black text-white min-h-dvh overflow-hidden relative">
@@ -184,7 +210,7 @@ export default function Login() {
       <header className="relative z-20 h-12 sm:h-14 px-2 sm:px-4 pt-[env(safe-area-inset-top)]">
         <div className="absolute inset-y-0 right-2 sm:right-4 flex items-center">
           <Link
-            href="/creators"
+            href="/login/creators"
             className="flex items-center gap-1 bg-white/20 hover:bg-white/30 transition-colors duration-300
                      text-xs sm:text-sm font-medium sm:font-semibold text-white
                      py-1 px-2 sm:py-1.5 sm:px-3 rounded-md backdrop-blur-md leading-none"
@@ -206,21 +232,17 @@ export default function Login() {
 
         {/* Panel de inicio de sesión */}
         <div className="bg-black/40 backdrop-blur-lg p-6 sm:p-10 rounded-3xl shadow-2xl w-full max-w-sm border border-white/20">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">¡Bienvenido!</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Welcome!</h2>
 
           {/* Social login */}
           <div className="flex flex-col space-y-3">
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
+            <button
+              onClick={() => {
+                signIn("google", { callbackUrl: `/api/auth/finalize?role=ARTIST` })
+              }}
+              className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
               <FaGoogle />
-              <span>Continuar con Google</span>
-            </button>
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <FaFacebook />
-              <span>Continuar con Facebook</span>
-            </button>
-            <button className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <FaApple />
-              <span>Continuar con Apple</span>
+              <span>Login with Google</span>
             </button>
           </div>
 
@@ -235,29 +257,45 @@ export default function Login() {
           </div>
 
           {/* Form */}
-          <form className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <input
               type="email"
-              placeholder="Correo electrónico"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Email"
               className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40"
+              required
             />
             <input
               type="password"
-              placeholder="Contraseña"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Password"
               className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40"
+              required
             />
+
             <button
               type="submit"
-              className="w-full p-3 rounded-lg bg-white text-black font-semibold tracking-wide transition-all duration-300 hover:scale-105 hover:shadow-lg"
+              disabled={loading}
+              className={`w-full p-3 rounded-lg bg-white text-black font-semibold tracking-wide transition-all duration-300 hover:scale-105 hover:shadow-lg ${loading ? "opacity-70 cursor-not-allowed" : ""
+                }`}
             >
-              Iniciar sesión
+              {loading ? "Cargando..." : "Iniciar sesión"}
             </button>
+
+            {error && <p className="text-red-400 text-sm">{error}</p>}
           </form>
 
           <div className="mt-6 text-center text-sm">
             <a href="#" className="text-white/80 hover:underline">
-              ¿Olvidaste tu contraseña?
+              Forgot your password?
             </a>
+          </div>
+          <div className="mt-6 text-center text-sm">
+            <Link href="/register/ARTIST" className="text-white/80 hover:underline">
+              Don’t have an account? Sign up.
+            </Link>
           </div>
         </div>
       </main>
