@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
- // output   = "../app/generated/prisma"
+  output   = "../app/generated/prisma"
 }
 
 datasource db {
@@ -9,7 +9,7 @@ datasource db {
 }
 
 model User {
-  id         String     @id @default(cuid())
+  id         String     @id @default(uuid())
   name       String?
   email      String     @unique
   password   String?
@@ -30,8 +30,8 @@ model Account {
   userId            String   @map("user_id")
   provider          String
   providerAccountId String
-  access_token      String?  @db.Text @map("access_token")
-  refresh_token     String?  @db.Text @map("refresh_token")
+  access_token      String?  @map("access_token")
+  refresh_token     String?  @map("refresh_token")
   expires_at        Int?     @map("expires_at")
   deleted           Boolean  @default(false)
   createdAt         DateTime @default(now()) @map("created_at")
@@ -44,11 +44,30 @@ model Account {
 }
 
 
-model verificationtoken {
-  id         String   @id
-  identifier String
-  token      String   @unique(map: "VerificationToken_token_key")
+model VerificationToken {
+  id         String   @id @default(cuid())
+  identifier String // ej: el email
+  token      String   @unique
   expires    DateTime
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("verification_tokens")
+}
+
+model File {
+  id        String   @id @default(uuid())
+  name      String   // Nombre original del archivo (ej: portada.png)
+  mimeType  String   @map("mime_type") // Tipo MIME (ej: image/png, audio/mpeg, application/pdf)
+  extension String   // Extensión (ej: png, mp3, pdf)
+  size      Int      // Tamaño en bytes
+  path      String   // Ruta relativa en el sistema de archivos (/uploads/cursos/xxxx.png)
+  url       String   // URL pública del archivo
+  folder    String   // Carpeta lógica donde se guarda (ej: cursos, audios, usuarios)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("files")
 }
 
 enum UserRole {
