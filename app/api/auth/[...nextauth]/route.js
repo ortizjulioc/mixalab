@@ -18,7 +18,8 @@ export const authOptions = {
         password: { label: "Password", type: "password", placeholder: "Password" },
       },
       async authorize(credentials) {
-        const userFound = await db.user.findUnique({
+        try {
+          const userFound = await db.user.findUnique({
           where: { email: credentials.email },
         });
 
@@ -34,6 +35,16 @@ export const authOptions = {
           image: userFound.image,
           role: userFound.role, // Agregar el rol aquí para que se propague
         };
+        } catch (error) {
+          console.error("Error in authorize:", error);
+          throw new Error("Error during authentication" + error.message);
+         // return null; // Retornar null en caso de error
+         // Nota: Lanzar un error redirige automáticamente a la página de inicio de sesión con el mensaje de error en la URL.
+         // Retornar null simplemente recarga la página de inicio de sesión sin mensaje.
+         // Elegí lanzar el error para mayor claridad al usuario.
+         // Si prefieres no mostrar mensajes de error, usa "return null;" en su lugar.
+         // throw new Error("Error during authentication"); // Alternativa genérica
+        }
       },
     }),
 
@@ -47,7 +58,8 @@ export const authOptions = {
   callbacks: {
     // 🔹 SIGN IN -----------------------------------------------------------------------------------
     async signIn({ user, account }) {
-      if (account?.provider === "google") {
+      try {
+              if (account?.provider === "google") {
         // Valor por defecto
         let userRole = UserRole.ARTIST;
 
@@ -109,6 +121,9 @@ export const authOptions = {
 
         return true;
       }
+    } catch (error) {
+      console.error("Error in signIn:", error);
+      return false;}
 
       return true;
     },

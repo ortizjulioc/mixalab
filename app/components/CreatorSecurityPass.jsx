@@ -1,3 +1,4 @@
+'use client'
 import React from 'react'
 
 export default function CreatorSecurityPass() {
@@ -8,7 +9,7 @@ export default function CreatorSecurityPass() {
   return (
     // Nota: La acción de navegación es solo un console.log ya que estamos en una Landing Page.
 
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 my-12">
+        <div className="px-4 sm:px-6 lg:px-8 my-12">
             <div className="bg-amber-900/40 border-2 border-amber-600/70 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-6 shadow-2xl backdrop-blur-sm">
                 
                 <div className="flex items-center space-x-4 flex-grow text-center md:text-left">

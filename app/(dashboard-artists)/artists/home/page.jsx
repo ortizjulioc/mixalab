@@ -1,4 +1,3 @@
-'use client'
 import CreatorSecurityPass from '@/app/components/CreatorSecurityPass'
 import React from 'react'
 
