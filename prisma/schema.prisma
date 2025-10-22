@@ -9,24 +9,114 @@ datasource db {
 }
 
 model User {
-  id         String     @id @default(uuid())
-  name       String?
-  email      String     @unique
-  password   String?
-  role       UserRole   @default(ARTIST)
-  image      String?
-  isVerified Boolean    @default(false) @map("is_verified")
-  status     UserStatus @default(UNVERIFIED)
-  deleted    Boolean    @default(false)
-  createdAt  DateTime   @default(now()) @map("created_at")
-  updatedAt  DateTime   @updatedAt @map("updated_at")
-  accounts   Account[]
+  id             String          @id @default(uuid())
+  name           String?
+  email          String          @unique
+  password       String?
+  role           UserRole        @default(ARTIST)
+  image          String?
+  isVerified     Boolean         @default(false) @map("is_verified")
+  status         UserStatus      @default(UNVERIFIED)
+  deleted        Boolean         @default(false)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+  accounts       Account[]
+  creatorProfile CreatorProfile?
+  artistProfile  ArtistProfile?
 
   @@map("users")
 }
 
+model CreatorProfile {
+  id                String             @id @default(uuid())
+  userId            String             @unique @map("user_id")
+  brandName         String             @map("brand_name")
+  country           String?
+  portfolio         String?
+  socials           Json?
+  yearsOfExperience Int                @map("years_of_experience")
+  mainDaw           String             @map("main_daw")
+  gearList          String             @map("gear_list")
+  availability      AvailabilityStatus
+
+  genders CreatorGenre[]
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deleted        Boolean          @default(false)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  @@map("creators_profiles")
+}
+
+model ArtistProfile {
+  id         String  @id @default(uuid())
+  userId     String  @unique @map("user_id")
+  stageName  String  @map("stage_name") // Nombre artístico
+  bio        String?
+  website    String?
+  socials    Json?
+  mixaPoints Int     @default(0) @map("mixa_points")
+
+  genres ArtistGenre[]
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("artists_profiles")
+}
+
+model CreatorGenre {
+  id        String @id @default(uuid())
+  creatorId String @map("creator_id")
+  genreId   String @map("genre_id")
+
+  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  genre   Genre          @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([creatorId, genreId])
+  @@index([creatorId], map: "creator_genres_creator_id_fkey")
+  @@index([genreId], map: "creator_genres_genre_id_fkey")
+  @@map("creator_genres")
+}
+
+model ArtistGenre {
+  id       String @id @default(uuid())
+  artistId String @map("artist_id")
+  genreId  String @map("genre_id")
+
+  artist ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  genre  Genre         @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([artistId, genreId])
+  @@index([artistId], map: "artist_genres_artist_id_fkey")
+  @@index([genreId], map: "artist_genres_genre_id_fkey")
+  @@map("artist_genres")
+}
+
+model Genre {
+  id   String @id @default(uuid())
+  name String @unique
+
+  creators CreatorGenre[]
+  artists  ArtistGenre[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("genres")
+}
+
 model Account {
-  id                String   @id @default(cuid())
+  id                String   @id @default(uuid())
   userId            String   @map("user_id")
   provider          String
   providerAccountId String
@@ -43,9 +133,8 @@ model Account {
   @@map("accounts")
 }
 
-
 model VerificationToken {
-  id         String   @id @default(cuid())
+  id         String   @id @default(uuid())
   identifier String // ej: el email
   token      String   @unique
   expires    DateTime
@@ -56,16 +145,16 @@ model VerificationToken {
 }
 
 model File {
-  id        String   @id @default(uuid())
-  name      String   // Nombre original del archivo (ej: portada.png)
-  mimeType  String   @map("mime_type") // Tipo MIME (ej: image/png, audio/mpeg, application/pdf)
-  extension String   // Extensión (ej: png, mp3, pdf)
-  size      Int      // Tamaño en bytes
-  path      String   // Ruta relativa en el sistema de archivos (/uploads/cursos/xxxx.png)
-  url       String   // URL pública del archivo
-  folder    String   // Carpeta lógica donde se guarda (ej: cursos, audios, usuarios)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             String           @id @default(uuid())
+  name           String // Nombre original del archivo (ej: portada.png)
+  mimeType       String           @map("mime_type") // Tipo MIME (ej: image/png, audio/mpeg, application/pdf)
+  extension      String // Extensión (ej: png, mp3, pdf)
+  size           Int // Tamaño en bytes
+  path           String // Ruta relativa en el sistema de archivos (/uploads/cursos/xxxx.png)
+  url            String // URL pública del archivo
+  folder         String // Carpeta lógica donde se guarda (ej: cursos, audios, usuarios)
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
 
   @@map("files")
 }
@@ -84,3 +173,10 @@ enum UserStatus {
   CLOSED         @map("closed")
   PENDING_REVIEW @map("pending_review")
 }
+
+enum AvailabilityStatus {
+  FULL_TIME @map("full_time")
+  PART_TIME @map("part_time")
+  ON_DEMAND @map("on_demand")
+}
+
