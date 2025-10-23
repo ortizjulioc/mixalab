@@ -41,10 +41,12 @@ model CreatorProfile {
 
   genders CreatorGenre[]
   user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  services CreatorServiceOffering[]
 
-  deleted        Boolean          @default(false)
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
+  deleted                Boolean                  @default(false)
+  createdAt              DateTime                 @default(now()) @map("created_at")
+  updatedAt              DateTime                 @updatedAt @map("updated_at")
+
 
   @@map("creators_profiles")
 }
@@ -145,18 +147,79 @@ model VerificationToken {
 }
 
 model File {
-  id             String           @id @default(uuid())
-  name           String // Nombre original del archivo (ej: portada.png)
-  mimeType       String           @map("mime_type") // Tipo MIME (ej: image/png, audio/mpeg, application/pdf)
-  extension      String // Extensión (ej: png, mp3, pdf)
-  size           Int // Tamaño en bytes
-  path           String // Ruta relativa en el sistema de archivos (/uploads/cursos/xxxx.png)
-  url            String // URL pública del archivo
-  folder         String // Carpeta lógica donde se guarda (ej: cursos, audios, usuarios)
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
+  id        String @id @default(uuid())
+  name      String // Nombre original del archivo (ej: portada.png)
+  mimeType  String @map("mime_type") // Tipo MIME (ej: image/png, audio/mpeg, application/pdf)
+  extension String // Extensión (ej: png, mp3, pdf)
+  size      Int // Tamaño en bytes
+  path      String // Ruta relativa en el sistema de archivos (/uploads/cursos/xxxx.png)
+  url       String // URL pública del archivo
+  folder    String // Carpeta lógica donde se guarda (ej: cursos, audios, usuarios)
+
+  tunesInOfferings CreatorServiceOffering[] @relation("TunedExampleFiles")
+  creatorExamples CreatorServiceExample[]
+
+  createdAt              DateTime                 @default(now()) @map("created_at")
+  updatedAt              DateTime                 @updatedAt @map("updated_at")
 
   @@map("files")
+}
+
+model Service {
+  id          String      @id @default(uuid())
+  code        ServiceType @unique
+  name        String
+  description String?
+
+  creatorOfferings CreatorServiceOffering[]
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@map("services")
+}
+
+// Oferta concreta de un creador para un servicio específico
+model CreatorServiceOffering {
+  id        String         @id @default(uuid())
+  creatorId String         @map("creator_id")
+  serviceId String         @map("service_id")
+  title         String?         // Ej: "Mixing - Pop/R&B (Standard)"
+  description   String?
+  turnaroundDays Int?           @map("turnaround_days")
+  active        Boolean         @default(true)
+  // Campos específicos para Mixing / Mastering / Recording:
+  // Usamos columnas explícitas para los más comunes, y `metadata` para lo demás.
+  yearsExperience Int?          @map("years_experience")
+  notableArtists  String?       @map("notable_artists")
+  tunesVocals     Boolean?      @map("tunes_vocals") // para mixing
+  tunedExampleId  String?      @map("tuned_example_id")
+  tunedExample    File?        @relation("TunedExampleFiles", fields: [tunedExampleId], references: [id], onDelete: SetNull)
+
+  preferredLoudness String?     @map("preferred_loudness") // para mastering (ej: "-14 LUFS")
+  instruments       String?       // para recording: "Guitar,Bass"
+  studioSetup       String?     @map("studio_setup") // breve descripción
+
+  creator CreatorProfile @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  service Service        @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  examples CreatorServiceExample[]
+
+  deleted       Boolean         @default(false)
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+  @@map("creator_service_offerings")
+}
+
+// Tabla para almacenar before/after / tuned / demo files asociados a una oferta
+model CreatorServiceExample {
+  id          String               @id @default(uuid())
+  offeringId  String               @map("offering_id")
+  fileId     String               @map("file_id")
+  tag         CreatorExampleTag    // before_mix, after_mix, tuned_example, demo, etc.
+
+  offering    CreatorServiceOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  file        File                  @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  @@map("creator_service_examples")
 }
 
 enum UserRole {
@@ -180,3 +243,21 @@ enum AvailabilityStatus {
   ON_DEMAND @map("on_demand")
 }
 
+enum ServiceType {
+  MIXING
+  MASTERING
+  RECORDING
+  PRODUCTION
+  ARRANGEMENT
+  OTHER
+}
+
+enum CreatorExampleTag {
+  BEFORE_MIX    @map("before_mix")
+  AFTER_MIX     @map("after_mix")
+  BEFORE_MASTER @map("before_master")
+  AFTER_MASTER  @map("after_master")
+  TUNED_EXAMPLE @map("tuned_example")
+  DEMO          @map("demo")
+  VIDEO_EXAMPLE @map("video_example")
+}
