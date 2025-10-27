@@ -167,7 +167,7 @@ model File {
 
 model Service {
   id          String      @id @default(uuid())
-  code        ServiceType @unique
+  serviceType ServiceType @map("service_type")
   name        String
   description String?
 
