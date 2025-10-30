@@ -253,10 +253,10 @@ const DashboardLayout = ({ children, navItems }) => {
 
                         {/* 4. Content (Children) - Área principal de las vistas */}
                         <main className="flex-1 overflow-y-auto p-4 md:p-8">
-                            <div className="min-h-full liquid-glass rounded-[40px] border border-white/20 p-8 shadow-2xl glow-border transition-all duration-300 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
+              
                                 {/* Aquí es donde se renderizarán los componentes hijos/vistas */}
                                 {children ? children : "Your view components will be rendered here."}
-                            </div>
+                        
                         </main>
                     </div>
                 </div>
