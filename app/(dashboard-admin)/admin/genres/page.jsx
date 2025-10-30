@@ -3,7 +3,7 @@
 
 import useGenres from '@/app/hooks/useGenres';
 import React, { useState, useEffect } from 'react';
-
+import { Edit, Trash2 } from 'lucide-react';
 
 export default function GenresPage() {
   const {
@@ -122,36 +122,36 @@ export default function GenresPage() {
       ) : (
         <div className="overflow-x-auto border border-white/20 rounded-2xl liquid-glass">
           <table className="w-full">
-            <thead>
-              <tr className="bg-white/5">
-                <th className="p-4 text-left text-white font-semibold border-b border-white/20">Name</th>
-                <th className="p-4 text-left text-white font-semibold border-b border-white/20">Created At</th>
-                <th className="p-4 text-left text-white font-semibold border-b border-white/20">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {genres.map((genre) => (
-                <tr key={genre.id} className="border-b border-white/10 hover:bg-white/5 transition">
-                  <td className="p-4 text-white">{genre.name}</td>
-                  <td className="p-4 text-gray-400">{new Date(genre.createdAt).toLocaleDateString()}</td>
-                  <td className="p-4">
-                    <button
-                      onClick={() => handleEdit(genre.id)}
-                      className="mr-2 px-4 py-2 bg-blue-600/50 hover:bg-blue-700/50 text-white rounded-xl text-sm font-medium transition border border-blue-500/30 hover:scale-105"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDelete(genre.id)}
-                      className="px-4 py-2 bg-red-600/50 hover:bg-red-700/50 text-white rounded-xl text-sm font-medium transition border border-red-500/30 hover:scale-105"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+    <thead>
+      <tr className="bg-white/5">
+        <th className="p-4 text-left text-white font-semibold border-b border-white/20">Name</th>
+        <th className="p-4 text-left text-white font-semibold border-b border-white/20">Created At</th>
+        <th className="p-4 text-right text-white font-semibold border-b border-white/20">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {genres.map((genre) => (
+        <tr key={genre.id} className="border-b border-white/10 hover:bg-white/5 transition">
+          <td className="p-4 text-white">{genre.name}</td>
+          <td className="p-4 text-gray-400">{new Date(genre.createdAt).toLocaleDateString()}</td>
+          <td className="p-4 text-right">
+            <button
+              onClick={() => handleEdit(genre.id)}
+              className="mr-2 p-2 hover:bg-blue-700/50 text-white rounded-xl text-sm font-medium transition border border-blue-500/30 hover:scale-105"
+            >
+              <Edit className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => handleDelete(genre.id)}
+              className="p-2 hover:bg-red-700/50 text-white rounded-xl text-sm font-medium transition border border-red-500/30 hover:scale-105"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
           {/* Pagination */}
           {pagination.totalPages > 1 && (
             <div className="flex justify-center space-x-2 p-4 bg-white/5 rounded-b-2xl">
