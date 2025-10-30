@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { Edit, Trash2 } from 'lucide-react';
 import Pagination from '@/app/components/Pagination';
 import Button from '@/app/components/Button';
+import Input from '@/app/components/Input';
 
 
 export default function GenresPage() {
@@ -84,12 +85,12 @@ export default function GenresPage() {
     <div className="p-6 max-w-6xl mx-auto space-y-6 shadow-2xl">
       {/* Header with Search and New Button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass">
-        <input
+        <Input
           type="text"
           placeholder="Search genres..."
           value={filters.search}
           onChange={(e) => handleChangeFilter('search', e.target.value)}
-          className="flex-1 p-3 rounded-xl border border-white/20 bg-transparent text-white placeholder-gray-400 focus:outline-none focus:border-white/50 liquid-glass"
+          className="flex-1 p-3 rounded-xl  text-white placeholder-gray-400 focus:outline-none focus:border-white/50 "
         />
         <Button
           onClick={() => openModal()}
@@ -178,13 +179,13 @@ export default function GenresPage() {
               {editingId ? 'Edit Genre' : 'Create New Genre'}
             </h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <input
+              <Input
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Genre name"
-                className="w-full p-3 rounded-xl border border-white/20 bg-transparent text-white placeholder-gray-400 focus:outline-none focus:border-white/50 liquid-glass"
-                required
+                className="w-full p-3 rounded-xl   bg-transparent text-white placeholder-gray-400 focus:outline-none focus:border-white/50 " 
+                
               />
               <div className="flex justify-end space-x-3">
                 <Button
