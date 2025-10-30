@@ -42,8 +42,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
         }
 
-        // Debug: Log prisma to confirm
-        console.log('Prisma instance (POST):', prisma); // Should log the client object
+        
 
         const genre = await prisma.genre.create({
             data: { name: body.name },

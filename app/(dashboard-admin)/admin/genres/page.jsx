@@ -4,24 +4,16 @@
 import useGenres from '@/app/hooks/useGenres';
 import React, { useState, useEffect } from 'react';
 import { Edit, Trash2 } from 'lucide-react';
+import Pagination from '@/app/components/Pagination';
+import Button from '@/app/components/Button';
+
 
 export default function GenresPage() {
-  const {
-    genres,
-    loading,
-    error,
-    filters,
-    handleChangeFilter,
-    pagination,
-    createGenre,
-    updateGenre,
-    deleteGenre,
-    fetchGenres
-  } = useGenres();
-
+  const { genres, loading, error, filters, handleChangeFilter, pagination, createGenre, updateGenre, deleteGenre, fetchGenres } = useGenres();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [name, setName] = useState('');
+  const [formLoading, setFormLoading] = useState(false);
 
   const openModal = (editId) => {
     if (editId) {
@@ -45,7 +37,7 @@ export default function GenresPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) return;
-
+    setFormLoading(true);
     try {
       if (editingId) {
         await updateGenre(editingId, { name: name.trim() });
@@ -56,6 +48,8 @@ export default function GenresPage() {
       await fetchGenres(); // Refresh list
     } catch (err) {
       console.error('Error saving genre:', err);
+    } finally {
+      setFormLoading(false);
     }
   };
 
@@ -66,7 +60,7 @@ export default function GenresPage() {
     await fetchGenres(); // Refresh
   };
 
-    useEffect(() => {
+  useEffect(() => {
     fetchGenres()
   }, [fetchGenres])
 
@@ -74,15 +68,20 @@ export default function GenresPage() {
     return (
       <div className="p-8 text-center liquid-glass rounded-2xl border border-white/20">
         <p className="text-red-400 mb-4">Error: {error}</p>
-        <button onClick={fetchGenres} className="px-4 py-2 bg-blue-600/50 hover:bg-blue-700/50 text-white rounded-xl border border-blue-500/30">
+        <Button
+          onClick={fetchGenres}
+          color="blue"
+          size="md"
+          className="px-4 py-2"
+        >
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6   shadow-2xl">
+    <div className="p-6 max-w-6xl mx-auto space-y-6 shadow-2xl">
       {/* Header with Search and New Button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass">
         <input
@@ -92,13 +91,15 @@ export default function GenresPage() {
           onChange={(e) => handleChangeFilter('search', e.target.value)}
           className="flex-1 p-3 rounded-xl border border-white/20 bg-transparent text-white placeholder-gray-400 focus:outline-none focus:border-white/50 liquid-glass"
         />
-        <button
+        <Button
           onClick={() => openModal()}
-          className="px-8 py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl font-semibold transition hover:scale-105 border border-white/20"
+          color="blue"
+          size="lg"
           disabled={loading}
+          className="px-8"
         >
           {loading ? 'Loading...' : 'New'}
-        </button>
+        </Button>
       </div>
 
       {/* Table with Skeleton */}
@@ -122,68 +123,50 @@ export default function GenresPage() {
       ) : (
         <div className="overflow-x-auto border border-white/20 rounded-2xl liquid-glass">
           <table className="w-full">
-    <thead>
-      <tr className="bg-white/5">
-        <th className="p-4 text-left text-white font-semibold border-b border-white/20">Name</th>
-        <th className="p-4 text-left text-white font-semibold border-b border-white/20">Created At</th>
-        <th className="p-4 text-right text-white font-semibold border-b border-white/20">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {genres.map((genre) => (
-        <tr key={genre.id} className="border-b border-white/10 hover:bg-white/5 transition">
-          <td className="p-4 text-white">{genre.name}</td>
-          <td className="p-4 text-gray-400">{new Date(genre.createdAt).toLocaleDateString()}</td>
-          <td className="p-4 text-right">
-            <button
-              onClick={() => handleEdit(genre.id)}
-              className="mr-2 p-2 hover:bg-blue-700/50 text-white rounded-xl text-sm font-medium transition border border-blue-500/30 hover:scale-105"
-            >
-              <Edit className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => handleDelete(genre.id)}
-              className="p-2 hover:bg-red-700/50 text-white rounded-xl text-sm font-medium transition border border-red-500/30 hover:scale-105"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-          {/* Pagination */}
-          {pagination.totalPages > 1 && (
-            <div className="flex justify-center space-x-2 p-4 bg-white/5 rounded-b-2xl">
-              <button
-                onClick={() => handleChangeFilter('page', pagination.currentPage - 1)}
-                disabled={pagination.currentPage === 1}
-                className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-xl disabled:opacity-50 transition"
-              >
-                Previous
-              </button>
-              {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => handleChangeFilter('page', page)}
-                  className={`px-4 py-2 rounded-xl transition ${
-                    pagination.currentPage === page
-                      ? 'bg-blue-600/50 text-white border border-blue-500/30'
-                      : 'bg-gray-600/50 hover:bg-gray-700/50 text-white'
-                  }`}
-                >
-                  {page}
-                </button>
+            <thead>
+              <tr className="bg-white/5">
+                <th className="p-4 text-left text-white font-semibold border-b border-white/20">Name</th>
+                <th className="p-4 text-left text-white font-semibold border-b border-white/20">Created At</th>
+                <th className="p-4 text-right text-white font-semibold border-b border-white/20">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {genres.map((genre) => (
+                <tr key={genre.id} className="border-b border-white/10 hover:bg-white/5 transition">
+                  <td className="p-4 text-white">{genre.name}</td>
+                  <td className="p-4 text-gray-400">{new Date(genre.createdAt).toLocaleDateString()}</td>
+                  <td className="p-4 text-right">
+                    <Button
+                      onClick={() => handleEdit(genre.id)}
+                      color="blue"
+                      size="sm"
+                      className="mr-2 p-2 border-0 hover:scale-100"
+                      variant="secondary"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={() => handleDelete(genre.id)}
+                      color="red"
+                      size="sm"
+                      className="p-2 border-0 hover:scale-100"
+                      variant="secondary"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </td>
+                </tr>
               ))}
-              <button
-                onClick={() => handleChangeFilter('page', pagination.currentPage + 1)}
-                disabled={pagination.currentPage === pagination.totalPages}
-                className="px-4 py-2 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-xl disabled:opacity-50 transition"
-              >
-                Next
-              </button>
-            </div>
-          )}
+            </tbody>
+          </table>
+          {/* Pagination */}
+          <Pagination
+            pagination={{
+              page: pagination.currentPage || pagination.page,
+              pages: pagination.totalPages || pagination.pages,
+            }}
+            onPageChange={(newPage) => handleChangeFilter('page', newPage)}
+          />
         </div>
       )}
 
@@ -204,19 +187,26 @@ export default function GenresPage() {
                 required
               />
               <div className="flex justify-end space-x-3">
-                <button
+                <Button
                   type="button"
                   onClick={closeModal}
-                  className="px-6 py-3 bg-gray-600/50 hover:bg-gray-700/50 text-white rounded-xl transition border border-white/20"
+                  color="gray"
+                  size="md"
+                  className="px-6"
+                  variant="secondary"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  className="px-6 py-3 bg-blue-600/50 hover:bg-blue-700/50 text-white rounded-xl font-semibold transition border border-blue-500/30 hover:scale-105"
+                  color="blue"
+                  size="md"
+                  loading={formLoading}
+                  disabled={formLoading}
+                  className="px-6 flex-0"
                 >
                   {editingId ? 'Update' : 'Create'}
-                </button>
+                </Button>
               </div>
             </form>
           </div>
