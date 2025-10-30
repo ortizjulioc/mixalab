@@ -6,12 +6,13 @@ import { signIn } from 'next-auth/react';
 
 
 // Componente para los botones de acceso social con estilo Liquid Glass
-const SocialGlassButton = ({ icon: Icon, label, bgColor, textColor, shadowColor }) => (
+const SocialGlassButton = ({ icon: Icon, label, bgColor, textColor, shadowColor, onClick }) => (
     <button
         className={`w-full flex items-center justify-center space-x-3 py-3 px-4 mb-4 rounded-xl 
                 bg-white/5 backdrop-blur-sm border border-white/20 text-white 
                 transition duration-300 ease-in-out transform hover:scale-[1.02]
                 hover:bg-white/10 shadow-lg shadow-black/30 focus:outline-none focus:ring-2 ${shadowColor}`}
+        onClick={onClick}
     >
         <Icon className={`w-5 h-5 ${textColor}`} />
         <span className="font-semibold">{label}</span>
@@ -97,10 +98,10 @@ const App = () => {
 
             if (response.ok) {
                 setMessage("Registration successful!");
-             
+
                 await signIn("credentials", {
-                    email:formData.email,
-                    password:formData.password,
+                    email: formData.email,
+                    password: formData.password,
                     callbackUrl: `/api/auth/finalize?role=${slug}`,
                 });
 
@@ -160,6 +161,9 @@ const App = () => {
                         icon={Chrome} // Used Chrome icon as Google substitute
                         label="Continue with Google"
                         shadowColor="focus:ring-red-400/50"
+                        onClick={() =>
+                            signIn("google", { callbackUrl: `/api/auth/finalize?role=${slug}` })
+                        }
                     />
                 </div>
 
