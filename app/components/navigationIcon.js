@@ -24,18 +24,7 @@ const navigationIcon = {
   customer: <HiOutlineUserGroup size={32} />,
   maintenance: <HiOutlineCog size={32} />,
   // billing: <HiOutlineDocumentText size={32} />,
-  billing: <FaRegKeyboard size={32} />,
-  billings: <HiOutlineDocumentDuplicate size={32} />,
-  prebills: <HiOutlineDocumentText size={32} />,
-  // report: <HiOutlineDocumentReport size={32} />,
-  order: <HiOutlineClipboardList size={32} />,
-  cxc: <HiOutlineCurrencyDollar size={32} />,
-  ncf: <TbListNumbers size={32} />,
-  report: <HiOutlineDocumentReport size={32} />,
-  log: <GoGitMerge size={32} />,
-  nurse: <LiaUserNurseSolid size={32} />,
-  chef: <LuChefHat size={32} />,
-  tipodieta: <MdOutlineFoodBank size={32} />,
+
 }
 
 export default navigationIcon

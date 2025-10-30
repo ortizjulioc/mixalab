@@ -14,7 +14,7 @@ const navItems = [
 ];
 
 
-export default function CreatorsLayout({ children }) {
+export default function AdminLayout({ children }) {
     return (
         <DashboardLayout navItems={navItems}>
             {children}
