@@ -236,6 +236,7 @@ const DashboardLayout = ({ children, navItems }) => {
                             {/* User Profile and Notifications - Sin card style adicional */}
                             <div className="flex items-center space-x-4 text-white">
                                 <Bell size={33} className=" hover:text-white/80 transition cursor-pointer liquid-glass rounded-xl p-2 border border-white/20 animate-pulse-glow" />
+                                 <RoleBadge role={userRole} />
                                 <div className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/10 transition">
                                     {userImage ? (
                                         <img src={userImage} alt="User avatar" className="w-6 h-6 rounded-full" />
@@ -244,7 +245,7 @@ const DashboardLayout = ({ children, navItems }) => {
                                     )}
                                     <div className="hidden md:block">
                                         <span className="text-sm font-semibold">{userName}</span>
-                                        <RoleBadge role={userRole} />
+                                       
                                     </div>
                                 </div>
                             </div>
