@@ -1,0 +1,196 @@
+'use client';
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { debounce } from "./useDebounce"; // Ajusta la ruta si es necesario
+import { useCallback, useEffect, useRef, useState } from "react"; // Ajusta la ruta si es necesario
+// Ajusta la ruta si es necesario
+import Swal from "sweetalert2";
+import { openNotification } from "../utils/open-notification";
+import { fetchClient } from "../utils/fetchClient";
+
+export default function useGenres() {
+    const [genres, setGenres] = useState([]);
+    const [genre, setGenre] = useState(null);
+    const searchParams = useSearchParams();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const router = useRouter();
+
+    const [filters, setFilters] = useState({
+        page: Number(searchParams.get('page')) || 1,
+        search: searchParams.get('search') || '',
+    });
+
+    const [pagination, setPagination] = useState({
+        total: 0,
+        currentPage: 1,
+        limit: 10,
+        totalPages: 1
+    });
+
+    const handleChangeFilter = (name, value, updateParams = true) => {
+        const newFilters = { ...filters, [name]: value };
+
+        setFilters(newFilters);
+
+        if (updateParams) {
+            debouncedUpdateParams(newFilters);
+        }
+    };
+
+    const debouncedUpdateParams = useRef(
+        debounce((newFilters) => {
+            const params = new URLSearchParams();
+
+            Object.entries(newFilters).forEach(([key, value]) => {
+                if (value !== '' && value !== null && value !== undefined) {
+                    params.set(key, value.toString());
+                }
+            });
+            router.push(`?${params.toString()}`, { scroll: false });
+        }, 500)
+    ).current;
+
+    const debouncedFetchGenres = useRef(
+        debounce(async (filters) => {
+            try {
+                const res = await fetchClient({
+                    method: 'GET',
+                    endpoint: '/genres',
+                    params: filters
+                });
+
+                setGenres(res.genres || res.data || []);
+                setPagination(res.pagination);
+                setError(null);
+                return res;
+            } catch (error) {
+                console.error('Error fetching Genres:', error);
+                setError('Error al cargar los Genres');
+                openNotification('error', error.message || 'Error al cargar los Genres');
+                return error;
+            } finally {
+                setLoading(false);
+            }
+        }, 500) // espera 500ms antes de disparar la petición
+    ).current;
+
+    const fetchGenres = useCallback(async () => {
+        setLoading(true);
+        debouncedFetchGenres(filters);
+    }, [filters, debouncedFetchGenres]);
+
+    const createGenre = async (data) => {
+        console.log('createGenre data:', data);
+        try {
+            const res = await fetchClient({
+                method: 'POST',
+                endpoint: '/genres',
+                data
+            });
+
+            fetchGenres();
+            openNotification('success', 'Genre created successfully');
+
+            return true;
+        } catch (error) {
+            console.error('Error creating Genre:', error);
+            openNotification('error', error.message || 'Error creating Genre');
+            return error;
+        }
+    };
+
+    const deleteGenre = async (id) => {
+        const result = await Swal.fire({
+            icon: 'warning',
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete it!',
+            cancelButtonText: 'Cancel',
+            allowOutsideClick: false,
+            padding: '2em',
+            background: 'transparent',
+            customClass: {
+                container: 'z-[9999] liquid-glass-container',
+                popup: 'liquid-glass rounded-2xl border border-white/20 shadow-2xl glow-border',
+                title: 'text-white font-bold',
+                htmlContainer: 'text-gray-200',
+                confirmButton:
+                    'bg-red-600/50 hover:bg-red-700/50 border border-red-500/30 text-white rounded-xl transition-all duration-300',
+                cancelButton:
+                    'bg-gray-600/50 hover:bg-gray-700/50 border border-gray-500/30 text-white rounded-xl transition-all duration-300'
+            },
+            didOpen: (popup) => {
+                popup.querySelector('.swal2-icon')?.classList.add('scale-110');
+            }
+        });
+
+        if (result.isConfirmed) {
+            try {
+                const res = await fetchClient({
+                    method: 'DELETE',
+                    endpoint: `/genres/${id}`
+                });
+
+                fetchGenres();
+                openNotification('success', 'Genre deleted successfully');
+                return true;
+            } catch (error) {
+                console.error('Error deleting Genre:', error);
+                openNotification('error', error.message || 'Error deleting Genre');
+                return error;
+            }
+        }
+    };
+
+    const updateGenre = async (id, data) => {
+        try {
+            const res = await fetchClient({
+                method: 'PUT',
+                endpoint: `/genres/${id}`,
+                data
+            });
+
+            fetchGenres();
+            openNotification('success', 'Genre updated successfully');
+            return true;
+        } catch (error) {
+            console.error('Error updating Genre:', error);
+            openNotification('error', error.message || 'Error updating Genre');
+            return error;
+        }
+    };
+
+    const getGenreById = useCallback(async (id) => {
+        try {
+            const res = await fetchClient({
+                method: 'GET',
+                endpoint: `/genres/${id}`
+            });
+
+            console.log('getGenreById res:', res);
+            setGenre(res);
+
+            return res;
+        } catch (error) {
+            console.error('Error fetching Genre:', error);
+            openNotification('error', error.message || 'Error loading Genre');
+        }
+    }, []);
+
+    return {
+        handleChangeFilter,
+        filters,
+        genres,
+        pagination,
+        loading,
+        error,
+        genre,
+        fetchGenres,
+        createGenre,
+        deleteGenre,
+        updateGenre,
+        getGenreById,
+    };
+}
