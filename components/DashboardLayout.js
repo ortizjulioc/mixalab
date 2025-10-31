@@ -40,14 +40,16 @@ const GlassLink = ({ iconKey, label, href, isSelected = false, onClick }) => {
     return (
         <Link
             href={href}
-            className={`flex items-center space-x-4 p-3 rounded-2xl transition duration-300 ease-in-out 
-                    text-white font-medium hover:bg-white/10 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] w-full text-left  liquid-glass
-                    ${isSelected ? 'bg-white/15 border-l-4 border-white glow-border' : ''}`}
+            className={`flex items-center space-x-4 p-3 rounded-2xl transition-all duration-300 ease-in-out 
+                    text-white font-medium hover:bg-white/10 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] w-full text-left liquid-glass
+                    ${isSelected 
+                        ? 'bg-gradient-to-r from-blue-500/25 to-blue-400/15 border-l-8 border-blue-400/80 shadow-2xl shadow-blue-500/25 ring-2 ring-blue-400/40 ring-inset font-bold scale-[1.02] relative before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-r before:from-blue-500/10 before:to-transparent before:blur' 
+                        : ''}`}
         >
-            <div className="flex-shrink-0 text-white/80"> {/* Sin tamaño fijo, el ícono maneja su propio tamaño */}
+            <div className={`flex-shrink-0 transition-colors duration-300 ${isSelected ? 'text-blue-300 drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'text-white/80'}`}> {/* Ícono con glow en selected */}
                 {IconElement} {/* Renderiza el JSX del ícono con size={32} definido en navigationIcon */}
             </div>
-            <span className="hidden lg:block">{label}</span>
+            <span className={`hidden lg:block transition-all duration-300 ${isSelected ? 'text-blue-200 drop-shadow-[0_0_4px_rgba(59,130,246,0.4)]' : ''}`}>{label}</span>
         </Link>
     );
 };
@@ -119,8 +121,14 @@ const DashboardLayout = ({ children, navItems }) => {
     // Definición de estilos CSS globales inspirados en el ejemplo (liquid-glass, glow-border, etc.)
     const globalStyles = `
         @keyframes pulse-glow {
-            0%, 100% { text-shadow: 0 0 10px rgba(255, 255, 255, 0), 0 0 20px rgba(255, 255, 255, 0.2); }
-            50% { text-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 0 40px rgba(255, 255, 255, 0.5); }
+            0%, 100% { 
+                text-shadow: 0 0 10px rgba(255, 255, 255, 0), 0 0 20px rgba(255, 255, 255, 0.2); 
+                box-shadow: 0 0 10px rgba(135, 206, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            }
+            50% { 
+                text-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 0 40px rgba(255, 255, 255, 0.5); 
+                box-shadow: 0 0 30px rgba(135, 206, 235, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            }
         }
         @keyframes wave-move {
             0% { transform: translateX(0) scaleX(1); }
