@@ -1,4 +1,4 @@
-import CreatorSecurityPass from '@/app/components/CreatorSecurityPass'
+import CreatorSecurityPass from '@/components/CreatorSecurityPass'
 import React from 'react'
 
 export default function Home() {

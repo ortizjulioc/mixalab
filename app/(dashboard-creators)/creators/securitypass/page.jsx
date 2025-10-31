@@ -1,13 +1,13 @@
 'use client'
 import React, { useState } from 'react';
 import { User, Zap, Headphones, Mic, Sparkles, Sliders, Music } from 'lucide-react';
-import Checkbox from '@/app/components/Checkbox';
-import SectionHeader from '@/app/components/SectionHeader';
-import Input from '@/app/components/Input';
-import Select from '@/app/components/Select';
+import Checkbox from '@/components/Checkbox';
+import SectionHeader from '@/components/SectionHeader';
+import Input from '@/components/Input';
+import Select from '@/components/Select';
 import SocialsInput from './SocialsInput';
-import FileUploadPlaceholder from '@/app/components/FileUploadPlaceholder';
-import Button from '@/app/components/Button';
+import FileUploadPlaceholder from '@/components/FileUploadPlaceholder';
+import Button from '@/components/Button';
 
 
 

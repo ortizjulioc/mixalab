@@ -1,12 +1,12 @@
 // app/genres/page.js
 'use client';
 
-import useGenres from '@/app/hooks/useGenres';
+import useGenres from '@/hooks/useGenres';
 import React, { useState, useEffect } from 'react';
 import { Edit, Trash2 } from 'lucide-react';
-import Pagination from '@/app/components/Pagination';
-import Button from '@/app/components/Button';
-import Input from '@/app/components/Input';
+import Pagination from '@/components/Pagination';
+import Button from '@/components/Button';
+import Input from '@/components/Input';
 
 
 export default function GenresPage() {

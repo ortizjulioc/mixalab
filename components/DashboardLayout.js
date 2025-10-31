@@ -6,7 +6,7 @@ import { LogOut, Menu, Bell, Search, User } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import Logo from '../components/Logo';
+import Logo from './Logo';
 import navigationIcon from './navigationIcon'; // Importa el objeto de íconos pre-renderizados
 
 /**
@@ -41,7 +41,7 @@ const GlassLink = ({ iconKey, label, href, isSelected = false, onClick }) => {
         <Link
             href={href}
             className={`flex items-center space-x-4 p-3 rounded-2xl transition duration-300 ease-in-out 
-                    text-white font-medium hover:bg-white/10 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] w-full text-left block liquid-glass
+                    text-white font-medium hover:bg-white/10 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] w-full text-left  liquid-glass
                     ${isSelected ? 'bg-white/15 border-l-4 border-white glow-border' : ''}`}
         >
             <div className="flex-shrink-0 text-white/80"> {/* Sin tamaño fijo, el ícono maneja su propio tamaño */}

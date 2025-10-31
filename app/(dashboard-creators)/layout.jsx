@@ -1,6 +1,6 @@
 // app/dashboard/layout.jsx (o donde corresponda en tu estructura de rutas de Next.js)
 import { Home, Music, Aperture, Settings } from 'lucide-react';
-import DashboardLayout from '../components/DashboardLayout';
+import DashboardLayout from '../../components/DashboardLayout';
 
 
 
