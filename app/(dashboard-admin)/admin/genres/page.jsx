@@ -3,10 +3,11 @@
 
 import useGenres from '@/hooks/useGenres';
 import React, { useState, useEffect } from 'react';
-import { Edit, Trash2 } from 'lucide-react';
+import { Edit, Home, Trash2 } from 'lucide-react';
 import Pagination from '@/components/Pagination';
 import Button from '@/components/Button';
 import Input from '@/components/Input';
+import BreadcrumbsTitle from '@/components/Breadcrumbs';
 
 
 export default function GenresPage() {
@@ -83,6 +84,14 @@ export default function GenresPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6 shadow-2xl">
+      {/* Título con Breadcrumbs */}
+                <BreadcrumbsTitle
+                    title="Genres"  
+                    items={[
+                        { label: 'Dashboard', href: '/admin/home', icon: <Home size={18} /> },
+                        { label: 'Genres' },  
+                    ]}
+                />
       {/* Header with Search and New Button */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass">
         <Input
