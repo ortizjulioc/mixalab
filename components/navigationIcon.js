@@ -1,22 +1,13 @@
 // components/navigationIcon.js (actualizado con size={32} para consistencia)
 import React from 'react'
-import { FaRegKeyboard } from 'react-icons/fa'
+import { FaArchive } from 'react-icons/fa';
 import {
   HiOutlineHome,
   HiOutlineCube,
   HiOutlineUserGroup,
   HiOutlineCog,
-  HiOutlineDocumentDuplicate,
-  HiOutlineCurrencyDollar,
-  HiOutlineClipboardList,
-  HiOutlineDocumentReport,
-  HiOutlineDocumentText,
 } from 'react-icons/hi'
-import { TbListNumbers } from 'react-icons/tb'
-import { GoGitMerge } from "react-icons/go"
-import { LiaUserNurseSolid } from "react-icons/lia"; // nurse icon
-import { LuChefHat } from "react-icons/lu"; // chef hat icon
-import { MdLibraryMusic, MdOutlineFoodBank } from "react-icons/md";  // food icon
+import { MdLibraryMusic } from "react-icons/md";  // food icon
 
 const navigationIcon = {
   home: <HiOutlineHome size={32} />,
@@ -24,6 +15,7 @@ const navigationIcon = {
   customer: <HiOutlineUserGroup size={32} />,
   maintenance: <HiOutlineCog size={32} />,
   genre: <MdLibraryMusic size={32} />,
+  service:<FaArchive size={32}/>
 
 }
 
