@@ -11,16 +11,22 @@ export async function GET(request) {
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '10');
         const skip = (page - 1) * limit;
+        const search = searchParams.get('search') || '';
 
-        
+        const where = search ? {
+            name: {
+                contains: search
+            }
+        } : {};
 
         const [genres, total] = await Promise.all([
             prisma.genre.findMany({
                 skip,
                 take: limit,
+                where,
                 orderBy: { createdAt: 'desc' },
             }),
-            prisma.genre.count(),
+            prisma.genre.count({ where }),
         ]);
 
         return NextResponse.json({
@@ -42,7 +48,7 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
         }
 
-        
+
 
         const genre = await prisma.genre.create({
             data: { name: body.name },
