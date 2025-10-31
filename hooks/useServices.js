@@ -2,8 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { debounce } from "./useDebounce"; // Ajusta la ruta si es necesario
-import { useCallback, useEffect, useRef, useState } from "react"; // Ajusta la ruta si es necesario
-// Ajusta la ruta si es necesario
+import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import { openNotification } from "../utils/open-notification";
 import { fetchClient } from "../utils/fetchClient";
@@ -19,6 +18,7 @@ export default function useServices() {
     const [filters, setFilters] = useState({
         page: Number(searchParams.get('page')) || 1,
         search: searchParams.get('search') || '',
+        serviceType: searchParams.get('serviceType') || '', // Filtro por tipo de servicio (opcional)
     });
 
     const [pagination, setPagination] = useState({
@@ -60,7 +60,7 @@ export default function useServices() {
                     params: filters
                 });
 
-                setServices(res.Services || res.data || []);
+                setServices(res.services || res.data || []);
                 setPagination(res.pagination);
                 setError(null);
                 return res;
@@ -148,7 +148,7 @@ export default function useServices() {
         try {
             const res = await fetchClient({
                 method: 'PUT',
-                endpoint: `/Services/${id}`,
+                endpoint: `/services/${id}`,
                 data
             });
 
@@ -178,6 +178,11 @@ export default function useServices() {
             openNotification('error', error.message || 'Error loading Service');
         }
     }, []);
+
+    // Efecto para inicializar la carga de datos
+    useEffect(() => {
+        fetchServices();
+    }, []); // Carga inicial al montar el hook
 
     return {
         handleChangeFilter,
