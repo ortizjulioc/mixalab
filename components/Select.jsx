@@ -35,6 +35,11 @@ const customSelectStyles = {
     ...provided,
     backgroundColor: 'black',
     borderColor: '#374151',
+    zIndex: 9999
+  }),
+  menuPortal: (provided) => ({
+    ...provided,
+    zIndex: 9999,
   }),
   option: (provided, state) => ({
     ...provided,
@@ -71,20 +76,20 @@ const customSelectStyles = {
   }),
 };
 
-const Select = ({ 
-  label, 
-  id, 
-  options = [], 
-  value, 
-  onChange, 
-  required = false, 
-  placeholder, 
+const Select = ({
+  label,
+  id,
+  options = [],
+  value,
+  onChange,
+  required = false,
+  placeholder,
   isMulti = false,
   isCreatable = false,
   isAsync = false, // If true, expects loadOptions function instead of static options
   loadOptions, // For async: function that returns Promise of options
   className = '',
-  ...props 
+  ...props
 }) => {
   const selectedValue = useMemo(() => {
     if (isMulti) {
@@ -128,6 +133,8 @@ const Select = ({
         loadOptions={loadOptions} // For async loading
         {...props}
         required={required}
+        menuPortalTarget={typeof document !== 'undefined' ? document.body : null} // 👈 menú en body
+        menuPosition="fixed"
       />
       {/* Hidden input for form validation if required and no value */}
       {required && !value && <input type="hidden" required aria-hidden="true" value="" />}
