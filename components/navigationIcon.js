@@ -15,7 +15,8 @@ const navigationIcon = {
   customer: <HiOutlineUserGroup size={32} />,
   maintenance: <HiOutlineCog size={32} />,
   genre: <MdLibraryMusic size={32} />,
-  service:<FaArchive size={32}/>
+  service:<FaArchive size={32}/>,
+  users:<HiOutlineUserGroup size={32}/>
 
 }
 

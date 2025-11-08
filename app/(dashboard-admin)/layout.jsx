@@ -9,6 +9,7 @@ const navItems = [
     { iconKey: 'home', label: 'Dashboard', href: '/admin/home' },
     {iconKey: 'genre', label: 'Genres', href: '/admin/genres' },
     {iconKey: 'service', label: 'Services', href: '/admin/services' },
+    { iconKey: 'users', label: 'Users', href: '/admin/users' },
    
 ];
 

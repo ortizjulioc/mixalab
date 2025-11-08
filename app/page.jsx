@@ -1,7 +1,8 @@
 'use client';
 import React from 'react';
-import Logo from './components/Logo';
+
 import Link from 'next/link';
+import Logo from '@/components/Logo';
 
 // Componente para la barra de navegación con efecto Liquid Glass
 // Componente para la barra de navegación con efecto Liquid Glass
