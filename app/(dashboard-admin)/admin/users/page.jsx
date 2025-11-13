@@ -131,7 +131,7 @@ export default function UsersPage() {
 
         <div className="flex-none">
           <Button
-            onClick={() => openModal()}
+            onClick={() => setOpenModalUser(true)}
             color="blue"
             size="lg"
             disabled={loading}
