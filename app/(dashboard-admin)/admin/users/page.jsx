@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Edit, Trash2, KeyRound } from 'lucide-react'
+import { Edit, Trash2, KeyRound, Home } from 'lucide-react'
 import { Formik, Form } from 'formik'
 import * as Yup from 'yup'
 
@@ -13,6 +13,7 @@ import Pagination from '@/components/Pagination'
 import useUsers from '@/hooks/useUsers'
 import Card, { CardContent } from '@/components/Card'
 import Table from '@/components/Table' // ✅ nuevo componente reutilizable
+import BreadcrumbsTitle from '@/components/Breadcrumbs'
 
 // ✅ Role Badge Component
 const RoleBadge = ({ role }) => {
@@ -109,69 +110,82 @@ export default function UsersPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass">
-        <Input
-          placeholder="Search users..."
-          className="flex-1 w-full"
-          value={filters.search}
-          onChange={(e) => handleChangeFilter('search', e.target.value)}
-        />
-        <Button
-          onClick={() => {
-            setSelectedUser(null)
-            setOpenModalUser(true)
-          }}
-          color="blue"
-          size="lg"
-          className="px-8 w-full sm:w-auto"
-        >
-          New User
-        </Button>
+      <BreadcrumbsTitle
+              title="Users"
+              items={[
+                { label: 'Dashboard', href: '/admin/home', icon: <Home size={18} /> },
+                { label: 'Users' },
+              ]}
+            />
+       {/* Header with Search and New Button */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass w-full">
+        <div className="flex-1 w-full">
+          <Input
+            type="text"
+            placeholder="Search users..."
+            value={filters.search}
+            onChange={(e) => handleChangeFilter('search', e.target.value)}
+            className="w-full p-3 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/50"
+          />
+        </div>
+
+        <div className="flex-none">
+          <Button
+            onClick={() => openModal()}
+            color="blue"
+            size="lg"
+            disabled={loading}
+            className="px-8"
+          >
+            {loading ? 'Loading...' : 'New'}
+          </Button>
+        </div>
       </div>
 
+
       {/* Users Table */}
-      
-          <Table
-            columns={columns}
-            loading={loading}
-            data={users}
-            renderActions={(user) => (
-              <div className="flex justify-end">
-                <Button
-                  onClick={() => handlePasswordChange(user)}
-                  color="purple"
-                  size="sm"
-                  className="mr-2 p-2 border-0 hover:scale-100"
-                  variant="secondary"
-                >
-                  <KeyRound className="w-4 h-4" />
-                </Button>
-                <Button
-                  onClick={() => handleEdit(user)}
-                  color="blue"
-                  size="sm"
-                  className="mr-2 p-2 border-0 hover:scale-100"
-                  variant="secondary"
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  onClick={() => handleDelete(user)}
-                  color="red"
-                  size="sm"
-                  className="p-2 border-0 hover:scale-100"
-                  variant="secondary"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-          />
-          <Pagination
-            pagination={pagination}
-            onPageChange={(page) => handleChangeFilter('page', page)}
-          />
-       
+
+      <Table
+        columns={columns}
+        loading={loading}
+        data={users}
+        renderActions={(user) => (
+          <div className="flex justify-end">
+            <Button
+              onClick={() => handlePasswordChange(user)}
+              color="purple"
+              size="sm"
+              className="mr-2 p-2 border-0 hover:scale-100"
+              variant="secondary"
+            >
+              <KeyRound className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={() => handleEdit(user)}
+              color="blue"
+              size="sm"
+              className="mr-2 p-2 border-0 hover:scale-100"
+              variant="secondary"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={() => handleDelete(user)}
+              color="red"
+              size="sm"
+              className="p-2 border-0 hover:scale-100"
+              variant="secondary"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      />
+      <Pagination
+        pagination={pagination}
+        onPageChange={(page) => handleChangeFilter('page', page)}
+      />
+
       {/* Modal Create/Edit User */}
       <Modal
         open={openModalUser}

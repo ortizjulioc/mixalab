@@ -85,31 +85,36 @@ export default function GenresPage() {
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6 shadow-2xl">
       {/* Título con Breadcrumbs */}
-                <BreadcrumbsTitle
-                    title="Genres"  
-                    items={[
-                        { label: 'Dashboard', href: '/admin/home', icon: <Home size={18} /> },
-                        { label: 'Genres' },  
-                    ]}
-                />
+      <BreadcrumbsTitle
+        title="Genres"
+        items={[
+          { label: 'Dashboard', href: '/admin/home', icon: <Home size={18} /> },
+          { label: 'Genres' },
+        ]}
+      />
       {/* Header with Search and New Button */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass">
-        <Input
-          type="text"
-          placeholder="Search genres..."
-          value={filters.search}
-          onChange={(e) => handleChangeFilter('search', e.target.value)}
-          className="flex-1 p-3 rounded-xl  text-white placeholder-gray-400 focus:outline-none focus:border-white/50 "
-        />
-        <Button
-          onClick={() => openModal()}
-          color="blue"
-          size="lg"
-          disabled={loading}
-          className="px-8"
-        >
-          {loading ? 'Loading...' : 'New'}
-        </Button>
+      <div className="flex flex-col sm:flex-row items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass w-full">
+        <div className="flex-1 w-full">
+          <Input
+            type="text"
+            placeholder="Search genres..."
+            value={filters.search}
+            onChange={(e) => handleChangeFilter('search', e.target.value)}
+            className="w-full p-3 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/50"
+          />
+        </div>
+
+        <div className="flex-none">
+          <Button
+            onClick={() => openModal()}
+            color="blue"
+            size="lg"
+            disabled={loading}
+            className="px-8"
+          >
+            {loading ? 'Loading...' : 'New'}
+          </Button>
+        </div>
       </div>
 
       {/* Table with Skeleton */}
@@ -193,8 +198,8 @@ export default function GenresPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Genre name"
-                className="w-full p-3 rounded-xl   bg-transparent text-white placeholder-gray-400 focus:outline-none focus:border-white/50 " 
-                
+                className="w-full p-3 rounded-xl   bg-transparent text-white placeholder-gray-400 focus:outline-none focus:border-white/50 "
+
               />
               <div className="flex justify-end space-x-3">
                 <Button
