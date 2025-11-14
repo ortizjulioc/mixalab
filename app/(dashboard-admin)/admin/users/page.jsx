@@ -11,7 +11,6 @@ import Select from '@/components/Select'
 import Modal from '@/components/Modal'
 import Pagination from '@/components/Pagination'
 import useUsers from '@/hooks/useUsers'
-import Card, { CardContent } from '@/components/Card'
 import Table from '@/components/Table' // ✅ nuevo componente reutilizable
 import BreadcrumbsTitle from '@/components/Breadcrumbs'
 
@@ -51,6 +50,7 @@ export default function UsersPage() {
   const [openModalUser, setOpenModalUser] = useState(false)
   const [openModalPassword, setOpenModalPassword] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [rowLoading, setRowLoading] = useState({})
 
   useEffect(() => {
     fetchUsers()
@@ -82,8 +82,10 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (user) => {
+    setRowLoading((prev) => ({ ...prev, [user.id]: true }))
     await deleteUser(user.id)
     fetchUsers()
+    setRowLoading((prev) => ({ ...prev, [user.id]: false }))
   }
 
   const handlePasswordChange = (user) => {
@@ -134,10 +136,10 @@ export default function UsersPage() {
             onClick={() => setOpenModalUser(true)}
             color="blue"
             size="lg"
-            disabled={loading}
+            loading={loading}
             className="px-8"
           >
-            {loading ? 'Loading...' : 'New'}
+            New
           </Button>
         </div>
       </div>
@@ -175,6 +177,7 @@ export default function UsersPage() {
               size="sm"
               className="p-2 border-0 hover:scale-100"
               variant="secondary"
+              loading={rowLoading[user.id]}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -237,7 +240,7 @@ export default function UsersPage() {
             fetchUsers()
           }}
         >
-          {({ values, handleChange, setFieldValue, touched, errors }) => (
+          {({ values, handleChange, setFieldValue, touched, errors, isSubmitting }) => (
             <Form className="space-y-4">
               <Input
                 label="Name"
@@ -288,7 +291,7 @@ export default function UsersPage() {
                 </>
               )}
 
-              <Button type="submit" color="blue" className="w-full">
+              <Button type="submit" color="blue" className="w-full" loading={isSubmitting}>
                 {selectedUser ? 'Update User' : 'Create User'}
               </Button>
             </Form>
@@ -315,7 +318,7 @@ export default function UsersPage() {
             setOpenModalPassword(false)
           }}
         >
-          {({ values, handleChange, errors, touched }) => (
+          {({ values, handleChange, errors, touched, isSubmitting }) => (
             <Form className="space-y-4">
               <Input
                 label="New Password"
@@ -333,7 +336,7 @@ export default function UsersPage() {
                 onChange={handleChange}
                 error={touched.repeatPassword && errors.repeatPassword}
               />
-              <Button type="submit" color="purple" className="w-full">
+              <Button type="submit" color="purple" className="w-full" loading={isSubmitting}>
                 Change Password
               </Button>
             </Form>
