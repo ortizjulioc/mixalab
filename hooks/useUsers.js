@@ -187,7 +187,7 @@ export default function useUsers() {
       await fetchClient({
         method: "PUT",
         endpoint: `/users/${id}/password`,
-        data: { newPassword },
+        data: { newPassword,repeatPassword },
       });
 
       openNotification("success", "Password changed successfully");

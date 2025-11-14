@@ -111,13 +111,13 @@ export default function UsersPage() {
     <div className="space-y-8">
       {/* Header */}
       <BreadcrumbsTitle
-              title="Users"
-              items={[
-                { label: 'Dashboard', href: '/admin/home', icon: <Home size={18} /> },
-                { label: 'Users' },
-              ]}
-            />
-       {/* Header with Search and New Button */}
+        title="Users"
+        items={[
+          { label: 'Dashboard', href: '/admin/home', icon: <Home size={18} /> },
+          { label: 'Users' },
+        ]}
+      />
+      {/* Header with Search and New Button */}
       <div className="flex flex-col sm:flex-row items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass w-full">
         <div className="flex-1 w-full">
           <Input
@@ -197,19 +197,47 @@ export default function UsersPage() {
             name: selectedUser?.name || '',
             email: selectedUser?.email || '',
             role: selectedUser?.role || '',
+            password: '',
+            repeatPassword: '',
           }}
-          validationSchema={validationSchema}
+          validationSchema={Yup.object({
+            name: Yup.string().required('Name is required'),
+            email: Yup.string().email('Invalid email').required('Email is required'),
+            role: Yup.string().required('Role is required'),
+            ...(selectedUser
+              ? {} // si es edición → NO validar password
+              : {
+                password: Yup.string()
+                  .min(6, 'At least 6 characters')
+                  .required('Password is required'),
+                repeatPassword: Yup.string()
+                  .oneOf([Yup.ref('password'), null], 'Passwords must match')
+                  .required('Repeat the password'),
+              }),
+          })}
           onSubmit={async (values, { resetForm }) => {
             if (selectedUser) {
-              await updateUser(selectedUser.id, values)
+              // EDITAR
+              await updateUser(selectedUser.id, {
+                name: values.name,
+                role: values.role,
+              })
             } else {
-              await createUser(values)
+              // CREAR NUEVO USUARIO
+              await createUser({
+                name: values.name,
+                email: values.email,
+                role: values.role,
+                password: values.password,
+              })
             }
+
             resetForm()
             setOpenModalUser(false)
+            fetchUsers()
           }}
         >
-          {({ values, handleChange, errors, touched }) => (
+          {({ values, handleChange, setFieldValue, touched, errors }) => (
             <Form className="space-y-4">
               <Input
                 label="Name"
@@ -218,21 +246,48 @@ export default function UsersPage() {
                 onChange={handleChange}
                 error={touched.name && errors.name}
               />
+
               <Input
                 label="Email"
                 name="email"
                 value={values.email}
                 onChange={handleChange}
                 error={touched.email && errors.email}
+                disabled={!!selectedUser}
               />
+
               <Select
                 label="Role"
                 name="role"
                 options={roles}
                 value={values.role}
-                onChange={handleChange}
+                onChange={(val) => setFieldValue('role', val)}
                 error={touched.role && errors.role}
               />
+
+              {/* CAMPOS DE PASSWORD SOLO SI ES NUEVO USUARIO */}
+              {!selectedUser && (
+                <>
+                  <Input
+                    label="Password"
+                    name="password"
+                    type="password"
+                    value={values.password}
+                    onChange={handleChange}
+                    error={touched.password && errors.password}
+                  />
+
+                  <Input
+                    label="Repeat Password"
+                    name="repeatPassword"
+                    type="password"
+                    value={values.repeatPassword}
+                    onChange={handleChange}
+                    error={touched.repeatPassword && errors.repeatPassword}
+                  />
+                </>
+              )}
+
               <Button type="submit" color="blue" className="w-full">
                 {selectedUser ? 'Update User' : 'Create User'}
               </Button>
