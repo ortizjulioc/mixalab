@@ -1,304 +1,250 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import * as THREE from "three";
-import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
-import { CiMusicNote1 } from "react-icons/ci";
-import Link from "next/link";
+import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
+import { FaGoogle, FaFacebook } from "react-icons/fa";
+import Link from "next/link";
 
-export default function Login() {
-
+export default function LoginPage() {
+  const router = useRouter();
+  const [mode, setMode] = useState("ARTIST"); // ARTIST or CREATORS
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const canvasRef = useRef(null);
+  const notesRef = useRef([]);
+
   useEffect(() => {
-    // --- THREE: escena con notas musicales y animación de entrada ---
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(window.devicePixelRatio || 1);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    setError("");
+  }, [mode, email, password]);
 
-    const canvasContainer = document.getElementById("bg-animation-canvas-container");
-    if (canvasContainer) canvasContainer.appendChild(renderer.domElement);
+  // --- Lightweight animated musical-notes background (2D canvas) ---
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
 
-    // --- texturas de notas musicales ---
-    const makeNoteTexture = (glyph) => {
-      const size = 128;
-      const c = document.createElement("canvas");
-      c.width = size;
-      c.height = size;
-      const ctx = c.getContext("2d");
-      ctx.clearRect(0, 0, size, size);
-      ctx.shadowColor = "rgba(255,255,255,0.6)";
-      ctx.shadowBlur = 12;
-      ctx.fillStyle = "#ffffff";
-      ctx.font = Math.floor(size * 0.8) + 'px "Segoe UI Symbol","Apple Color Emoji","Noto Color Emoji",Arial';
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(glyph, size / 2, size / 2 + size * 0.05);
-      const tex = new THREE.CanvasTexture(c);
-      const getMaxAniso = renderer.capabilities.getMaxAnisotropy
-        ? renderer.capabilities.getMaxAnisotropy()
-        : 1;
-      tex.anisotropy = Math.min(getMaxAniso, 8);
-      tex.needsUpdate = true;
-      return tex;
-    };
+    let w = (canvas.width = window.innerWidth);
+    let h = (canvas.height = window.innerHeight);
+    const NOTES = ["♪", "♫", "♬", "♩"];
+    const count = Math.floor((w * h) / 50000) + 30;
 
-    const glyphs = ["♪", "♫", "♩", "♬"];
-    const textures = glyphs.map(makeNoteTexture);
-
-    // --- grupos de puntos ---
-    const total = 2000;
-    const groups = glyphs.length;
-    const perGroup = Math.ceil(total / groups);
-    const systems = [];
-    const materials = [];
-    const geometries = [];
-
-    // opacidad objetivo para el fade-in
-    const TARGET_OPACITY = 0.95;
-
-    for (let g = 0; g < groups; g++) {
-      const count = g === groups - 1 ? total - perGroup * (groups - 1) : perGroup;
-      const positions = [];
-      const colors = [];
-      const color = new THREE.Color();
-
+    function initNotes() {
+      notesRef.current = [];
       for (let i = 0; i < count; i++) {
-        positions.push(Math.random() * 2000 - 1000);
-        positions.push(Math.random() * 2000 - 1000);
-        positions.push(Math.random() * 2000 - 1000);
-
-        // blancos/grises (tema oscuro, look original)
-        color.setHSL(0, 0, Math.random() * 0.5 + 0.5);
-        colors.push(color.r, color.g, color.b);
+        notesRef.current.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vy: 0.3 + Math.random() * 1,
+          vx: -0.5 + Math.random() * 1,
+          size: 12 + Math.random() * 28,
+          char: NOTES[Math.floor(Math.random() * NOTES.length)],
+          alpha: 0.2 + Math.random() * 0.8,
+          rot: (Math.random() - 0.5) * 0.4,
+        });
       }
-
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-      geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
-
-      const mat = new THREE.PointsMaterial({
-        size: 26,
-        map: textures[g],
-        vertexColors: true,
-        transparent: true,
-        depthWrite: false,
-        opacity: 0, // empieza en 0 para el fade-in
-        blending: THREE.AdditiveBlending,
-        sizeAttenuation: true,
-      });
-
-      const pts = new THREE.Points(geo, mat);
-      // ligera variación inicial
-      pts.rotation.x = Math.random() * Math.PI;
-      pts.rotation.y = Math.random() * Math.PI;
-
-      scene.add(pts);
-      systems.push(pts);
-      materials.push(mat);
-      geometries.push(geo);
     }
 
-    // cámara con zoom-in de entrada
-    const START_Z = 800;
-    const END_Z = 500;
-    camera.position.z = START_Z;
+    function onResize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      initNotes();
+    }
 
-    // interacción con mouse (parallax suave)
-    let mouseX = 0,
-      mouseY = 0;
-    const handleMouseMove = (e) => {
-      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-    };
-    window.addEventListener("mousemove", handleMouseMove);
+    initNotes();
+    window.addEventListener("resize", onResize);
 
-    // animación
-    const startTime = performance.now();
-    let rafId;
+    let raf = null;
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
 
-    const animate = () => {
-      rafId = requestAnimationFrame(animate);
+      // subtle gradient background
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, "#071226");
+      g.addColorStop(1, "#0f1724");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
 
-      // progreso del intro (1.2s) con easeOutQuad
-      const elapsed = performance.now() - startTime;
-      const t = Math.min(1, elapsed / 1200);
-      const ease = 1 - (1 - t) * (1 - t);
+      // draw notes
+      for (const n of notesRef.current) {
+        ctx.save();
+        ctx.globalAlpha = n.alpha * 0.9;
+        ctx.translate(n.x, n.y);
+        ctx.rotate(n.rot);
+        ctx.font = `${n.size}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
+        ctx.fillStyle = `rgba(255,255,255,${Math.max(0.08, Math.min(0.9, n.alpha))})`;
+        ctx.fillText(n.char, 0, 0);
+        ctx.restore();
 
-      // fade-in de partículas
-      materials.forEach((m) => (m.opacity = TARGET_OPACITY * ease));
+        n.x += n.vx;
+        n.y -= n.vy; // float upward
+        n.rot += (Math.random() - 0.5) * 0.02;
 
-      // zoom-in de cámara
-      camera.position.z = START_Z + (END_Z - START_Z) * ease;
+        if (n.y < -50 || n.x < -100 || n.x > w + 100) {
+          // recycle
+          n.x = Math.random() * w;
+          n.y = h + 30 + Math.random() * 200;
+          n.vy = 0.3 + Math.random() * 1.2;
+          n.vx = -0.5 + Math.random() * 1;
+          n.size = 12 + Math.random() * 28;
+          n.alpha = 0.2 + Math.random() * 0.9;
+        }
+      }
 
-      // rotación base + parallax por mouse
-      systems.forEach((sys, i) => {
-        const f = 0.0005 + i * 0.00015;
-        sys.rotation.y += (mouseX * 0.005 - sys.rotation.y) * 0.02 + f * 0.5;
-        sys.rotation.x += (mouseY * 0.005 - sys.rotation.x) * 0.02 + f * 0.25;
-      });
+      raf = requestAnimationFrame(draw);
+    }
 
-      renderer.render(scene, camera);
-    };
-    animate();
-
-    const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setPixelRatio(window.devicePixelRatio || 1);
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    };
-    window.addEventListener("resize", handleResize);
+    draw();
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("mousemove", handleMouseMove);
-      if (rafId) cancelAnimationFrame(rafId);
-      if (canvasContainer && renderer.domElement.parentNode === canvasContainer) {
-        canvasContainer.removeChild(renderer.domElement);
-      }
-      systems.forEach((s) => scene.remove(s));
-      geometries.forEach((g) => g.dispose());
-      materials.forEach((m) => {
-        if (m.map) m.map.dispose();
-        m.dispose();
-      });
-      textures.forEach((t) => t.dispose());
-      renderer.dispose();
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
     };
   }, []);
+
+  // --- Authentication handlers ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError("");
 
     const res = await signIn("credentials", {
+      redirect: false,
       email,
       password,
-      callbackUrl: `/api/auth/finalize?role=ARTIST`,
+      role: mode,
     });
 
     setLoading(false);
 
-    if (res?.error) {
-      setError("Credenciales inválidas.");
-    } else if (res?.ok && res.url) {
-      window.location.href = res.url; // redirige al callbackUrl
+    if (!res) {
+      setError("Unknown error. Please try again.");
+      return;
     }
+    if (res.error) {
+      setError(res.error);
+      return;
+    }
+
+    if (mode === "ARTIST") router.push("/dashboard/artist");
+    else router.push("/dashboard/creators");
   };
 
+  const handleSocial = async (provider) => {
+    const callbackUrl = `/auth/redirect?role=${mode}`; // puedes redirigir a donde quieras
+
+    await signIn(provider, { callbackUrl });
+  };
+
+  const isArtist = mode === "ARTIST";
+
   return (
-    <div className="bg-black text-white min-h-dvh overflow-hidden relative">
-      {/* Canvas de fondo */}
-      <div
-        id="bg-animation-canvas-container"
-        className="absolute inset-0 z-0 opacity-20"
-        style={{ contain: "layout paint size" }}
-      />
+    <div className="relative min-h-screen">
+      {/* Animated musical-notes canvas background */}
+      <canvas ref={canvasRef} className="fixed inset-0 w-full h-full -z-10" />
 
-      {/* HEADER */}
-      <header className="relative z-20 h-12 sm:h-14 px-2 sm:px-4 pt-[env(safe-area-inset-top)]">
-        <div className="absolute inset-y-0 right-2 sm:right-4 flex items-center">
-          <Link
-            href="/login/creators"
-            className="flex items-center gap-1 bg-white/20 hover:bg-white/30 transition-colors duration-300
-                     text-xs sm:text-sm font-medium sm:font-semibold text-white
-                     py-1 px-2 sm:py-1.5 sm:px-3 rounded-md backdrop-blur-md leading-none"
-          >
-            <CiMusicNote1 className="w-4 h-4" />
-            <span className="max-[360px]:hidden ">Login creators</span>
-          </Link>
-        </div>
-      </header>
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-5xl w-full grid grid-cols-1 md:grid-cols-2 gap-8 bg-white/5 rounded-2xl shadow-2xl overflow-hidden">
 
-      {/* MAIN */}
-      <main className="relative z-10 min-h-[calc(100dvh-3rem)] sm:min-h-[calc(100dvh-3.5rem)] flex flex-col items-center justify-center p-4 font-poppins">
-        {/* Título / logo */}
-        <div className="text-center mb-6 sm:mb-10">
-          <h1 className="text-2xl sm:text-3xl md:text-6xl lg:text-7xl font-bold tracking-tight">
-            Mixa Lab
-          </h1>
-        </div>
+          {/* Left panel: selector */}
+          <aside className={`p-8 flex flex-col justify-between ${isArtist ? 'bg-[rgba(0,0,0,0.35)]' : 'bg-[rgba(2,6,23,0.45)]'} sm:p-12`}>
+            <div>
+              <h2 className="text-3xl font-bold text-white">{isArtist ? 'Artist Login' : 'Creators Login'}</h2>
+              <p className="mt-3 text-sm text-white/80">{isArtist ? 'Sign in to manage your artist profile and music.' : 'Sign in to manage projects, sales and collaborations.'}</p>
 
-        {/* Panel de inicio de sesión */}
-        <div className="bg-black/40 backdrop-blur-lg p-6 sm:p-10 rounded-3xl shadow-2xl w-full max-w-sm border border-white/20">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Welcome!</h2>
-
-          {/* Social login */}
-          <div className="flex flex-col space-y-3">
-            <button
-              onClick={() => {
-                signIn("google", { callbackUrl: `/api/auth/finalize?role=ARTIST` })
-              }}
-              className="flex items-center justify-center gap-3 p-3 rounded-lg border border-white/40 bg-white text-black font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <FaGoogle />
-              <span>Login with Google</span>
-            </button>
-          </div>
-
-          {/* Separador */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-white/20" />
+              <div className="mt-6 flex items-center gap-3">
+                <span className="text-sm text-white/70">Mode:</span>
+                <div className="flex rounded-full bg-white/10 p-1">
+                  <button
+                    onClick={() => setMode('ARTIST')}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition ${isArtist ? 'bg-white/90 text-black' : 'text-white/80'}`}
+                  >
+                    Artist
+                  </button>
+                  <button
+                    onClick={() => setMode('CREATOR')}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition ${!isArtist ? 'bg-white/90 text-black' : 'text-white/80'}`}
+                  >
+                    Creators
+                  </button>
+                </div>
+              </div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-black/40 px-3 text-white/60">o</span>
+
+            <div className="mt-8 text-sm text-white/80">
+              <p><strong>Note:</strong> The switch only indicates which account type you are using; the backend should use the `role` value to select authentication logic.</p>
             </div>
-          </div>
+          </aside>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Email"
-              className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40"
-              required
-            />
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
-              className="w-full p-3 bg-white/10 rounded-lg border border-white/20 focus:outline-none focus:ring-1 focus:ring-white/40"
-              required
-            />
+          {/* Right panel: form */}
+          <main className={`p-8 sm:p-12 flex items-center justify-center ${isArtist ? 'bg-transparent' : 'bg-transparent'}`}>
+            <div className="w-full max-w-md">
+              <div className="mb-6">
+                <h3 className="text-2xl font-semibold text-white">{isArtist ? 'Welcome, Artist' : 'Welcome, Creator'}</h3>
+                <p className="mt-1 text-sm text-white/70">{isArtist ? 'Use your email and password to access your artist account.' : 'Sign in to access your creator workspace.'}</p>
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full p-3 rounded-lg bg-white text-black font-semibold tracking-wide transition-all duration-300 hover:scale-105 hover:shadow-lg ${loading ? "opacity-70 cursor-not-allowed" : ""
-                }`}
-            >
-              {loading ? "Cargando..." : "Iniciar sesión"}
-            </button>
+              <div className="flex gap-3 mb-6">
+                <button onClick={() => handleSocial('google')} className="flex-1 py-2 rounded-lg cursor-pointer border border-white/10 bg-white/5 flex items-center justify-center gap-2 text-white text-sm hover:bg-white/6">
+                  <FaGoogle /> Continue with Google
+                </button>
+                <button onClick={() => handleSocial('facebook')} className="py-2 px-3 rounded-lg border border-white/10 bg-white/5 flex items-center gap-2 text-white text-sm hover:bg-white/6">
+                  <FaFacebook />
+                </button>
+              </div>
 
-            {error && <p className="text-red-400 text-sm">{error}</p>}
-          </form>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-white/80 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/50"
+                    placeholder="you@domain.com"
+                  />
+                </div>
 
-          <div className="mt-6 text-center text-sm">
-            <a href="#" className="text-white/80 hover:underline">
-              Forgot your password?
-            </a>
-          </div>
-          <div className="mt-6 text-center text-sm">
-            <Link href="/register/ARTIST" className="text-white/80 hover:underline">
-              Don’t have an account? Sign up.
-            </Link>
-          </div>
+                <div>
+                  <label className="block text-sm text-white/80 mb-2">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white placeholder-white/50"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                {error && <div className="text-sm text-red-400">{error}</div>}
+
+                <div className="flex items-center justify-between">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="px-4 py-2 rounded-lg bg-indigo-600 cursor-pointer hover:bg-indigo-700 text-white font-medium disabled:opacity-60"
+                  >
+                    {loading ? 'Signing in...' : `Sign in as ${isArtist ? 'Artist' : 'Creators'}`}
+                  </button>
+
+                  <Link href="/forgot-password" className="text-sm text-white/70 hover:underline">Forgot your password?</Link>
+                </div>
+
+                <div className="mt-4 text-center text-sm text-white/70">
+                  Don’t have an account? <Link href={isArtist ? '/register/ARTIST' : '/register/CREATOR'} className="underline">Sign up</Link>
+                </div>
+              </form>
+
+              <p className="mt-6 text-xs text-white/50">Tip: On the backend, use the `role` field (ARTIST | CREATORS) from credentials or social callbacks to branch authentication and post-login routing.</p>
+            </div>
+          </main>
+
         </div>
-      </main>
+      </div>
     </div>
   );
 }
