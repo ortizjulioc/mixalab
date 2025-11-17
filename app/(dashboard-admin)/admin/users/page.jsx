@@ -81,12 +81,7 @@ export default function UsersPage() {
     setOpenModalUser(true)
   }
 
-  const handleDelete = async (user) => {
-    setRowLoading((prev) => ({ ...prev, [user.id]: true }))
-    await deleteUser(user.id)
-    fetchUsers()
-    setRowLoading((prev) => ({ ...prev, [user.id]: false }))
-  }
+
 
   const handlePasswordChange = (user) => {
     setSelectedUser(user)
@@ -172,7 +167,7 @@ export default function UsersPage() {
               <Edit className="w-4 h-4" />
             </Button>
             <Button
-              onClick={() => handleDelete(user)}
+              onClick={ () => deleteUser(user.id)}
               color="red"
               size="sm"
               className="p-2 border-0 hover:scale-100"
