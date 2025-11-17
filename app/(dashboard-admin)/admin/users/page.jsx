@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { Edit, Trash2, KeyRound } from 'lucide-react'
+import { Edit, Trash2, KeyRound, Home } from 'lucide-react'
 import { Formik, Form } from 'formik'
 import * as Yup from 'yup'
 
@@ -11,8 +11,8 @@ import Select from '@/components/Select'
 import Modal from '@/components/Modal'
 import Pagination from '@/components/Pagination'
 import useUsers from '@/hooks/useUsers'
-import Card, { CardContent } from '@/components/Card'
 import Table from '@/components/Table' // ✅ nuevo componente reutilizable
+import BreadcrumbsTitle from '@/components/Breadcrumbs'
 
 // ✅ Role Badge Component
 const RoleBadge = ({ role }) => {
@@ -50,6 +50,7 @@ export default function UsersPage() {
   const [openModalUser, setOpenModalUser] = useState(false)
   const [openModalPassword, setOpenModalPassword] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [rowLoading, setRowLoading] = useState({})
 
   useEffect(() => {
     fetchUsers()
@@ -81,8 +82,10 @@ export default function UsersPage() {
   }
 
   const handleDelete = async (user) => {
+    setRowLoading((prev) => ({ ...prev, [user.id]: true }))
     await deleteUser(user.id)
     fetchUsers()
+    setRowLoading((prev) => ({ ...prev, [user.id]: false }))
   }
 
   const handlePasswordChange = (user) => {
@@ -109,69 +112,83 @@ export default function UsersPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass">
-        <Input
-          placeholder="Search users..."
-          className="flex-1 w-full"
-          value={filters.search}
-          onChange={(e) => handleChangeFilter('search', e.target.value)}
-        />
-        <Button
-          onClick={() => {
-            setSelectedUser(null)
-            setOpenModalUser(true)
-          }}
-          color="blue"
-          size="lg"
-          className="px-8 w-full sm:w-auto"
-        >
-          New User
-        </Button>
+      <BreadcrumbsTitle
+        title="Users"
+        items={[
+          { label: 'Dashboard', href: '/admin/home', icon: <Home size={18} /> },
+          { label: 'Users' },
+        ]}
+      />
+      {/* Header with Search and New Button */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass w-full">
+        <div className="flex-1 w-full">
+          <Input
+            type="text"
+            placeholder="Search users..."
+            value={filters.search}
+            onChange={(e) => handleChangeFilter('search', e.target.value)}
+            className="w-full p-3 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-white/50"
+          />
+        </div>
+
+        <div className="flex-none">
+          <Button
+            onClick={() => setOpenModalUser(true)}
+            color="blue"
+            size="lg"
+            loading={loading}
+            className="px-8"
+          >
+            New
+          </Button>
+        </div>
       </div>
 
+
       {/* Users Table */}
-      
-          <Table
-            columns={columns}
-            loading={loading}
-            data={users}
-            renderActions={(user) => (
-              <div className="flex justify-end">
-                <Button
-                  onClick={() => handlePasswordChange(user)}
-                  color="purple"
-                  size="sm"
-                  className="mr-2 p-2 border-0 hover:scale-100"
-                  variant="secondary"
-                >
-                  <KeyRound className="w-4 h-4" />
-                </Button>
-                <Button
-                  onClick={() => handleEdit(user)}
-                  color="blue"
-                  size="sm"
-                  className="mr-2 p-2 border-0 hover:scale-100"
-                  variant="secondary"
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
-                <Button
-                  onClick={() => handleDelete(user)}
-                  color="red"
-                  size="sm"
-                  className="p-2 border-0 hover:scale-100"
-                  variant="secondary"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
-          />
-          <Pagination
-            pagination={pagination}
-            onPageChange={(page) => handleChangeFilter('page', page)}
-          />
-       
+
+      <Table
+        columns={columns}
+        loading={loading}
+        data={users}
+        renderActions={(user) => (
+          <div className="flex justify-end">
+            <Button
+              onClick={() => handlePasswordChange(user)}
+              color="purple"
+              size="sm"
+              className="mr-2 p-2 border-0 hover:scale-100"
+              variant="secondary"
+            >
+              <KeyRound className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={() => handleEdit(user)}
+              color="blue"
+              size="sm"
+              className="mr-2 p-2 border-0 hover:scale-100"
+              variant="secondary"
+            >
+              <Edit className="w-4 h-4" />
+            </Button>
+            <Button
+              onClick={() => handleDelete(user)}
+              color="red"
+              size="sm"
+              className="p-2 border-0 hover:scale-100"
+              variant="secondary"
+              loading={rowLoading[user.id]}
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
+        )}
+      />
+      <Pagination
+        pagination={pagination}
+        onPageChange={(page) => handleChangeFilter('page', page)}
+      />
+
       {/* Modal Create/Edit User */}
       <Modal
         open={openModalUser}
@@ -183,19 +200,47 @@ export default function UsersPage() {
             name: selectedUser?.name || '',
             email: selectedUser?.email || '',
             role: selectedUser?.role || '',
+            password: '',
+            repeatPassword: '',
           }}
-          validationSchema={validationSchema}
+          validationSchema={Yup.object({
+            name: Yup.string().required('Name is required'),
+            email: Yup.string().email('Invalid email').required('Email is required'),
+            role: Yup.string().required('Role is required'),
+            ...(selectedUser
+              ? {} // si es edición → NO validar password
+              : {
+                password: Yup.string()
+                  .min(6, 'At least 6 characters')
+                  .required('Password is required'),
+                repeatPassword: Yup.string()
+                  .oneOf([Yup.ref('password'), null], 'Passwords must match')
+                  .required('Repeat the password'),
+              }),
+          })}
           onSubmit={async (values, { resetForm }) => {
             if (selectedUser) {
-              await updateUser(selectedUser.id, values)
+              // EDITAR
+              await updateUser(selectedUser.id, {
+                name: values.name,
+                role: values.role,
+              })
             } else {
-              await createUser(values)
+              // CREAR NUEVO USUARIO
+              await createUser({
+                name: values.name,
+                email: values.email,
+                role: values.role,
+                password: values.password,
+              })
             }
+
             resetForm()
             setOpenModalUser(false)
+            fetchUsers()
           }}
         >
-          {({ values, handleChange, errors, touched }) => (
+          {({ values, handleChange, setFieldValue, touched, errors, isSubmitting }) => (
             <Form className="space-y-4">
               <Input
                 label="Name"
@@ -204,22 +249,49 @@ export default function UsersPage() {
                 onChange={handleChange}
                 error={touched.name && errors.name}
               />
+
               <Input
                 label="Email"
                 name="email"
                 value={values.email}
                 onChange={handleChange}
                 error={touched.email && errors.email}
+                disabled={!!selectedUser}
               />
+
               <Select
                 label="Role"
                 name="role"
                 options={roles}
                 value={values.role}
-                onChange={handleChange}
+                onChange={(val) => setFieldValue('role', val)}
                 error={touched.role && errors.role}
               />
-              <Button type="submit" color="blue" className="w-full">
+
+              {/* CAMPOS DE PASSWORD SOLO SI ES NUEVO USUARIO */}
+              {!selectedUser && (
+                <>
+                  <Input
+                    label="Password"
+                    name="password"
+                    type="password"
+                    value={values.password}
+                    onChange={handleChange}
+                    error={touched.password && errors.password}
+                  />
+
+                  <Input
+                    label="Repeat Password"
+                    name="repeatPassword"
+                    type="password"
+                    value={values.repeatPassword}
+                    onChange={handleChange}
+                    error={touched.repeatPassword && errors.repeatPassword}
+                  />
+                </>
+              )}
+
+              <Button type="submit" color="blue" className="w-full" loading={isSubmitting}>
                 {selectedUser ? 'Update User' : 'Create User'}
               </Button>
             </Form>
@@ -246,7 +318,7 @@ export default function UsersPage() {
             setOpenModalPassword(false)
           }}
         >
-          {({ values, handleChange, errors, touched }) => (
+          {({ values, handleChange, errors, touched, isSubmitting }) => (
             <Form className="space-y-4">
               <Input
                 label="New Password"
@@ -264,7 +336,7 @@ export default function UsersPage() {
                 onChange={handleChange}
                 error={touched.repeatPassword && errors.repeatPassword}
               />
-              <Button type="submit" color="purple" className="w-full">
+              <Button type="submit" color="purple" className="w-full" loading={isSubmitting}>
                 Change Password
               </Button>
             </Form>

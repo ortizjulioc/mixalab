@@ -4,15 +4,15 @@ import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 
 // 🧠 PATCH: Change password
-export async function PATCH(request, { params }) {
+export async function PUT(request, { params }) {
   try {
     const body = await request.json();
-    const { newPassword, confirmPassword } = body;
+    const { newPassword, repeatPassword } = body;
 
-    if (!newPassword || !confirmPassword)
+    if (!newPassword || !repeatPassword)
       return NextResponse.json({ error: 'Both password fields are required' }, { status: 400 });
 
-    if (newPassword !== confirmPassword)
+    if (newPassword !== repeatPassword)
       return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 });
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);

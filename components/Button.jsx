@@ -38,11 +38,15 @@ const Button = ({
       primary: 'bg-green-600/50 hover:bg-green-700/50 border border-green-500/30 text-white focus:ring-green-500',
       secondary: 'bg-transparent hover:bg-green-600/20 border border-green-500/50 text-green-300 focus:ring-green-500',
     },
+    purple: {
+      primary: 'bg-purple-600/50 hover:bg-purple-700/50 border border-purple-500/30 text-white focus:ring-purple-500',
+      secondary: 'bg-transparent hover:bg-purple-600/20 border border-purple-500/50 text-purple-300 focus:ring-purple-500',
+    },
   }[color]?.[variant] || 'bg-gray-600/50 hover:bg-gray-700/50 border border-gray-500/30 text-white focus:ring-gray-500';
 
   const loadingIndicator = (
     <svg
-      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+      className="animate-spin h-5 w-5 text-white"
       xmlns="http://www.w3.org/2000/svg"
       fill="none"
       viewBox="0 0 24 24"
@@ -63,15 +67,6 @@ const Button = ({
     </svg>
   );
 
-  const content = loading ? (
-    <>
-      {loadingIndicator}
-      {typeof children === 'string' ? children + '...' : children}
-    </>
-  ) : (
-    children
-  );
-
   return (
     <button
       type={type}
@@ -80,7 +75,7 @@ const Button = ({
       className={`${baseClasses} ${sizeClasses} ${colorClasses} ${className}`}
       {...props}
     >
-      {content}
+      {loading ? loadingIndicator : children}
     </button>
   );
 };
