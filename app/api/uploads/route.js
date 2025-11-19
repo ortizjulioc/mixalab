@@ -1,6 +1,6 @@
-import { prisma } from "@/libs/db";
 import { handleError } from "@/utils/error-handle";
 import { BadRequestError } from "@/utils/errors";
+import prisma from "@/utils/lib/prisma";
 import { uploadFile } from "@/utils/upload";
 import { NextResponse } from "next/server";
 import * as yup from "yup";
