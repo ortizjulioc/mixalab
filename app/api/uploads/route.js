@@ -1,9 +1,11 @@
 import { handleError } from "@/utils/error-handle";
-import { BadRequestError } from "@/utils/errors";
+import { BadRequestError, ForbiddenError } from "@/utils/errors";
 import prisma from "@/utils/lib/prisma";
 import { uploadFile } from "@/utils/upload";
+import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
 import * as yup from "yup";
+import { authOptions } from "../auth/[...nextauth]/route";
 
 const fileSchema = yup.object().shape({
   name: yup
@@ -41,6 +43,12 @@ const fileSchema = yup.object().shape({
 
 export async function POST(request) {
   try {
+
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      throw new ForbiddenError("Forbidden. You must be logged in to upload files.");
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
 
@@ -50,7 +58,7 @@ export async function POST(request) {
 
     // TODO: Obtener el 'username' del usuario autenticado
     // Por ahora lo dejo fijo
-    const fileData = await uploadFile(file, { username: "anderlfrias" });
+    const fileData = await uploadFile(file, { username: session.user.id || undefined });
 
     if (!fileData) {
       throw new Error("File upload failed");
@@ -60,7 +68,7 @@ export async function POST(request) {
 
     // TODO: Relacionar con el usuario
     const fileCreated = await prisma.file.create({
-      data: parsedFile,
+      data: { ...parsedFile, userId: session.user.id },
     });
 
     return NextResponse.json({

@@ -22,6 +22,7 @@ model User {
   accounts       Account[]
   creatorProfile CreatorProfile?
   artistProfile  ArtistProfile?
+  files          File[]
 
   @@map("users")
 }
@@ -154,9 +155,11 @@ model File {
   path      String // Ruta relativa en el sistema de archivos (/uploads/cursos/xxxx.png)
   url       String // URL pública del archivo
   folder    String // Carpeta lógica donde se guarda (ej: cursos, audios, usuarios)
+  userId    String @map("user_id")
 
   tunesInOfferings CreatorServiceOffering[] @relation("TunedExampleFiles")
   creatorExamples  CreatorServiceExample[]
+  owner            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
