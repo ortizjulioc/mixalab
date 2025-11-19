@@ -18,7 +18,7 @@ export default function useUpgradeRequirements() {
   const [filters, setFilters] = useState({
     page: Number(searchParams.get('page')) || 1,
     search: searchParams.get('search') || '',
-    tierId: searchParams.get('tierId') || undefined,
+   
   });
 
   const [pagination, setPagination] = useState({ total: 0, currentPage: 1, limit: 10, totalPages: 1 });
