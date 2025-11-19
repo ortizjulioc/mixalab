@@ -16,7 +16,13 @@ const navigationIcon = {
   maintenance: <HiOutlineCog size={32} />,
   genre: <MdLibraryMusic size={32} />,
   service:<FaArchive size={32}/>,
-  users:<HiOutlineUserGroup size={32}/>
+  users:<HiOutlineUserGroup size={32}/>,
+  tiers:<HiOutlineUserGroup size={32}/>,
+  'maintain-requierements':<HiOutlineUserGroup size={32}/>,
+  'upgrade-requirements':<HiOutlineUserGroup size={32}/>,
+  'downgrade-triggers':<HiOutlineUserGroup size={32}/>,
+
+
 
 }
 

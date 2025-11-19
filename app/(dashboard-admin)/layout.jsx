@@ -7,10 +7,14 @@ import DashboardLayout from '../../components/DashboardLayout';
 
 const navItems = [
     { iconKey: 'home', label: 'Dashboard', href: '/admin/home' },
-    {iconKey: 'genre', label: 'Genres', href: '/admin/genres' },
-    {iconKey: 'service', label: 'Services', href: '/admin/services' },
+    { iconKey: 'genre', label: 'Genres', href: '/admin/genres' },
+    { iconKey: 'service', label: 'Services', href: '/admin/services' },
     { iconKey: 'users', label: 'Users', href: '/admin/users' },
-   
+    { iconKey: 'tiers', label: 'Tiers', href: '/admin/tiers' },
+    { iconKey: 'upgrade-requirements', label: 'Upgrade Requirements', href: '/admin/upgrade-requirements' },
+    { iconKey: 'maintain-requierements', label: 'Maintain Requirements', href: '/admin/maintain-requirements ' },
+    { iconKey: 'downgrade-triggers', label: 'Downgrade Triggers', href: '/admin/downgrade-triggers' }
+
 ];
 
 

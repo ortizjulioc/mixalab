@@ -12,6 +12,16 @@ import Pagination from '@/components/Pagination'
 import useTiers from '@/hooks/useTiers'
 import Table from '@/components/Table'
 import BreadcrumbsTitle from '@/components/Breadcrumbs'
+import Select from '@/components/Select'
+
+
+const TIER_OPTIONS = [
+  { value: "BRONZE", label: "BRONZE" },
+  { value: "SILVER", label: "SILVER" },
+  { value: "GOLD", label: "GOLD" },
+  { value: "PLATINUM", label: "PLATINUM" },
+];
+
 
 export default function TiersPage() {
   const {
@@ -145,12 +155,14 @@ export default function TiersPage() {
         >
           {({ values, handleChange, setFieldValue, touched, errors, isSubmitting }) => (
             <Form className="space-y-4">
-              <Input
-                label="Name"
-                name="name"
+              <Select
+                label="Tier"
+                id="tier"
+                options={TIER_OPTIONS}
                 value={values.name}
-                onChange={handleChange}
-                error={touched.name && errors.name}
+                onChange={(value) => setFieldValue("name", value)}
+                placeholder="Select tier"
+                required
               />
 
               <Input
