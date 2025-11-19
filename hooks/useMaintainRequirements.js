@@ -29,18 +29,21 @@ export default function useMaintainRequirements() {
     if (updateParams) debouncedUpdateParams(newFilters);
   };
 
-  const debouncedUpdateParams = useRef(
-    debounce((newFilters) => {
+  const debouncedUpdateParamsRef = useRef(null);
+  if (!debouncedUpdateParamsRef.current) {
+    debouncedUpdateParamsRef.current = debounce((newFilters) => {
       const params = new URLSearchParams();
       Object.entries(newFilters).forEach(([key, value]) => {
         if (value !== '' && value !== null && value !== undefined) params.set(key, value.toString());
       });
       router.push(`?${params.toString()}`, { scroll: false });
-    }, 500)
-  ).current;
+    }, 500);
+  }
+  const debouncedUpdateParams = debouncedUpdateParamsRef.current;
 
-  const debouncedFetch = useRef(
-    debounce(async (filters) => {
+  const debouncedFetchRef = useRef(null);
+  if (!debouncedFetchRef.current) {
+    debouncedFetchRef.current = debounce(async (filters) => {
       try {
         const res = await fetchClient({ method: 'GET', endpoint: '/maintain-requirements', params: filters });
         setItems(res.items || res.maintainRequirements || res.data || []);
@@ -55,8 +58,9 @@ export default function useMaintainRequirements() {
       } finally {
         setLoading(false);
       }
-    }, 500)
-  ).current;
+    }, 500);
+  }
+  const debouncedFetch = debouncedFetchRef.current;
 
   const fetchItems = useCallback(async () => {
     setLoading(true);
