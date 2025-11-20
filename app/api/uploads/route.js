@@ -56,8 +56,6 @@ export async function POST(request) {
       throw new BadRequestError("No file provided");
     }
 
-    // TODO: Obtener el 'username' del usuario autenticado
-    // Por ahora lo dejo fijo
     const fileData = await uploadFile(file, { username: session.user.id || undefined });
 
     if (!fileData) {
@@ -66,7 +64,6 @@ export async function POST(request) {
 
     const parsedFile = await fileSchema.validate(fileData, { abortEarly: false, stripUnknown: true });
 
-    // TODO: Relacionar con el usuario
     const fileCreated = await prisma.file.create({
       data: { ...parsedFile, userId: session.user.id },
     });
