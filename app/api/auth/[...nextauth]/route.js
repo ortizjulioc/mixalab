@@ -20,30 +20,30 @@ export const authOptions = {
       async authorize(credentials) {
         try {
           const userFound = await db.user.findUnique({
-          where: { email: credentials.email },
-        });
+            where: { email: credentials.email },
+          });
 
-        if (!userFound) throw new Error("User not found");
+          if (!userFound) throw new Error("User not found");
 
-        const isPasswordValid = await bcrypt.compare(credentials.password, userFound.password);
-        if (!isPasswordValid) throw new Error("Invalid password");
+          const isPasswordValid = await bcrypt.compare(credentials.password, userFound.password);
+          if (!isPasswordValid) throw new Error("Invalid password");
 
-        return {
-          id: userFound.id,
-          name: userFound.name,
-          email: userFound.email,
-          image: userFound.image,
-          role: userFound.role, // Agregar el rol aquí para que se propague
-        };
+          return {
+            id: userFound.id,
+            name: userFound.name,
+            email: userFound.email,
+            image: userFound.image,
+            role: userFound.role, // Agregar el rol aquí para que se propague
+          };
         } catch (error) {
           console.error("Error in authorize:", error);
           throw new Error("Error during authentication" + error.message);
-         // return null; // Retornar null en caso de error
-         // Nota: Lanzar un error redirige automáticamente a la página de inicio de sesión con el mensaje de error en la URL.
-         // Retornar null simplemente recarga la página de inicio de sesión sin mensaje.
-         // Elegí lanzar el error para mayor claridad al usuario.
-         // Si prefieres no mostrar mensajes de error, usa "return null;" en su lugar.
-         // throw new Error("Error during authentication"); // Alternativa genérica
+          // return null; // Retornar null en caso de error
+          // Nota: Lanzar un error redirige automáticamente a la página de inicio de sesión con el mensaje de error en la URL.
+          // Retornar null simplemente recarga la página de inicio de sesión sin mensaje.
+          // Elegí lanzar el error para mayor claridad al usuario.
+          // Si prefieres no mostrar mensajes de error, usa "return null;" en su lugar.
+          // throw new Error("Error during authentication"); // Alternativa genérica
         }
       },
     }),
@@ -59,71 +59,72 @@ export const authOptions = {
     // 🔹 SIGN IN -----------------------------------------------------------------------------------
     async signIn({ user, account }) {
       try {
-              if (account?.provider === "google") {
-        // Valor por defecto
-        let userRole = UserRole.ARTIST;
+        if (account?.provider === "google") {
+          // Valor por defecto
+          let userRole = UserRole.ARTIST;
 
-        // Verificar si ya existe en la BD
-        let dbUser = await db.user.findUnique({
-          where: { email: user.email },
-          include: { accounts: true },
-        });
+          // Verificar si ya existe en la BD
+          let dbUser = await db.user.findUnique({
+            where: { email: user.email },
+            include: { accounts: true },
+          });
 
-        if (!dbUser) {
-          // Crear usuario nuevo
-          dbUser = await db.user.create({
-            data: {
-              email: user.email,
-              name: user.name,
-              image: user.image,
-              role: userRole,
-              isVerified: true,
-              status: UserStatus.ACTIVE,
-              accounts: {
-                create: {
+          if (!dbUser) {
+            // Crear usuario nuevo
+            dbUser = await db.user.create({
+              data: {
+                email: user.email,
+                name: user.name,
+                image: user.image,
+                role: userRole,
+                isVerified: true,
+                status: UserStatus.ACTIVE,
+                accounts: {
+                  create: {
+                    provider: account.provider,
+                    providerAccountId: account.providerAccountId,
+                    access_token: account.access_token,
+                    refresh_token: account.refresh_token,
+                    expires_at: account.expires_at,
+                  },
+                },
+              },
+              include: { accounts: true },
+            });
+          } else {
+            // Si ya existe, asegurarse de que tenga la cuenta de Google registrada
+            const existingAccount = dbUser.accounts.find(
+              (a) =>
+                a.provider === account.provider &&
+                a.providerAccountId === account.providerAccountId
+            );
+
+            if (!existingAccount) {
+              await db.account.create({
+                data: {
+                  userId: dbUser.id,
                   provider: account.provider,
                   providerAccountId: account.providerAccountId,
                   access_token: account.access_token,
                   refresh_token: account.refresh_token,
                   expires_at: account.expires_at,
                 },
-              },
-            },
-            include: { accounts: true },
-          });
-        } else {
-          // Si ya existe, asegurarse de que tenga la cuenta de Google registrada
-          const existingAccount = dbUser.accounts.find(
-            (a) =>
-              a.provider === account.provider &&
-              a.providerAccountId === account.providerAccountId
-          );
-
-          if (!existingAccount) {
-            await db.account.create({
-              data: {
-                userId: dbUser.id,
-                provider: account.provider,
-                providerAccountId: account.providerAccountId,
-                access_token: account.access_token,
-                refresh_token: account.refresh_token,
-                expires_at: account.expires_at,
-              },
-            });
+              });
+            }
+            // Actualizar el rol si es necesario (por defecto ARTIST, pero podría ser otro)
+            userRole = dbUser.role;
           }
-          // Actualizar el rol si es necesario (por defecto ARTIST, pero podría ser otro)
-          userRole = dbUser.role;
+
+          // Propagar id y rol al objeto user para los callbacks posteriores
+          user.id = dbUser.id;
+          user.role = userRole;
+
+          return true;
         }
-
-        // Propagar id y rol al objeto user para los callbacks posteriores
-        user.id = dbUser.id;
-        user.role = userRole;
-
-        return true;
+      } catch (error) {
+        console.error("Error in signIn:", error);
+        return false;
       }
-    } catch (error) {
-      console.error("Error in signIn:", error);
-      return false;}
 
       return true;
     },
