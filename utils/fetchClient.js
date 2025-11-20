@@ -4,7 +4,7 @@ const NEXTAUTH_URL = process.env.NEXTAUTH_URL; // Extract first for clarity
 // Fix: Use ternary for safe fallback. If NEXTAUTH_URL is undefined or empty, use localhost.
 const API_BASE_URL = NEXTAUTH_URL && NEXTAUTH_URL.trim() !== '' 
   ? `${NEXTAUTH_URL.replace(/\/+$/, '')}/api` // Remove trailing / if any, add /api
-  : "http://localhost:3000/api";
+  : "http://132.226.80.228/api";
 
 const url = API_BASE_URL;
 
