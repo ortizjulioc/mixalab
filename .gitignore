@@ -45,3 +45,6 @@ next-env.d.ts
 
 # files
 /public/uploads
+
+# ignore admin settings
+settings.json
