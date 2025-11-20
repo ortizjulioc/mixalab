@@ -56,7 +56,7 @@ export async function GET(req) {
         redirectUrl = "/creators/home";
         break;
       case UserRole.ADMIN:
-        redirectUrl = "/admin/dashboard"; // Puedes ajustarlo a tu ruta real
+        redirectUrl = "/admin/home"; // Puedes ajustarlo a tu ruta real
         break;
       default:
         redirectUrl = "/";

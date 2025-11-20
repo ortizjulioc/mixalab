@@ -173,9 +173,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <div className="mt-8 text-sm text-white/80">
+            {/* <div className="mt-8 text-sm text-white/80">
               <p><strong>Note:</strong> The switch only indicates which account type you are using; the backend should use the `role` value to select authentication logic.</p>
-            </div>
+            </div> */}
           </aside>
 
           {/* Right panel: form */}
@@ -190,9 +190,9 @@ export default function LoginPage() {
                 <button onClick={() => handleSocial('google')} className="flex-1 py-2 rounded-lg cursor-pointer border border-white/10 bg-white/5 flex items-center justify-center gap-2 text-white text-sm hover:bg-white/6">
                   <FaGoogle /> Continue with Google
                 </button>
-                <button onClick={() => handleSocial('facebook')} className="py-2 px-3 rounded-lg border border-white/10 bg-white/5 flex items-center gap-2 text-white text-sm hover:bg-white/6">
+                {/* <button onClick={() => handleSocial('facebook')} className="py-2 px-3 rounded-lg border border-white/10 bg-white/5 flex items-center gap-2 text-white text-sm hover:bg-white/6">
                   <FaFacebook />
-                </button>
+                </button> */}
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -239,7 +239,7 @@ export default function LoginPage() {
                 </div>
               </form>
 
-              <p className="mt-6 text-xs text-white/50">Tip: On the backend, use the `role` field (ARTIST | CREATORS) from credentials or social callbacks to branch authentication and post-login routing.</p>
+              {/* <p className="mt-6 text-xs text-white/50">Tip: On the backend, use the `role` field (ARTIST | CREATORS) from credentials or social callbacks to branch authentication and post-login routing.</p> */}
             </div>
           </main>
 

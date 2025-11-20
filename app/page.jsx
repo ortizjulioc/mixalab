@@ -30,38 +30,13 @@ const Header = ({ onScroll }) => {
           <a href="#why" onClick={(e) => onScroll(e, '#why')} className="text-white hover:text-gray-400 transition">Why Us</a>
         </nav>
 
-        {/* DROPDOWN MENU for Login/Join */}
-        <div className="relative">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="flex items-center bg-white text-black px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-200 transition shadow-lg focus:outline-none"
-          >
-            Log In / Join
-            <svg className={`w-4 h-4 ml-2 transition-transform ${isDropdownOpen ? 'rotate-180' : 'rotate-0'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
-          </button>
-          {isDropdownOpen && (
-            <div
-              className="absolute right-0 mt-2 w-48 rounded-xl bg-white/30 shadow-2xl overflow-hidden z-50 border border-white/20"
-              style={{
-                backdropFilter: "blur(12px) saturate(150%)",
-                WebkitBackdropFilter: "blur(12px) saturate(150%)",
-              }}
-            >
-              <Link
-                href="/login"
-                className="block px-4 py-3 text-sm text-white hover:bg-white/10 transition"
-              >
-                For Artists
-              </Link>
-              <Link
-                href="/login/creators"
-                className="block px-4 py-3 text-sm text-white hover:bg-white/10 transition"
-              >
-                For Creators (Producers)
-              </Link>
-            </div>
-          )}
-        </div>
+        {/* SIMPLE LOGIN BUTTON */}
+        <Link
+          href="/login"
+          className="flex items-center bg-white text-black px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-200 transition shadow-lg"
+        >
+          Log In / Join
+        </Link>
       </div>
     </header>
   );

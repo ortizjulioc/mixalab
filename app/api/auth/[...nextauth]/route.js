@@ -9,9 +9,13 @@ export const authOptions = {
   pages: {
     signIn: "/login",
   },
+
   providers: [
-    // --- Provider de credenciales ------------------------------------------------------------------
+    // ============================================================================================
+    // PROVIDER NORMAL (NO PERMITE ADMINS)
+    // ============================================================================================
     CredentialsProvider({
+      id: "credentials",
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "text", placeholder: "Email" },
@@ -25,7 +29,15 @@ export const authOptions = {
 
           if (!userFound) throw new Error("User not found");
 
-          const isPasswordValid = await bcrypt.compare(credentials.password, userFound.password);
+          // ❌ IMPEDIR QUE UN ADMIN ENTRE POR AQUI
+          if (userFound.role === UserRole.ADMIN) {
+            throw new Error("Unauthorized");
+          }
+
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            userFound.password
+          );
           if (!isPasswordValid) throw new Error("Invalid password");
 
           return {
@@ -33,22 +45,51 @@ export const authOptions = {
             name: userFound.name,
             email: userFound.email,
             image: userFound.image,
-            role: userFound.role, // Agregar el rol aquí para que se propague
+            role: userFound.role,
           };
         } catch (error) {
           console.error("Error in authorize:", error);
-          throw new Error("Error during authentication" + error.message);
-          // return null; // Retornar null en caso de error
-          // Nota: Lanzar un error redirige automáticamente a la página de inicio de sesión con el mensaje de error en la URL.
-          // Retornar null simplemente recarga la página de inicio de sesión sin mensaje.
-          // Elegí lanzar el error para mayor claridad al usuario.
-          // Si prefieres no mostrar mensajes de error, usa "return null;" en su lugar.
-          // throw new Error("Error during authentication"); // Alternativa genérica
+          throw new Error("Error during authentication");
         }
       },
     }),
 
-    // --- Provider de Google ------------------------------------------------------------------------
+    // ============================================================================================
+    // PROVIDER EXCLUSIVO ADMIN (NO EXPONE NAME/IMAGE)
+    // ============================================================================================
+    CredentialsProvider({
+      id: "admin-login",
+      name: "Admin Login",
+      credentials: {
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        const admin = await db.user.findUnique({
+          where: { email: credentials.email },
+        });
+
+        // ❌ No existe o no es admin
+        if (!admin || admin.role !== UserRole.ADMIN) return null;
+
+        const isPasswordValid = await bcrypt.compare(
+          credentials.password,
+          admin.password
+        );
+        if (!isPasswordValid) return null;
+
+        // 🔒 NO devolvemos name ni image
+        return {
+          id: admin.id,
+          email: admin.email,
+          role: admin.role,
+        };
+      },
+    }),
+
+    // ============================================================================================
+    // GOOGLE PROVIDER (SE MANTIENE IGUAL)
+    // ============================================================================================
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
@@ -56,21 +97,20 @@ export const authOptions = {
   ],
 
   callbacks: {
-    // 🔹 SIGN IN -----------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // SIGN IN
+    // --------------------------------------------------------------------------------------------
     async signIn({ user, account }) {
       try {
         if (account?.provider === "google") {
-          // Valor por defecto
           let userRole = UserRole.ARTIST;
 
-          // Verificar si ya existe en la BD
           let dbUser = await db.user.findUnique({
             where: { email: user.email },
             include: { accounts: true },
           });
 
           if (!dbUser) {
-            // Crear usuario nuevo
             dbUser = await db.user.create({
               data: {
                 email: user.email,
@@ -92,7 +132,6 @@ export const authOptions = {
               include: { accounts: true },
             });
           } else {
-            // Si ya existe, asegurarse de que tenga la cuenta de Google registrada
             const existingAccount = dbUser.accounts.find(
               (a) =>
                 a.provider === account.provider &&
@@ -111,11 +150,10 @@ export const authOptions = {
                 },
               });
             }
-            // Actualizar el rol si es necesario (por defecto ARTIST, pero podría ser otro)
+
             userRole = dbUser.role;
           }
 
-          // Propagar id y rol al objeto user para los callbacks posteriores
           user.id = dbUser.id;
           user.role = userRole;
 
@@ -129,7 +167,9 @@ export const authOptions = {
       return true;
     },
 
-    // 🔹 REDIRECT -----------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // REDIRECT
+    // --------------------------------------------------------------------------------------------
     async redirect({ url, baseUrl }) {
       try {
         const parsedUrl = new URL(url, baseUrl);
@@ -145,16 +185,20 @@ export const authOptions = {
       }
     },
 
-    // 🔹 JWT ----------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // JWT
+    // --------------------------------------------------------------------------------------------
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
-        token.role = user.role; // Agregar el rol al token desde el user
+        token.role = user.role;
       }
       return token;
     },
 
-    // 🔹 SESSION ------------------------------------------------------------------------------------
+    // --------------------------------------------------------------------------------------------
+    // SESSION
+    // --------------------------------------------------------------------------------------------
     async session({ session, token }) {
       if (token?.id) {
         session.user.id = token.id;
@@ -162,8 +206,8 @@ export const authOptions = {
       if (token?.role) {
         session.user.role = token.role;
       }
-      // Para asegurar que siempre tengamos el rol más actualizado (ej. después de finalize),
-      // consultar la BD aquí (se ejecuta en cada getSession)
+
+      // Siempre traer el rol más actualizado
       if (session.user.email) {
         const dbUser = await db.user.findUnique({
           where: { email: session.user.email },
@@ -172,6 +216,7 @@ export const authOptions = {
           session.user.role = dbUser.role;
         }
       }
+
       return session;
     },
   },
