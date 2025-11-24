@@ -34,6 +34,11 @@ export const authOptions = {
             throw new Error("Unauthorized");
           }
 
+          // ✅ VALIDAR QUE EL ROL DEL USUARIO COINCIDA CON EL ROL SOLICITADO
+          if (credentials.role && userFound.role !== credentials.role) {
+            throw new Error(`This account is registered as ${userFound.role.toLowerCase()}. Please select the correct login mode.`);
+          }
+
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             userFound.password
@@ -49,7 +54,7 @@ export const authOptions = {
           };
         } catch (error) {
           console.error("Error in authorize:", error);
-          throw new Error("Error during authentication");
+          throw error;
         }
       },
     }),

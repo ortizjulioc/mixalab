@@ -7,7 +7,7 @@ import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState("ARTIST"); // ARTIST or CREATORS
+  const [mode, setMode] = useState("ARTIST"); // ARTIST or CREATOR
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -128,8 +128,8 @@ export default function LoginPage() {
       return;
     }
 
-    if (mode === "ARTIST") router.push("/dashboard/artist");
-    else router.push("/dashboard/creators");
+    if (mode === "ARTIST") router.push("/artists/home");
+    else router.push("/creators/home");
   };
 
   const handleSocial = async (provider) => {
