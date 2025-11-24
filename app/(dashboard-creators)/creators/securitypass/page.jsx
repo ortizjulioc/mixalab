@@ -1,5 +1,7 @@
 'use client'
-import React, { useState } from 'react';
+import React from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
 import { User, Zap, Headphones, Mic, Sparkles, Sliders, Music } from 'lucide-react';
 import Checkbox from '@/components/Checkbox';
 import SectionHeader from '@/components/SectionHeader';
@@ -8,8 +10,7 @@ import Select from '@/components/Select';
 import SocialsInput from './SocialsInput';
 import FileUploadPlaceholder from '@/components/FileUploadPlaceholder';
 import Button from '@/components/Button';
-
-
+import SelectGenres from '@/components/SelectGenres';
 
 // Lista simplificada de países para el campo de selección
 const COUNTRIES = [
@@ -29,490 +30,621 @@ const COUNTRIES = [
   { label: 'Other', value: 'OTHER' },
 ];
 
-// Main Application Form Component
-const App = () => {
-  const [roles, setRoles] = useState({
+// Validation Schema using Yup
+const validationSchema = Yup.object({
+  stageName: Yup.string().required('Stage name is required'),
+  country: Yup.string().required('Country is required'),
+  yearsExperience: Yup.number().min(0).required('Years of experience is required'),
+  availability: Yup.string().required('Availability is required'),
+  mainDAWs: Yup.array().min(1, 'At least one DAW is required').required('Main DAWs are required'),
+  pluginChains: Yup.array().min(1, 'At least one plugin/gear is required').required('Plugin chain/gear list is required'),
+  generalGenres: Yup.array().min(1, 'At least one genre is required').required('Genres are required'),
+  socialLinks: Yup.array().min(1, 'At least one social link is required').required('Social links are required'),
+
+  // Conditional validations for roles
+  ...(true && {  // Base schema, conditionals added via .when in full schema if needed
+    roles: Yup.object({
+      mixing: Yup.boolean(),
+      mastering: Yup.boolean(),
+      recording: Yup.boolean(),
+    }).test('at-least-one-role', 'At least one role must be selected', function (value) {
+      const { mixing, mastering, recording } = value || {};
+      return mixing || mastering || recording;
+    }),
+  }),
+
+  // Mixing fields (validated if role selected, but for simplicity, require if present)
+  yearsMixing: Yup.number().when('roles.mixing', {
+    is: true,
+    then: (schema) => schema.min(0).required('Years mixing is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  mixingTurnaround: Yup.number().when('roles.mixing', {
+    is: true,
+    then: (schema) => schema.min(1).required('Turnaround time is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  mixingGenresList: Yup.array().when('roles.mixing', {
+    is: true,
+    then: (schema) => schema.min(1, 'At least one mixing genre is required').required('Mixing genres are required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  notableArtists: Yup.string().notRequired(),
+  tunedVocalExampleNeeded: Yup.boolean().notRequired(),
+
+  // Mastering fields
+  yearsMastering: Yup.number().when('roles.mastering', {
+    is: true,
+    then: (schema) => schema.min(0).required('Years mastering is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  masteringTurnaround: Yup.number().when('roles.mastering', {
+    is: true,
+    then: (schema) => schema.min(1).required('Turnaround time is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  masteringGenresList: Yup.array().when('roles.mastering', {
+    is: true,
+    then: (schema) => schema.min(1, 'At least one mastering genre is required').required('Mastering genres are required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  loudnessRange: Yup.string().notRequired(),
+
+  // Recording fields
+  yearsRecording: Yup.number().when('roles.recording', {
+    is: true,
+    then: (schema) => schema.min(0).required('Years recording is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  instrumentsPlayed: Yup.array().when('roles.recording', {
+    is: true,
+    then: (schema) => schema.min(1, 'At least one instrument is required').required('Instruments are required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  recordingGenresList: Yup.array().when('roles.recording', {
+    is: true,
+    then: (schema) => schema.min(1, 'At least one recording genre is required').required('Recording genres are required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  studioSetup: Yup.string().when('roles.recording', {
+    is: true,
+    then: (schema) => schema.required('Studio setup is required'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+
+  // Common optional fields
+  portfolioLink: Yup.string().url('Must be a valid URL').notRequired(),
+});
+
+// Initial Values
+const initialValues = {
+  stageName: '',
+  country: '',
+  yearsExperience: '',
+  availability: '',
+  portfolioLink: '',
+  mainDAWs: [],
+  pluginChains: [],
+  socialLinks: [],
+  generalGenres: [],
+  roles: {
     mixing: false,
     mastering: false,
     recording: false,
+  },
+  tunedVocalExampleNeeded: false,
+  yearsMixing: '',
+  mixingTurnaround: '',
+  notableArtists: '',
+  mixingGenresList: [],
+  yearsMastering: '',
+  masteringTurnaround: '',
+  loudnessRange: '',
+  masteringGenresList: [],
+  yearsRecording: '',
+  instrumentsPlayed: [],
+  recordingGenresList: [],
+  studioSetup: '',
+};
+
+// Main Application Form Component
+const App = () => {
+  const formik = useFormik({
+    initialValues,
+    validationSchema,
+    onSubmit: (values) => {
+      console.log('Form Submitted!', values);
+      console.log("Application submitted! (This is a placeholder submission).");
+      alert("Application submitted! (This is a placeholder submission).");
+    },
   });
-  const [tunedVocalExampleNeeded, setTunedVocalExampleNeeded] = useState(false);
-  
-  // --- Estado para campos de General Info ---
-  const [stageName, setStageName] = useState(''); 
-  const [country, setCountry] = useState('');
-  const [mainDAWs, setMainDAWs] = useState([]);
-  const [pluginChains, setPluginChains] = useState([]);
-  
-  // Lista de objetos para Socials (nueva estructura)
-  const [socialLinks, setSocialLinks] = useState([]); 
-  
-  // --- Estados para las listas de Géneros y Habilidades (Ahora usando MultiSelect) ---
-  const [generalGenres, setGeneralGenres] = useState([]);
-  const [mixingGenresList, setMixingGenresList] = useState([]);
-  const [masteringGenresList, setMasteringGenresList] = useState([]);
-  // NUEVOS ESTADOS para Recording Section
-  const [instrumentsPlayed, setInstrumentsPlayed] = useState([]);
-  const [recordingGenresList, setRecordingGenresList] = useState([]);
 
-  // Estados para campos sin estado específico (ejemplos, se pueden agregar useState si es necesario)
-  const [yearsExperience, setYearsExperience] = useState('');
-  const [availability, setAvailability] = useState('');
-  const [portfolioLink, setPortfolioLink] = useState('');
-  const [yearsMixing, setYearsMixing] = useState('');
-  const [mixingTurnaround, setMixingTurnaround] = useState('');
-  const [notableArtists, setNotableArtists] = useState('');
-  const [yearsMastering, setYearsMastering] = useState('');
-  const [masteringTurnaround, setMasteringTurnaround] = useState('');
-  const [loudnessRange, setLoudnessRange] = useState('');
-  const [yearsRecording, setYearsRecording] = useState('');
-  const [studioSetup, setStudioSetup] = useState('');
+  const { values, errors, touched, handleChange, handleBlur, setFieldValue, isValid, dirty } = formik;
+  const isAnyRoleSelected = values.roles.mixing || values.roles.mastering || values.roles.recording;
 
-  const handleRoleChange = (role) => {
-    setRoles(prev => ({ ...prev, [role]: !prev[role] }));
+  const handleRoleChange = (role, checked) => {
+    setFieldValue(`roles.${role}`, checked);
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // En una aplicación real, se incluiría el fullName y email del contexto de autenticación.
-    const formData = {
-        stageName, 
-        country,
-        mainDAWs,
-        pluginChains,
-        socialLinks, // Lista de objetos {platform, link}
-        generalGenres, 
-        mixingGenresList, 
-        masteringGenresList, 
-        instrumentsPlayed, // NUEVO
-        recordingGenresList, // NUEVO
-        // ... otros campos del formulario
-    };
-    console.log('Form Submitted!', formData);
-    console.log("Application submitted! (This is a placeholder submission).");
-    // Usamos alert temporalmente, pero se recomienda un modal personalizado.
-    // NOTE: In a production app, replace 'alert' with a custom modal.
-    alert("Application submitted! (This is a placeholder submission).");
+  const handleTunedVocalChange = (checked) => {
+    setFieldValue('tunedVocalExampleNeeded', checked);
   };
-
-  const isAnyRoleSelected = roles.mixing || roles.mastering || roles.recording;
 
   return (
-      <div className="max-w-4xl mx-auto bg-white/5 p-6 sm:p-10 rounded-xl shadow-2xl border-t-4 border-amber-500">
-        
-        {/* Header */}
-        <header className="text-center mb-10">
-          <p className="text-sm font-mono text-gray-400 mb-2">MIXA CREATOR SECURITY PASS</p>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white flex items-center justify-center">
-            <Zap className="w-8 h-8 mr-3 text-amber-500 animate-pulse" />
-            Access the Lab. Prove your Precision.
-          </h1>
-        </header>
+    <div className="max-w-4xl mx-auto bg-white/5 p-6 sm:p-10 rounded-xl shadow-2xl border-t-4 border-amber-500">
+      {/* Header */}
+      <header className="text-center mb-10">
+        <p className="text-sm font-mono text-gray-400 mb-2">MIXA CREATOR SECURITY PASS</p>
+        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white flex items-center justify-center">
+          <Zap className="w-8 h-8 mr-3 text-amber-500 animate-pulse" />
+          Access the Lab. Prove your Precision.
+        </h1>
+      </header>
 
-        <form onSubmit={handleSubmit} className="space-y-8">
-          
-          {/* Role Selection */}
-          <div className="bg-gray-700/50 p-6 rounded-lg border border-gray-700">
-            <h3 className="text-xl font-semibold mb-4 text-amber-300">Select Your Role(s)</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {['mixing', 'mastering', 'recording'].map(role => (
-                <label key={role} className="flex items-center p-3 rounded-lg cursor-pointer bg-black hover:bg-gray-900 transition duration-150 ease-in-out border border-transparent has-[:checked]:border-amber-500 has-[:checked]:bg-gray-700/70">
-                  <Checkbox
-                    id={`${role}-checkbox`}
-                    checked={roles[role]}
-                    onChange={() => handleRoleChange(role)}
-                    label={
-                      role === 'mixing' ? 'Mixing Engineer' :
+      <form onSubmit={formik.handleSubmit} className="space-y-8">
+
+        {/* Role Selection */}
+        <div className="bg-gray-700/50 p-6 rounded-lg border border-gray-700">
+          <h3 className="text-xl font-semibold mb-4 text-amber-300">Select Your Role(s)</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {['mixing', 'mastering', 'recording'].map(role => (
+              <label key={role} className="flex items-center p-3 rounded-lg cursor-pointer bg-black hover:bg-gray-900 transition duration-150 ease-in-out border border-transparent has-[:checked]:border-amber-500 has-[:checked]:bg-gray-700/70">
+                <Checkbox
+                  id={`${role}-checkbox`}
+                  checked={values.roles[role]}
+                  onChange={(e) => handleRoleChange(role, e.target.checked)}
+                  label={
+                    role === 'mixing' ? 'Mixing Engineer' :
                       role === 'mastering' ? 'Mastering Engineer' :
-                      'Recording Session (Musician)'
-                    }
-                    className="capitalize text-gray-200"
-                    containerClassName="w-full"
-                  />
-                </label>
-              ))}
-            </div>
-            {!isAnyRoleSelected && (
-                <p className="text-red-400 text-sm mt-3">Please select at least one role to continue.</p>
-            )}
+                        'Recording Session (Musician)'
+                  }
+                  className="capitalize text-gray-200"
+                  containerClassName="w-full"
+                />
+              </label>
+            ))}
           </div>
-          
-          {/* 🔐 GENERAL INFO SECTION (Required for all applicants) */}
-          <SectionHeader title="General Info" icon={User} id="general-info" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            
-            {/* Row 1: Stage Name & Country */}
-            <Input
-                label="Stage / Brand Name" 
-                id="stageName" 
-                required={true} 
-                placeholder="Miksa-Aurelius or Studio Echo"
-                value={stageName}
-                onChange={(e) => setStageName(e.target.value)}
-            />
-            <Select
-                label="Country of Residence" 
-                id="country" 
-                required={true} 
-                options={COUNTRIES} 
-                value={country} 
-                onChange={setCountry}
-            />
-            
-            {/* Row 2: Years of Experience & Availability */}
-            <Input 
-              label="Years of Experience" 
-              id="yearsExperience" 
-              required={true} 
-              type="number" 
-              placeholder="5" 
-              min="0"
-              value={yearsExperience}
-              onChange={(e) => setYearsExperience(e.target.value)}
-            />
-            <Select
-                label="Availability"
-                id="availability"
-                required={true}
-                options={[
-                    { label: 'Full-Time', value: 'FT' },
-                    { label: 'Part-Time', value: 'PT' },
-                    { label: 'On-Demand', value: 'OD' },
-                ]}
-                value={availability}
-                onChange={setAvailability}
-            />
-            
-            {/* Row 3: Portfolio Link & Main DAW */}
-            <Input 
-                label="Portfolio or Sample Link (optional)" 
-                id="portfolioLink" 
-                placeholder="Drive, Dropbox, or website link"
-                value={portfolioLink}
-                onChange={(e) => setPortfolioLink(e.target.value)}
-            />
-            <Select 
-                label="Main DAW" 
-                id="mainDaw" 
-                required={true} 
-                placeholder="Type DAW names, press Enter to add"
-                value={mainDAWs}
-                onChange={setMainDAWs}
-                isMulti={true}
-                isCreatable={true}
-                options={
-                  [
-                    { label: 'Ableton Live', value: 'ableton_live' },
-                    { label: 'FL Studio', value: 'fl_studio' },
-                    { label: 'Logic Pro', value: 'logic_pro' },
-                    { label: 'Pro Tools', value: 'pro_tools' },
-                    { label: 'Cubase', value: 'cubase' },
-                    { label: 'Studio One', value: 'studio_one' },
-                    { label: 'Reaper', value: 'reaper' },
-                    { label: 'Other', value: 'other' },
-                  ]
-                }
-            />
+          {formik.touched.roles && errors.roles && (
+            <p className="text-red-400 text-sm mt-3">{errors.roles}</p>
+          )}
+          {!isAnyRoleSelected && (
+            <p className="text-red-400 text-sm mt-3">Please select at least one role to continue.</p>
+          )}
+        </div>
 
-            {/* Row 4: Socials (Full Width) */}
-            <SocialsInput
-                label="Social Media Links"
-                socials={socialLinks}
-                setSocials={setSocialLinks}
-                className="sm:col-span-2"
+        {/* 🔐 GENERAL INFO SECTION (Required for all applicants) */}
+        <SectionHeader title="General Info" icon={User} id="general-info" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+          {/* Row 1: Stage Name & Country */}
+          <Input
+            label="Stage / Brand Name"
+            id="stageName"
+            name="stageName"
+            required={true}
+            placeholder="Miksa-Aurelius or Studio Echo"
+            value={values.stageName}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={touched.stageName && errors.stageName}
+          />
+          <Select
+            label="Country of Residence"
+            id="country"
+            name="country"
+            required={true}
+            options={COUNTRIES}
+            value={values.country}
+            onChange={(newValue) => setFieldValue('country', newValue)}
+            onBlur={handleBlur}
+            error={touched.country && errors.country}
+          />
+
+          {/* Row 2: Years of Experience & Availability */}
+          <Input
+            label="Years of Experience"
+            id="yearsExperience"
+            name="yearsExperience"
+            required={true}
+            type="number"
+            placeholder="5"
+            min="0"
+            value={values.yearsExperience}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={touched.yearsExperience && errors.yearsExperience}
+          />
+          <Select
+            label="Availability"
+            id="availability"
+            name="availability"
+            required={true}
+            options={[
+              { label: 'Full-Time', value: 'FT' },
+              { label: 'Part-Time', value: 'PT' },
+              { label: 'On-Demand', value: 'OD' },
+            ]}
+            value={values.availability}
+            onChange={(newValue) => setFieldValue('availability', newValue)}
+            onBlur={handleBlur}
+            error={touched.availability && errors.availability}
+          />
+
+          {/* Row 3: Portfolio Link & Main DAW */}
+          <Input
+            label="Portfolio or Sample Link (optional)"
+            id="portfolioLink"
+            name="portfolioLink"
+            placeholder="Drive, Dropbox, or website link"
+            value={values.portfolioLink}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            error={touched.portfolioLink && errors.portfolioLink}
+          />
+          <Select
+            label="Main DAW"
+            id="mainDaw"
+            name="mainDAWs"
+            required={true}
+            placeholder="Type DAW names, press Enter to add"
+            value={values.mainDAWs}
+            onChange={(newValue) => setFieldValue('mainDAWs', newValue)}
+            onBlur={handleBlur}
+            error={touched.mainDAWs && errors.mainDAWs}
+            isMulti={true}
+            isCreatable={true}
+            options={
+              [
+                { label: 'Ableton Live', value: 'ableton_live' },
+                { label: 'FL Studio', value: 'fl_studio' },
+                { label: 'Logic Pro', value: 'logic_pro' },
+                { label: 'Pro Tools', value: 'pro_tools' },
+                { label: 'Cubase', value: 'cubase' },
+                { label: 'Studio One', value: 'studio_one' },
+                { label: 'Reaper', value: 'reaper' },
+                { label: 'Other', value: 'other' },
+              ]
+            }
+          />
+
+          {/* Row 4: Socials (Full Width) */}
+          <SocialsInput
+            label="Social Media Links"
+            name="socialLinks"
+            socials={values.socialLinks}
+            setSocials={(newSocials) => setFieldValue('socialLinks', newSocials)}
+            className="sm:col-span-2"
+            required={true}
+            error={touched.socialLinks && errors.socialLinks}
+          />
+
+          {/* Row 5: Plugin Chain / Gear List (Full Width) */}
+          <Select
+            label="Plugin Chain / Gear List"
+            id="gearList"
+            name="pluginChains"
+            required={true}
+            placeholder="Type gear names, press Enter to add"
+            value={values.pluginChains}
+            onChange={(newValue) => setFieldValue('pluginChains', newValue)}
+            onBlur={handleBlur}
+            error={touched.pluginChains && errors.pluginChains}
+            isMulti={true}
+            isCreatable={true}
+            options={
+              [
+                { label: 'Waves', value: 'waves' },
+                { label: 'FabFilter', value: 'fabfilter' },
+                { label: 'Universal Audio', value: 'universal_audio' },
+                { label: 'iZotope', value: 'izotope' },
+                { label: 'Native Instruments', value: 'native_instruments' },
+                { label: 'Other', value: 'other' },
+              ]
+            }
+            className="sm:col-span-2"
+          />
+
+          {/* Row 6: Genres You Specialize In (Full Width) */}
+          <SelectGenres
+            label="Genres You Specialize In"
+            id="genresSpecialized"
+            name="generalGenres"
+            required={true}
+            value={values.generalGenres}
+            onChange={(newValue) => setFieldValue('generalGenres', newValue)}
+            onBlur={handleBlur}
+            error={touched.generalGenres && errors.generalGenres}
+            className="sm:col-span-2"
+          />
+        </div>
+
+        {/* 🎧 MIXING ENGINEER SECTION */}
+        {values.roles.mixing && (
+          <>
+            <SectionHeader title="Mixing Engineer" icon={Headphones} id="mixing-engineer" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+              {/* Row 1: Years Mixing & Turnaround Time (Paired) */}
+              <Input
+                label="Years Mixing"
+                id="yearsMixing"
+                name="yearsMixing"
                 required={true}
-            />
-            
-            {/* Row 5: Plugin Chain / Gear List (Full Width) */}
-            <Select
-                label="Plugin Chain / Gear List"
-                id="gearList"
+                type="number"
+                placeholder="3"
+                min="0"
+                value={values.yearsMixing}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.yearsMixing && errors.yearsMixing}
+              />
+              <Input
+                label="Average Turnaround Time (days)"
+                id="mixingTurnaround"
+                name="mixingTurnaround"
                 required={true}
-                placeholder="Type gear names, press Enter to add"
-                value={pluginChains}
-                onChange={setPluginChains}
-                isMulti={true}
-                isCreatable={true}
-                options={
-                  [
-                    { label: 'Waves', value: 'waves' },
-                    { label: 'FabFilter', value: 'fabfilter' },
-                    { label: 'Universal Audio', value: 'universal_audio' },
-                    { label: 'iZotope', value: 'izotope' },
-                    { label: 'Native Instruments', value: 'native_instruments' },
-                    { label: 'Other', value: 'other' },
-                  ]
-                }
-                className="sm:col-span-2"
-            />
-            
-            {/* Row 6: Genres You Specialize In (Full Width) */}
-            <Select
-                label="Genres You Specialize In"
-                id="genresSpecialized"
+                type="number"
+                placeholder="3"
+                min="1"
+                value={values.mixingTurnaround}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.mixingTurnaround && errors.mixingTurnaround}
+              />
+
+              {/* Row 2: Genres You Mix (Full Width) */}
+              <Select
+                label="Genres You Mix"
+                id="mixingGenres"
+                name="mixingGenresList"
                 required={true}
                 placeholder="Type genre names, press Enter to add"
-                value={generalGenres}
-                onChange={setGeneralGenres}
+                value={values.mixingGenresList}
+                onChange={(newValue) => setFieldValue('mixingGenresList', newValue)}
+                onBlur={handleBlur}
+                error={touched.mixingGenresList && errors.mixingGenresList}
                 isMulti={true}
                 isCreatable={true}
                 options={[]}
                 className="sm:col-span-2"
-            />
-          </div>
+              />
 
-          {/* 🎧 MIXING ENGINEER SECTION */}
-          {roles.mixing && (
-            <>
-              <SectionHeader title="Mixing Engineer" icon={Headphones} id="mixing-engineer" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                
-                {/* Row 1: Years Mixing & Turnaround Time (Paired) */}
-                <Input 
-                  label="Years Mixing" 
-                  id="yearsMixing" 
-                  required={true} 
-                  type="number" 
-                  placeholder="3" 
-                  min="0"
-                  value={yearsMixing}
-                  onChange={(e) => setYearsMixing(e.target.value)}
-                />
-                <Input 
-                  label="Average Turnaround Time (days)" 
-                  id="mixingTurnaround" 
-                  required={true} 
-                  type="number" 
-                  placeholder="3" 
-                  min="1"
-                  value={mixingTurnaround}
-                  onChange={(e) => setMixingTurnaround(e.target.value)}
-                />
+              {/* Row 3: Notable Artists (Full Width) */}
+              <Input
+                label="Notable Artists You’ve Worked With (optional)"
+                id="notableArtists"
+                name="notableArtists"
+                placeholder="Artist X, Band Y"
+                value={values.notableArtists}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.notableArtists && errors.notableArtists}
+                className="sm:col-span-2"
+              />
 
-                {/* Row 2: Genres You Mix (Full Width) */}
-                <Select
-                    label="Genres You Mix"
-                    id="mixingGenres"
-                    required={true}
-                    placeholder="Type genre names, press Enter to add"
-                    value={mixingGenresList}
-                    onChange={setMixingGenresList}
-                    isMulti={true}
-                    isCreatable={true}
-                    options={[]}
-                    className="sm:col-span-2"
-                />
-
-                {/* Row 3: Notable Artists (Full Width) */}
-                <Input 
-                  label="Notable Artists You’ve Worked With (optional)" 
-                  id="notableArtists" 
-                  placeholder="Artist X, Band Y" 
-                  value={notableArtists}
-                  onChange={(e) => setNotableArtists(e.target.value)}
-                  className="sm:col-span-2" 
-                />
-                
-                {/* Row 4: Vocal Tuning Conditional (Full Width) */}
-                <div className="sm:col-span-2 space-y-3">
-                    <label className="text-sm font-medium text-gray-300 block">Do You Tune Vocals? <span className="text-red-400">*</span></label>
-                    <div className="flex space-x-6">
-                        <Checkbox
-                            id="tuneVocals-yes"
-                            checked={tunedVocalExampleNeeded}
-                            onChange={() => setTunedVocalExampleNeeded(true)}
-                            label="Yes"
-                            containerClassName="mr-4"
-                        />
-                        <Checkbox
-                            id="tuneVocals-no"
-                            checked={!tunedVocalExampleNeeded}
-                            onChange={() => setTunedVocalExampleNeeded(false)}
-                            label="No"
-                        />
-                    </div>
-
-                    {tunedVocalExampleNeeded && (
-                         <FileUploadPlaceholder
-                            label="Upload Example with Tuned Vocals"
-                            id="tunedVocalsExample"
-                            required={true}
-                            helperText="Upload an audio example showcasing your vocal tuning skill."
-                            icon={Sparkles}
-                        />
-                    )}
+              {/* Row 4: Vocal Tuning Conditional (Full Width) */}
+              <div className="sm:col-span-2 space-y-3">
+                <label className="text-sm font-medium text-gray-300 block">Do You Tune Vocals? <span className="text-red-400">*</span></label>
+                <div className="flex space-x-6">
+                  <Checkbox
+                    id="tuneVocals-yes"
+                    checked={values.tunedVocalExampleNeeded}
+                    onChange={(e) => handleTunedVocalChange(e.target.checked)}
+                    label="Yes"
+                    containerClassName="mr-4"
+                  />
+                  <Checkbox
+                    id="tuneVocals-no"
+                    checked={!values.tunedVocalExampleNeeded}
+                    onChange={(e) => handleTunedVocalChange(!e.target.checked)}
+                    label="No"
+                  />
                 </div>
-                
-                {/* Row 5: Upload Mix (Full Width, al final) */}
-                <FileUploadPlaceholder
-                    label="Upload 1 Before & After Mix"
-                    id="mixExample"
+
+                {values.tunedVocalExampleNeeded && (
+                  <FileUploadPlaceholder
+                    label="Upload Example with Tuned Vocals"
+                    id="tunedVocalsExample"
                     required={true}
-                    helperText="Please upload one pair of 'before' (raw) and 'after' (mixed) files."
-                    icon={Music}
-                    className="sm:col-span-2"
-                />
+                    helperText="Upload an audio example showcasing your vocal tuning skill."
+                    icon={Sparkles}
+                  />
+                )}
               </div>
-            </>
-          )}
 
-          {/* 🔊 MASTERING ENGINEER SECTION */}
-          {roles.mastering && (
-            <>
-              <SectionHeader title="Mastering Engineer" icon={Sliders} id="mastering-engineer" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                
-                {/* Row 1: Years Mastering & Turnaround Time (Paired) */}
-                <Input 
-                  label="Years Mastering" 
-                  id="yearsMastering" 
-                  required={true} 
-                  type="number" 
-                  placeholder="2" 
-                  min="0"
-                  value={yearsMastering}
-                  onChange={(e) => setYearsMastering(e.target.value)}
-                />
-                <Input 
-                  label="Average Turnaround Time (days)" 
-                  id="masteringTurnaround" 
-                  required={true} 
-                  type="number" 
-                  placeholder="2" 
-                  min="1"
-                  value={masteringTurnaround}
-                  onChange={(e) => setMasteringTurnaround(e.target.value)}
-                />
+              {/* Row 5: Upload Mix (Full Width, al final) */}
+              <FileUploadPlaceholder
+                label="Upload 1 Before & After Mix"
+                id="mixExample"
+                required={true}
+                helperText="Please upload one pair of 'before' (raw) and 'after' (mixed) files."
+                icon={Music}
+                className="sm:col-span-2"
+              />
+            </div>
+          </>
+        )}
 
-                {/* Row 2: Genres You Master (Full Width) */}
-                <Select
-                    label="Genres You Master"
-                    id="masteringGenres"
-                    required={true}
-                    placeholder="Type genre names, press Enter to add"
-                    value={masteringGenresList}
-                    onChange={setMasteringGenresList}
-                    isMulti={true}
-                    isCreatable={true}
-                    options={[]}
-                    className="sm:col-span-2"
-                />
+        {/* 🔊 MASTERING ENGINEER SECTION */}
+        {values.roles.mastering && (
+          <>
+            <SectionHeader title="Mastering Engineer" icon={Sliders} id="mastering-engineer" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-                {/* Row 3: Preferred Loudness Range (Full Width) */}
-                <Input 
-                  label="Preferred Loudness Range (LUFS or RMS, optional)" 
-                  id="loudnessRange" 
-                  placeholder="-12 LUFS to -8 LUFS"
-                  value={loudnessRange}
-                  onChange={(e) => setLoudnessRange(e.target.value)}
-                  className="sm:col-span-2" 
-                />
+              {/* Row 1: Years Mastering & Turnaround Time (Paired) */}
+              <Input
+                label="Years Mastering"
+                id="yearsMastering"
+                name="yearsMastering"
+                required={true}
+                type="number"
+                placeholder="2"
+                min="0"
+                value={values.yearsMastering}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.yearsMastering && errors.yearsMastering}
+              />
+              <Input
+                label="Average Turnaround Time (days)"
+                id="masteringTurnaround"
+                name="masteringTurnaround"
+                required={true}
+                type="number"
+                placeholder="2"
+                min="1"
+                value={values.masteringTurnaround}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.masteringTurnaround && errors.masteringTurnaround}
+              />
 
-                {/* Row 4: Upload Master (Full Width, al final) */}
-                <FileUploadPlaceholder
-                    label="Upload 1 Before & After Master"
-                    id="masterExample"
-                    required={true}
-                    helperText="Please upload one pair of 'before' (mixed) and 'after' (mastered) files."
-                    icon={Music}
-                    className="sm:col-span-2"
-                />
-              </div>
-            </>
-          )}
+              {/* Row 2: Genres You Master (Full Width) */}
+              <Select
+                label="Genres You Master"
+                id="masteringGenres"
+                name="masteringGenresList"
+                required={true}
+                placeholder="Type genre names, press Enter to add"
+                value={values.masteringGenresList}
+                onChange={(newValue) => setFieldValue('masteringGenresList', newValue)}
+                onBlur={handleBlur}
+                error={touched.masteringGenresList && errors.masteringGenresList}
+                isMulti={true}
+                isCreatable={true}
+                options={[]}
+                className="sm:col-span-2"
+              />
 
-          {/* 🎙️ RECORDING SESSION SECTION */}
-          {roles.recording && (
-            <>
-              <SectionHeader title="Recording Session (Instrumentalist)" icon={Mic} id="recording-session" />
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                
-                {/* Row 1: Years of Recording (1/2) + Spacer */}
-                <Input 
-                  label="Years of Recording or Playing" 
-                  id="yearsRecording" 
-                  required={true} 
-                  type="number" 
-                  placeholder="10" 
-                  min="0"
-                  value={yearsRecording}
-                  onChange={(e) => setYearsRecording(e.target.value)}
-                />
-                {/* Div vacío para mantener la alineación en desktop */}
-                <div></div>
+              {/* Row 3: Preferred Loudness Range (Full Width) */}
+              <Input
+                label="Preferred Loudness Range (LUFS or RMS, optional)"
+                id="loudnessRange"
+                name="loudnessRange"
+                placeholder="-12 LUFS to -8 LUFS"
+                value={values.loudnessRange}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.loudnessRange && errors.loudnessRange}
+                className="sm:col-span-2"
+              />
 
-                {/* Row 2: Instruments (Full Width MultiSelect) */}
-                <Select 
-                    label="What Instruments do you play" 
-                    id="instrumentsPlayed" 
-                    required={true} 
-                    placeholder="Type instrument names, press Enter to add" 
-                    value={instrumentsPlayed}
-                    onChange={setInstrumentsPlayed}
-                    isMulti={true}
-                    isCreatable={true}
-                    options={[]}
-                    className="sm:col-span-2"
-                />
-                
-                {/* Row 3: Genres (Full Width MultiSelect) */}
-                <Select 
-                    label="Genres You Record or Perform" 
-                    id="recordingGenres" 
-                    required={true} 
-                    placeholder="Type genre names, press Enter to add" 
-                    value={recordingGenresList}
-                    onChange={setRecordingGenresList}
-                    isMulti={true}
-                    isCreatable={true}
-                    options={[]}
-                    className="sm:col-span-2"
-                />
+              {/* Row 4: Upload Master (Full Width, al final) */}
+              <FileUploadPlaceholder
+                label="Upload 1 Before & After Master"
+                id="masterExample"
+                required={true}
+                helperText="Please upload one pair of 'before' (mixed) and 'after' (mastered) files."
+                icon={Music}
+                className="sm:col-span-2"
+              />
+            </div>
+          </>
+        )}
 
-                {/* Row 4: Studio Setup (Full Width Text Area) */}
-                <Input 
-                    label="Studio Setup (brief description)" 
-                    id="studioSetup" 
-                    required={true} 
-                    placeholder="Home studio, custom acoustic treatment, Focusrite interface, specific mic models." 
-                    as="textarea"
-                    value={studioSetup}
-                    onChange={(e) => setStudioSetup(e.target.value)}
-                    className="sm:col-span-2" 
-                />
+        {/* 🎙️ RECORDING SESSION SECTION */}
+        {values.roles.recording && (
+          <>
+            <SectionHeader title="Recording Session (Instrumentalist)" icon={Mic} id="recording-session" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
 
-                {/* Row 5: Upload Example (Full Width, al final) */}
-                <FileUploadPlaceholder
-                    label="Upload Audio or Video Example"
-                    id="performanceExample"
-                    required={true}
-                    helperText="Upload an example showcasing your performance/recording quality."
-                    icon={Music}
-                    className="sm:col-span-2"
-                />
-              </div>
-            </>
-          )}
+              {/* Row 1: Years of Recording (1/2) + Spacer */}
+              <Input
+                label="Years of Recording or Playing"
+                id="yearsRecording"
+                name="yearsRecording"
+                required={true}
+                type="number"
+                placeholder="10"
+                min="0"
+                value={values.yearsRecording}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.yearsRecording && errors.yearsRecording}
+              />
+              {/* Div vacío para mantener la alineación en desktop */}
+              <div></div>
 
-          {/* Submission Button */}
-          <div className="pt-8 border-t border-gray-700 mt-10">
-            <Button
-              type="submit"
-              disabled={!isAnyRoleSelected}
-              className={`w-full py-3 rounded-xl text-lg font-bold transition duration-300 ease-in-out ${
-                isAnyRoleSelected
-                  ? 'bg-amber-500 text-gray-900 hover:bg-amber-400 shadow-lg shadow-amber-500/50'
-                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              {/* Row 2: Instruments (Full Width MultiSelect) */}
+              <Select
+                label="What Instruments do you play"
+                id="instrumentsPlayed"
+                name="instrumentsPlayed"
+                required={true}
+                placeholder="Type instrument names, press Enter to add"
+                value={values.instrumentsPlayed}
+                onChange={(newValue) => setFieldValue('instrumentsPlayed', newValue)}
+                onBlur={handleBlur}
+                error={touched.instrumentsPlayed && errors.instrumentsPlayed}
+                isMulti={true}
+                isCreatable={true}
+                options={[]}
+                className="sm:col-span-2"
+              />
+
+              {/* Row 3: Genres (Full Width MultiSelect) */}
+              <Select
+                label="Genres You Record or Perform"
+                id="recordingGenres"
+                name="recordingGenresList"
+                required={true}
+                placeholder="Type genre names, press Enter to add"
+                value={values.recordingGenresList}
+                onChange={(newValue) => setFieldValue('recordingGenresList', newValue)}
+                onBlur={handleBlur}
+                error={touched.recordingGenresList && errors.recordingGenresList}
+                isMulti={true}
+                isCreatable={true}
+                options={[]}
+                className="sm:col-span-2"
+              />
+
+              {/* Row 4: Studio Setup (Full Width Text Area) */}
+              <Input
+                label="Studio Setup (brief description)"
+                id="studioSetup"
+                name="studioSetup"
+                required={true}
+                placeholder="Home studio, custom acoustic treatment, Focusrite interface, specific mic models."
+                as="textarea"
+                value={values.studioSetup}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                error={touched.studioSetup && errors.studioSetup}
+                className="sm:col-span-2"
+              />
+
+              {/* Row 5: Upload Example (Full Width, al final) */}
+              <FileUploadPlaceholder
+                label="Upload Audio or Video Example"
+                id="performanceExample"
+                required={true}
+                helperText="Upload an example showcasing your performance/recording quality."
+                icon={Music}
+                className="sm:col-span-2"
+              />
+            </div>
+          </>
+        )}
+
+        {/* Submission Button */}
+        <div className="pt-8 border-t border-gray-700 mt-10">
+          <Button
+            type="submit"
+            disabled={!isAnyRoleSelected || !isValid || !dirty}
+            className={`w-full py-3 rounded-xl text-lg font-bold transition duration-300 ease-in-out ${isAnyRoleSelected && isValid && dirty
+              ? 'bg-amber-500 text-gray-900 hover:bg-amber-400 shadow-lg shadow-amber-500/50'
+              : 'bg-gray-600 text-gray-400 cursor-not-allowed'
               }`}
-            >
-              Submit Creator Pass Application
-            </Button>
-            {!isAnyRoleSelected && (
-                <p className="text-center text-sm text-gray-400 mt-3">You must select at least one role to submit the application.</p>
-            )}
-          </div>
-        </form>
-      </div>
+          >
+            Submit Creator Pass Application
+          </Button>
+          {!isAnyRoleSelected && (
+            <p className="text-center text-sm text-gray-400 mt-3">You must select at least one role to submit the application.</p>
+          )}
+        </div>
+      </form>
+    </div>
   );
 };
 

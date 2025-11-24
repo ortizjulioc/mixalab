@@ -135,6 +135,44 @@ export default function useCreatorProfile() {
         }
     }, []);
 
+    const getCreatorProfileByUserId = useCallback(async (userId) => {
+        try {
+            setLoading(true);
+            const res = await fetchClient({ method: 'GET', endpoint: `/creator-profiles/user/${userId}` });
+            setCreatorProfile(res);
+            setError(null);
+            return res;
+        } catch (err) {
+            console.log('Error object:', err);
+
+            // The error structure from fetchClient is: { success: false, error: { code, message } }
+            // But the API returns: { error: "Creator profile not found" }
+            // So we need to check both err.error.message and err.error
+            const errorMessage = err?.error?.message || err?.error || 'Error loading creator profile';
+            const isNotFound =
+                typeof errorMessage === 'string' &&
+                (errorMessage.toLowerCase().includes('not found') ||
+                    errorMessage.toLowerCase().includes('404'));
+
+            if (isNotFound) {
+                // User doesn't have a profile yet - this is expected, don't show error
+                console.log('Profile not found - user needs to create one');
+                setError(null);
+                setCreatorProfile(null);
+            } else {
+                // Actual error - show notification
+                console.error('Actual error fetching profile:', errorMessage);
+                setError(errorMessage);
+                openNotification('error', errorMessage);
+                setCreatorProfile(null);
+            }
+
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     return {
         handleChangeFilter,
         filters,
@@ -148,5 +186,6 @@ export default function useCreatorProfile() {
         updateCreatorProfile,
         deleteCreatorProfile,
         getCreatorProfileById,
+        getCreatorProfileByUserId,
     };
 }
