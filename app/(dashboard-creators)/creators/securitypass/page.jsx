@@ -350,8 +350,8 @@ const App = () => {
             id="genresSpecialized"
             name="generalGenres"
             required={true}
-            value={values.generalGenres}
-            onChange={(newValue) => setFieldValue('generalGenres', newValue)}
+            value={values.generalGenres}  // This should now be an array like [1, 2, 3]
+            onChange={(event) => setFieldValue('generalGenres', event.target.value)}  // ← Extract the value here
             onBlur={handleBlur}
             error={touched.generalGenres && errors.generalGenres}
             className="sm:col-span-2"

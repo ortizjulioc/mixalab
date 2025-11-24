@@ -28,43 +28,45 @@ export default function SelectGenres({
 
     const [selectedGenres, setSelectedGenres] = useState([]);
 
-    // Load initial genres list
+    /** 🔹 Load initial genres */
     useEffect(() => {
         fetchGenres();
     }, []);
 
-    // When value changes, sync selected items
+    /** 🔹 Sync props.value → selectedGenres */
     useEffect(() => {
-        if (!value || value.length === 0) {
+        const safe = Array.isArray(value) ? value : [];
+
+        if (safe.length === 0) {
             setSelectedGenres([]);
             return;
         }
 
         const loadSelected = async () => {
-            const selected = [];
+            const mapped = [];
 
-            for (const id of value) {
-                let found = genres.find((g) => g.id === id);
+            for (const gid of safe) {
+                let found = genres.find((g) => g.id === gid);
 
                 if (!found) {
-                    found = await getGenreById(id);
+                    found = await getGenreById(gid);
                 }
 
                 if (found) {
-                    selected.push({
+                    mapped.push({
                         value: found.id,
                         label: found.name,
                     });
                 }
             }
 
-            setSelectedGenres(selected);
+            setSelectedGenres(mapped);
         };
 
         loadSelected();
     }, [value, genres]);
 
-    // Map API items → Select options
+    /** 🔹 Convert API items → Select options */
     const mapToOptions = useCallback(
         (items) =>
             (items || []).map((g) => ({
@@ -74,21 +76,22 @@ export default function SelectGenres({
         []
     );
 
-    // Async load options (search)
+    /** 🔹 Async loading with search */
     const loadOptionsFn = useCallback(
         async (inputValue, callback) => {
             handleChangeFilter("search", inputValue, false);
 
+            // Slight delay so your API updates genres list
             setTimeout(() => {
                 callback(mapToOptions(genres));
-            }, 200);
+            }, 120);
         },
         [genres, handleChangeFilter, mapToOptions]
     );
 
-    // Debounced search
+    /** 🔹 Debounced search */
     const debouncedLoadOptions = useMemo(
-        () => debounce(loadOptionsFn, 300),
+        () => debounce(loadOptionsFn, 250),
         [loadOptionsFn]
     );
 
@@ -96,27 +99,32 @@ export default function SelectGenres({
         return () => debouncedLoadOptions.cancel();
     }, [debouncedLoadOptions]);
 
-    // Change handler
+    /** 🔹 On select */
     const handleSelectChange = (options) => {
-        const newValue = isMulti
-            ? options?.map((o) => o.value) || []
-            : options?.value || "";
+        setSelectedGenres(options || []);
 
-        setSelectedGenres(options);
-        handleChangeFilter("search", "", false);
+        const newValue = isMulti
+            ? Array.isArray(options)
+                ? options.map((o) => o.value)
+                : []
+            : options?.value || "";
 
         onChange?.({
             target: { name, value: newValue },
         });
     };
 
+    /** 🔹 On blur */
     const handleBlurInput = () => {
         onBlur?.({
-            target: { name, value: selectedGenres?.map((s) => s.value) },
+            target: {
+                name,
+                value: selectedGenres.map((s) => s.value),
+            },
         });
     };
 
-    // 🎨 Custom styles (mismo estilo que tu Select usado antes)
+    /** 🔹 Styles */
     const customStyles = {
         control: (provided, state) => ({
             ...provided,
@@ -143,15 +151,8 @@ export default function SelectGenres({
                     : "black",
             color: state.isSelected ? "#111827" : "white",
         }),
-        multiValue: (provided) => ({
-            ...provided,
-            backgroundColor: "#374151",
-            color: "white",
-        }),
-        multiValueLabel: (provided) => ({
-            ...provided,
-            color: "white",
-        }),
+        multiValue: (p) => ({ ...p, backgroundColor: "#374151" }),
+        multiValueLabel: (p) => ({ ...p, color: "white" }),
     };
 
     return (
