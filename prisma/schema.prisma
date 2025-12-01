@@ -38,6 +38,18 @@ model CreatorProfile {
   mainDaw           String             @map("main_daw")
   gearList          String             @map("gear_list")
   availability      AvailabilityStatus
+  //------
+  stageName         String?            @map("stage_name") // Opcional, si el creador también es artista
+  mainDawProject    Json               @map("main_daw_project") // Opcional, si el creador también es artista
+  pluginChains      Json               @map("plugin_chains") // Opcional, si el creador también es artista
+  generalGenres     Json               @map("general_genres") // Opcional, si el creador también es artista
+  socialLinks       Json               @map("social_links") // Opcional, si el creador también es artista
+  roles             creatorRoles[]     @map("roles")
+  mixing            String?            @map("mixing")
+  mastering         String?            @map("mastering")
+  recording         String?            @map("recording")
+  porfolioLinks     Json               @map("portfolio_links")
+  fileExamples      Json               @map("file_examples")
 
   genders     CreatorGenre[]
   user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -159,7 +171,7 @@ model File {
 
   tunesInOfferings CreatorServiceOffering[] @relation("TunedExampleFiles")
   creatorExamples  CreatorServiceExample[]
-  owner            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  owner            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -340,4 +352,10 @@ enum TierName {
   SILVER
   GOLD
   PLATINUM
+}
+
+enum creatorRoles {
+  MIXING
+  MASTERING
+  RECORDING
 }
