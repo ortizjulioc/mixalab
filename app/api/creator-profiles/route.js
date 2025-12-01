@@ -12,6 +12,7 @@ function parseJSON(value) {
 }
 
 const AVAILABILITIES = ['FULL_TIME', 'PART_TIME', 'ON_DEMAND'];
+const CREATOR_ROLES = ['MIXING', 'MASTERING', 'RECORDING'];
 
 export async function GET(request) {
     try {
@@ -22,11 +23,13 @@ export async function GET(request) {
 
         const search = searchParams.get('search') || undefined; // search brandName
         const availability = searchParams.get('availability') || undefined;
+        const role = searchParams.get('role') || undefined;
         const userId = searchParams.get('userId') || undefined;
 
         const where = {
             ...(search && { brandName: { contains: search } }),
             ...(availability && { availability }),
+            ...(role && { roles: role }),
             ...(userId && { userId }),
             deleted: false,
         };
@@ -72,6 +75,13 @@ export async function POST(request) {
         }
 
         const socials = parseJSON(body.socials);
+        const mainDawProject = parseJSON(body.mainDawProject);
+        const pluginChains = parseJSON(body.pluginChains);
+        const generalGenres = parseJSON(body.generalGenres);
+        const socialLinks = parseJSON(body.socialLinks);
+        const porfolioLinks = parseJSON(body.porfolioLinks);
+        const fileExamples = parseJSON(body.fileExamples);
+        const roles = body.roles ?? null;
 
         const data = {
             userId: body.userId,
@@ -83,7 +93,23 @@ export async function POST(request) {
             mainDaw: body.mainDaw ?? null,
             gearList: body.gearList ?? null,
             availability,
+            // optional new fields
+            stageName: body.stageName ?? null,
+            mainDawProject: mainDawProject ?? null,
+            pluginChains: pluginChains ?? null,
+            generalGenres: generalGenres ?? null,
+            socialLinks: socialLinks ?? null,
+            roles: roles ?? null,
+            mixing: body.mixing ?? null,
+            mastering: body.mastering ?? null,
+            recording: body.recording ?? null,
+            porfolioLinks: porfolioLinks ?? null,
+            fileExamples: fileExamples ?? null,
         };
+
+        if (roles !== null && !CREATOR_ROLES.includes(roles)) {
+            return NextResponse.json({ error: `roles must be one of ${CREATOR_ROLES.join(', ')}` }, { status: 400 });
+        }
 
         const item = await prisma.creatorProfile.create({ data, include: { user: { select: { id: true, email: true, name: true } } } });
 

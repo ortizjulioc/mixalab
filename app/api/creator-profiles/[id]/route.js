@@ -12,6 +12,7 @@ function parseJSON(value) {
 }
 
 const AVAILABILITIES = ['FULL_TIME', 'PART_TIME', 'ON_DEMAND'];
+const CREATOR_ROLES = ['MIXING', 'MASTERING', 'RECORDING'];
 
 export async function GET(request, { params }) {
     try {
@@ -67,6 +68,51 @@ export async function PUT(request, { params }) {
             const s = parseJSON(body.socials);
             if (s === undefined && body.socials !== null) return NextResponse.json({ error: 'socials must be a valid JSON object or null' }, { status: 400 });
             update.socials = s ?? null;
+        }
+
+        // New optional fields
+        if (body.stageName !== undefined) update.stageName = body.stageName === null ? null : String(body.stageName);
+        if (body.mainDawProject !== undefined) {
+            const v = parseJSON(body.mainDawProject);
+            if (v === undefined && body.mainDawProject !== null) return NextResponse.json({ error: 'mainDawProject must be valid JSON or null' }, { status: 400 });
+            update.mainDawProject = v ?? null;
+        }
+        if (body.pluginChains !== undefined) {
+            const v = parseJSON(body.pluginChains);
+            if (v === undefined && body.pluginChains !== null) return NextResponse.json({ error: 'pluginChains must be valid JSON or null' }, { status: 400 });
+            update.pluginChains = v ?? null;
+        }
+        if (body.generalGenres !== undefined) {
+            const v = parseJSON(body.generalGenres);
+            if (v === undefined && body.generalGenres !== null) return NextResponse.json({ error: 'generalGenres must be valid JSON or null' }, { status: 400 });
+            update.generalGenres = v ?? null;
+        }
+        if (body.socialLinks !== undefined) {
+            const v = parseJSON(body.socialLinks);
+            if (v === undefined && body.socialLinks !== null) return NextResponse.json({ error: 'socialLinks must be valid JSON or null' }, { status: 400 });
+            update.socialLinks = v ?? null;
+        }
+        if (body.roles !== undefined) {
+            if (body.roles === null) {
+                update.roles = null;
+            } else if (!CREATOR_ROLES.includes(body.roles)) {
+                return NextResponse.json({ error: `roles must be one of ${CREATOR_ROLES.join(', ')}` }, { status: 400 });
+            } else {
+                update.roles = body.roles;
+            }
+        }
+        if (body.mixing !== undefined) update.mixing = body.mixing === null ? null : String(body.mixing);
+        if (body.mastering !== undefined) update.mastering = body.mastering === null ? null : String(body.mastering);
+        if (body.recording !== undefined) update.recording = body.recording === null ? null : String(body.recording);
+        if (body.porfolioLinks !== undefined) {
+            const v = parseJSON(body.porfolioLinks);
+            if (v === undefined && body.porfolioLinks !== null) return NextResponse.json({ error: 'porfolioLinks must be valid JSON or null' }, { status: 400 });
+            update.porfolioLinks = v ?? null;
+        }
+        if (body.fileExamples !== undefined) {
+            const v = parseJSON(body.fileExamples);
+            if (v === undefined && body.fileExamples !== null) return NextResponse.json({ error: 'fileExamples must be valid JSON or null' }, { status: 400 });
+            update.fileExamples = v ?? null;
         }
 
         const item = await prisma.creatorProfile.update({

@@ -44,7 +44,7 @@ model CreatorProfile {
   pluginChains      Json               @map("plugin_chains") // Opcional, si el creador también es artista
   generalGenres     Json               @map("general_genres") // Opcional, si el creador también es artista
   socialLinks       Json               @map("social_links") // Opcional, si el creador también es artista
-  roles             creatorRoles[]     @map("roles")
+  roles             CreatorRoles       @map("roles") // Nuevos roles del creador
   mixing            String?            @map("mixing")
   mastering         String?            @map("mastering")
   recording         String?            @map("recording")
@@ -354,7 +354,7 @@ enum TierName {
   PLATINUM
 }
 
-enum creatorRoles {
+enum CreatorRoles {
   MIXING
   MASTERING
   RECORDING
