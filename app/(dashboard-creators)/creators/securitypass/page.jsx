@@ -14,6 +14,7 @@ import SelectGenres from '@/components/SelectGenres';
 import { createCreatorProfileFormData, submitCreatorProfile, validateRequiredFiles } from '@/utils/submit-creator-profile';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { openNotification } from '@/utils/open-notification';
 
 // Lista simplificada de países para el campo de selección
 const COUNTRIES = [
@@ -176,7 +177,7 @@ const App = () => {
         // Validar archivos requeridos
         const fileValidation = validateRequiredFiles(values.roles, files);
         if (!fileValidation.valid) {
-          alert(fileValidation.errors.join('\n'));
+          openNotification('error', fileValidation.errors.join('\n'));
           setIsSubmitting(false);
           return;
         }
@@ -188,15 +189,17 @@ const App = () => {
         const result = await submitCreatorProfile(formData);
 
         console.log('Creator Profile created successfully:', result);
-        alert('Application submitted successfully!');
+        openNotification('success', 'Application submitted successfully! Redirecting to dashboard...');
 
-        // Redirigir al dashboard o perfil
-        router.push('/creators/dashboard');
+        // Redirigir al dashboard después de un pequeño delay
+        setTimeout(() => {
+          router.push('/creators/home');
+        }, 1500);
 
       } catch (error) {
         console.error('Error submitting application:', error);
         setSubmitError(error.message);
-        alert(`Error: ${error.message}`);
+        openNotification('error', error.message || 'An error occurred while submitting your application');
       } finally {
         setIsSubmitting(false);
       }
@@ -308,9 +311,9 @@ const App = () => {
             name="availability"
             required={true}
             options={[
-              { label: 'Full-Time', value: 'FT' },
-              { label: 'Part-Time', value: 'PT' },
-              { label: 'On-Demand', value: 'OD' },
+              { label: 'Full-Time', value: 'FULL_TIME' },
+              { label: 'Part-Time', value: 'PART_TIME' },
+              { label: 'On-Demand', value: 'ON_DEMAND' },
             ]}
             value={values.availability}
             onChange={(newValue) => setFieldValue('availability', newValue)}
@@ -441,19 +444,15 @@ const App = () => {
               />
 
               {/* Row 2: Genres You Mix (Full Width) */}
-              <Select
+              <SelectGenres
                 label="Genres You Mix"
                 id="mixingGenres"
                 name="mixingGenresList"
                 required={true}
-                placeholder="Type genre names, press Enter to add"
                 value={values.mixingGenresList}
-                onChange={(newValue) => setFieldValue('mixingGenresList', newValue)}
+                onChange={(event) => setFieldValue('mixingGenresList', event.target.value)}
                 onBlur={handleBlur}
                 error={touched.mixingGenresList && errors.mixingGenresList}
-                isMulti={true}
-                isCreatable={true}
-                options={[]}
                 className="sm:col-span-2"
               />
 
@@ -552,19 +551,15 @@ const App = () => {
               />
 
               {/* Row 2: Genres You Master (Full Width) */}
-              <Select
+              <SelectGenres
                 label="Genres You Master"
                 id="masteringGenres"
                 name="masteringGenresList"
                 required={true}
-                placeholder="Type genre names, press Enter to add"
                 value={values.masteringGenresList}
-                onChange={(newValue) => setFieldValue('masteringGenresList', newValue)}
+                onChange={(event) => setFieldValue('masteringGenresList', event.target.value)}
                 onBlur={handleBlur}
                 error={touched.masteringGenresList && errors.masteringGenresList}
-                isMulti={true}
-                isCreatable={true}
-                options={[]}
                 className="sm:col-span-2"
               />
 
@@ -632,24 +627,35 @@ const App = () => {
                 error={touched.instrumentsPlayed && errors.instrumentsPlayed}
                 isMulti={true}
                 isCreatable={true}
-                options={[]}
+                options={[
+                  { label: 'Guitar', value: 'guitar' },
+                  { label: 'Bass', value: 'bass' },
+                  { label: 'Drums', value: 'drums' },
+                  { label: 'Piano', value: 'piano' },
+                  { label: 'Keyboard', value: 'keyboard' },
+                  { label: 'Vocals', value: 'vocals' },
+                  { label: 'Saxophone', value: 'saxophone' },
+                  { label: 'Trumpet', value: 'trumpet' },
+                  { label: 'Violin', value: 'violin' },
+                  { label: 'Cello', value: 'cello' },
+                  { label: 'Flute', value: 'flute' },
+                  { label: 'Clarinet', value: 'clarinet' },
+                  { label: 'Synthesizer', value: 'synthesizer' },
+                  { label: 'Percussion', value: 'percussion' },
+                ]}
                 className="sm:col-span-2"
               />
 
               {/* Row 3: Genres (Full Width MultiSelect) */}
-              <Select
+              <SelectGenres
                 label="Genres You Record or Perform"
                 id="recordingGenres"
                 name="recordingGenresList"
                 required={true}
-                placeholder="Type genre names, press Enter to add"
                 value={values.recordingGenresList}
-                onChange={(newValue) => setFieldValue('recordingGenresList', newValue)}
+                onChange={(event) => setFieldValue('recordingGenresList', event.target.value)}
                 onBlur={handleBlur}
                 error={touched.recordingGenresList && errors.recordingGenresList}
-                isMulti={true}
-                isCreatable={true}
-                options={[]}
                 className="sm:col-span-2"
               />
 
@@ -685,6 +691,16 @@ const App = () => {
 
         {/* Submission Button */}
         <div className="pt-8 border-t border-gray-700 mt-10">
+          {/* DEBUG: Mostrar errores de validación */}
+          {!isValid && Object.keys(errors).length > 0 && (
+            <div className="mb-4 p-4 bg-yellow-500/10 border border-yellow-500 rounded-lg">
+              <p className="text-yellow-400 text-sm font-bold mb-2">Validation Errors (Debug):</p>
+              <pre className="text-xs text-yellow-300 overflow-auto max-h-40">
+                {JSON.stringify(errors, null, 2)}
+              </pre>
+            </div>
+          )}
+
           {submitError && (
             <div className="mb-4 p-4 bg-red-500/10 border border-red-500 rounded-lg">
               <p className="text-red-400 text-sm">{submitError}</p>

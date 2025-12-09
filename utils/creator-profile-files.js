@@ -155,11 +155,17 @@ export async function createCreatorProfileWithFiles(profileData, files) {
             uploadedFiles = await uploadCreatorProfileFiles(files, profileData.userId);
         }
 
-        // 2. Crear el perfil con los IDs de archivos en el campo fileExamples
+        // 2. Extraer userId y preparar data para Prisma
+        const { userId, ...restProfileData } = profileData;
+
+        // 3. Crear el perfil con los IDs de archivos en el campo fileExamples
         const profile = await prisma.creatorProfile.create({
             data: {
-                ...profileData,
+                ...restProfileData,
                 fileExamples: uploadedFiles || {},
+                user: {
+                    connect: { id: userId }
+                }
             },
             include: {
                 user: {

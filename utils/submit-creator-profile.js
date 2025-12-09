@@ -28,10 +28,14 @@ export function createCreatorProfileFormData(values, files, userId) {
     // Convertir a JSON string antes de agregar a FormData
     if (values.mainDAWs && values.mainDAWs.length > 0) {
         formData.append('mainDawProject', JSON.stringify(values.mainDAWs));
+        // mainDaw es requerido, usar el primero de la lista
+        formData.append('mainDaw', values.mainDAWs[0].label || values.mainDAWs[0].value || values.mainDAWs[0]);
     }
 
     if (values.pluginChains && values.pluginChains.length > 0) {
         formData.append('pluginChains', JSON.stringify(values.pluginChains));
+        // gearList es requerido, usar el primero de la lista
+        formData.append('gearList', values.pluginChains[0].label || values.pluginChains[0].value || values.pluginChains[0]);
     }
 
     if (values.generalGenres && values.generalGenres.length > 0) {
