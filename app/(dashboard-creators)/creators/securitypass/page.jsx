@@ -1,5 +1,5 @@
 'use client'
-import React from 'react';
+import React, { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { User, Zap, Headphones, Mic, Sparkles, Sliders, Music } from 'lucide-react';
@@ -11,6 +11,9 @@ import SocialsInput from './SocialsInput';
 import FileUploadPlaceholder from '@/components/FileUploadPlaceholder';
 import Button from '@/components/Button';
 import SelectGenres from '@/components/SelectGenres';
+import { createCreatorProfileFormData, submitCreatorProfile, validateRequiredFiles } from '@/utils/submit-creator-profile';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 // Lista simplificada de países para el campo de selección
 const COUNTRIES = [
@@ -149,13 +152,54 @@ const initialValues = {
 
 // Main Application Form Component
 const App = () => {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
+
+  // Estado para archivos
+  const [files, setFiles] = useState({
+    mixExampleFile: null,
+    masterExampleFile: null,
+    performanceExampleFile: null,
+    tunedVocalsExampleFile: null,
+  });
+
   const formik = useFormik({
     initialValues,
     validationSchema,
-    onSubmit: (values) => {
-      console.log('Form Submitted!', values);
-      console.log("Application submitted! (This is a placeholder submission).");
-      alert("Application submitted! (This is a placeholder submission).");
+    onSubmit: async (values) => {
+      setIsSubmitting(true);
+      setSubmitError(null);
+
+      try {
+        // Validar archivos requeridos
+        const fileValidation = validateRequiredFiles(values.roles, files);
+        if (!fileValidation.valid) {
+          alert(fileValidation.errors.join('\n'));
+          setIsSubmitting(false);
+          return;
+        }
+
+        // Crear FormData
+        const formData = createCreatorProfileFormData(values, files, session?.user?.id);
+
+        // Enviar al API
+        const result = await submitCreatorProfile(formData);
+
+        console.log('Creator Profile created successfully:', result);
+        alert('Application submitted successfully!');
+
+        // Redirigir al dashboard o perfil
+        router.push('/creators/dashboard');
+
+      } catch (error) {
+        console.error('Error submitting application:', error);
+        setSubmitError(error.message);
+        alert(`Error: ${error.message}`);
+      } finally {
+        setIsSubmitting(false);
+      }
     },
   });
 
@@ -168,6 +212,10 @@ const App = () => {
 
   const handleTunedVocalChange = (checked) => {
     setFieldValue('tunedVocalExampleNeeded', checked);
+  };
+
+  const handleFileChange = (fieldName, file) => {
+    setFiles(prev => ({ ...prev, [fieldName]: file }));
   };
 
   return (
@@ -448,6 +496,8 @@ const App = () => {
                     required={true}
                     helperText="Upload an audio example showcasing your vocal tuning skill."
                     icon={Sparkles}
+                    onChange={(file) => handleFileChange('tunedVocalsExampleFile', file)}
+                    accept="audio/*"
                   />
                 )}
               </div>
@@ -460,6 +510,8 @@ const App = () => {
                 helperText="Please upload one pair of 'before' (raw) and 'after' (mixed) files."
                 icon={Music}
                 className="sm:col-span-2"
+                onChange={(file) => handleFileChange('mixExampleFile', file)}
+                accept="audio/*"
               />
             </div>
           </>
@@ -537,6 +589,8 @@ const App = () => {
                 helperText="Please upload one pair of 'before' (mixed) and 'after' (mastered) files."
                 icon={Music}
                 className="sm:col-span-2"
+                onChange={(file) => handleFileChange('masterExampleFile', file)}
+                accept="audio/*"
               />
             </div>
           </>
@@ -622,6 +676,8 @@ const App = () => {
                 helperText="Upload an example showcasing your performance/recording quality."
                 icon={Music}
                 className="sm:col-span-2"
+                onChange={(file) => handleFileChange('performanceExampleFile', file)}
+                accept="audio/*,video/*"
               />
             </div>
           </>
@@ -629,15 +685,20 @@ const App = () => {
 
         {/* Submission Button */}
         <div className="pt-8 border-t border-gray-700 mt-10">
+          {submitError && (
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500 rounded-lg">
+              <p className="text-red-400 text-sm">{submitError}</p>
+            </div>
+          )}
           <Button
             type="submit"
-            disabled={!isAnyRoleSelected || !isValid || !dirty}
-            className={`w-full py-3 rounded-xl text-lg font-bold transition duration-300 ease-in-out ${isAnyRoleSelected && isValid && dirty
+            disabled={!isAnyRoleSelected || !isValid || !dirty || isSubmitting}
+            className={`w-full py-3 rounded-xl text-lg font-bold transition duration-300 ease-in-out ${isAnyRoleSelected && isValid && dirty && !isSubmitting
               ? 'bg-amber-500 text-gray-900 hover:bg-amber-400 shadow-lg shadow-amber-500/50'
               : 'bg-gray-600 text-gray-400 cursor-not-allowed'
               }`}
           >
-            Submit Creator Pass Application
+            {isSubmitting ? 'Submitting...' : 'Submit Creator Pass Application'}
           </Button>
           {!isAnyRoleSelected && (
             <p className="text-center text-sm text-gray-400 mt-3">You must select at least one role to submit the application.</p>

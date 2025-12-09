@@ -68,6 +68,13 @@ enum CreatorRoles {
   RECORDING
 }
 
+enum CreatorProfileStatus {
+  PENDING   @map("pending")
+  APPROVED  @map("approved")
+  REJECTED  @map("rejected")
+  SUSPENDED @map("suspended")
+}
+
 enum ProjectType {
   SINGLE
   EP
@@ -107,51 +114,51 @@ enum ProjectFileType {
 // ---------------------------------------------------------
 
 model Project {
-  id           String            @id @default(uuid())
-  userId       String
+  id     String @id @default(uuid())
+  userId String
 
-  projectName  String
-  artistName   String
-  projectType  ProjectType
-  tier         RequestTier
-  genre        String?
-  bpm          Int?
-  references   String?
+  projectName String
+  artistName  String
+  projectType ProjectType
+  tier        RequestTier
+  genre       String?
+  bpm         Int?
+  references  String?
 
-  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  services     ProjectService[]
-  files        ProjectFile[]
+  services ProjectService[]
+  files    ProjectFile[]
 
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("projects")
 }
 
 model ProjectService {
-  id         String              @id @default(uuid())
-  projectId  String
-  type       ProjectServiceType
+  id        String             @id @default(uuid())
+  projectId String
+  type      ProjectServiceType
 
-  project    Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime            @default(now())
+  createdAt DateTime @default(now())
 
   @@map("project_services")
 }
 
 model ProjectFile {
-  id         String            @id @default(uuid())
-  projectId  String
-  fileType   ProjectFileType
-  filePath   String
-  fileName   String
-  fileSize   Int?
+  id        String          @id @default(uuid())
+  projectId String
+  fileType  ProjectFileType
+  filePath  String
+  fileName  String
+  fileSize  Int?
 
-  project    Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  createdAt  DateTime          @default(now())
+  createdAt DateTime @default(now())
 
   @@map("project_files")
 }
@@ -161,24 +168,24 @@ model ProjectFile {
 // ---------------------------------------------------------
 
 model User {
-  id             String          @id @default(uuid())
-  name           String?
-  email          String          @unique
-  password       String?
-  role           UserRole        @default(ARTIST)
-  image          String?
-  isVerified     Boolean         @default(false) @map("is_verified")
-  status         UserStatus      @default(UNVERIFIED)
-  deleted        Boolean         @default(false)
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  id         String     @id @default(uuid())
+  name       String?
+  email      String     @unique
+  password   String?
+  role       UserRole   @default(ARTIST)
+  image      String?
+  isVerified Boolean    @default(false) @map("is_verified")
+  status     UserStatus @default(UNVERIFIED)
+  deleted    Boolean    @default(false)
+  createdAt  DateTime   @default(now()) @map("created_at")
+  updatedAt  DateTime   @updatedAt @map("updated_at")
 
-  accounts       Account[]
-  creatorProfile CreatorProfile?
-  artistProfile  ArtistProfile?
-  files          File[]
+  accounts        Account[]
+  creatorProfile  CreatorProfile?
+  artistProfile   ArtistProfile?
+  files           File[]
   serviceRequests ServiceRequest[]
-  projects       Project[]
+  projects        Project[]
 
   @@map("users")
 }
@@ -195,17 +202,18 @@ model CreatorProfile {
   gearList          String             @map("gear_list")
   availability      AvailabilityStatus
 
-  stageName         String?            @map("stage_name")
-  mainDawProject    Json               @map("main_daw_project")
-  pluginChains      Json               @map("plugin_chains")
-  generalGenres     Json               @map("general_genres")
-  socialLinks       Json               @map("social_links")
-  roles             CreatorRoles       @map("roles")
-  mixing            String?            @map("mixing")
-  mastering         String?            @map("mastering")
-  recording         String?            @map("recording")
-  porfolioLinks     Json               @map("portfolio_links")
-  fileExamples      Json               @map("file_examples")
+  stageName      String?              @map("stage_name")
+  mainDawProject Json                 @map("main_daw_project")
+  pluginChains   Json                 @map("plugin_chains")
+  generalGenres  Json                 @map("general_genres")
+  socialLinks    Json                 @map("social_links")
+  roles          CreatorRoles         @map("roles")
+  mixing         String?              @map("mixing")
+  mastering      String?              @map("mastering")
+  recording      String?              @map("recording")
+  porfolioLinks  Json                 @map("portfolio_links")
+  fileExamples   Json                 @map("file_examples")
+  status         CreatorProfileStatus @default(PENDING)
 
   genders     CreatorGenre[]
   user        User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -293,7 +301,7 @@ model Account {
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -325,8 +333,10 @@ model File {
   creatorExamples  CreatorServiceExample[]
   owner            User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt        DateTime        @default(now()) @map("created_at")
+  updatedAt        DateTime        @updatedAt @map("updated_at")
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
+  serviceRequestId String?
 
   @@map("files")
 }
@@ -346,20 +356,20 @@ model Service {
 }
 
 model CreatorServiceOffering {
-  id              String   @id @default(uuid())
-  creatorId       String   @map("creator_id")
-  serviceId       String   @map("service_id")
-  title           String?
-  description     String?
-  turnaroundDays  Int?     @map("turnaround_days")
-  active          Boolean  @default(true)
+  id             String  @id @default(uuid())
+  creatorId      String  @map("creator_id")
+  serviceId      String  @map("service_id")
+  title          String?
+  description    String?
+  turnaroundDays Int?    @map("turnaround_days")
+  active         Boolean @default(true)
 
   yearsExperience Int?     @map("years_experience")
   notableArtists  String?  @map("notable_artists")
   tunesVocals     Boolean? @map("tunes_vocals")
 
-  tunedExampleId  String?  @map("tuned_example_id")
-  tunedExample    File?    @relation("TunedExampleFiles", fields: [tunedExampleId], references: [id], onDelete: SetNull)
+  tunedExampleId String? @map("tuned_example_id")
+  tunedExample   File?   @relation("TunedExampleFiles", fields: [tunedExampleId], references: [id], onDelete: SetNull)
 
   preferredLoudness String?
   instruments       String?
@@ -461,7 +471,7 @@ model MaintainRequirements {
 // ---------------------------------------------------------
 
 model ServiceRequest {
-  id          String        @id @default(uuid())
+  id          String      @id @default(uuid())
   userId      String
   projectName String
   artistName  String
@@ -471,16 +481,16 @@ model ServiceRequest {
   bpm         Int?
   references  String?
 
-  mixing      Boolean       @default(false)
-  mastering   Boolean       @default(false)
-  production  Boolean       @default(false)
+  mixing     Boolean @default(false)
+  mastering  Boolean @default(false)
+  production Boolean @default(false)
 
-  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  files       File[]
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  files File[]
 
-  status      RequestStatus @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  status    RequestStatus @default(PENDING)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 
   @@map("service_requests")
 }

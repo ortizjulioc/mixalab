@@ -54,8 +54,33 @@ export async function GET(request) {
 
 export async function POST(request) {
     try {
-        const body = await request.json();
+        const contentType = request.headers.get('content-type');
+        const isFormData = contentType?.includes('multipart/form-data');
 
+        let body;
+        let files = {};
+
+        if (isFormData) {
+            // Procesar FormData (con archivos)
+            const formData = await request.formData();
+            body = {};
+
+            // Extraer campos de texto y archivos
+            for (const [key, value] of formData.entries()) {
+                if (value instanceof File) {
+                    // Es un archivo
+                    files[key] = value;
+                } else {
+                    // Es un campo de texto
+                    body[key] = value;
+                }
+            }
+        } else {
+            // Procesar JSON (sin archivos)
+            body = await request.json();
+        }
+
+        // Validaciones
         if (!body.userId || typeof body.userId !== 'string') {
             return NextResponse.json({ error: 'userId is required' }, { status: 400 });
         }
@@ -80,10 +105,13 @@ export async function POST(request) {
         const generalGenres = parseJSON(body.generalGenres);
         const socialLinks = parseJSON(body.socialLinks);
         const porfolioLinks = parseJSON(body.porfolioLinks);
-        const fileExamples = parseJSON(body.fileExamples);
         const roles = body.roles ?? null;
 
-        const data = {
+        if (roles !== null && !CREATOR_ROLES.includes(roles)) {
+            return NextResponse.json({ error: `roles must be one of ${CREATOR_ROLES.join(', ')}` }, { status: 400 });
+        }
+
+        const profileData = {
             userId: body.userId,
             brandName: body.brandName,
             country: body.country ?? null,
@@ -104,16 +132,13 @@ export async function POST(request) {
             mastering: body.mastering ?? null,
             recording: body.recording ?? null,
             porfolioLinks: porfolioLinks ?? null,
-            fileExamples: fileExamples ?? null,
         };
 
-        if (roles !== null && !CREATOR_ROLES.includes(roles)) {
-            return NextResponse.json({ error: `roles must be one of ${CREATOR_ROLES.join(', ')}` }, { status: 400 });
-        }
+        // Crear perfil con archivos usando el servicio de transacción
+        const { createCreatorProfileWithFiles } = await import('@/utils/creator-profile-files');
+        const result = await createCreatorProfileWithFiles(profileData, files);
 
-        const item = await prisma.creatorProfile.create({ data, include: { user: { select: { id: true, email: true, name: true } } } });
-
-        return NextResponse.json(item, { status: 201 });
+        return NextResponse.json(result, { status: 201 });
     } catch (error) {
         console.error('CreatorProfile POST Error:', error);
         if (error.code === 'P2002') {
@@ -121,6 +146,9 @@ export async function POST(request) {
         }
         if (error.code === 'P2003') {
             return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
+        }
+        if (error.message?.includes('Tipo de archivo no permitido')) {
+            return NextResponse.json({ error: error.message }, { status: 400 });
         }
         return NextResponse.json({ error: 'Error creating creator profile' }, { status: 500 });
     }
