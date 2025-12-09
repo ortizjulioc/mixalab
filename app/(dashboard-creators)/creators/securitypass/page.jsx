@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { User, Zap, Headphones, Mic, Sparkles, Sliders, Music } from 'lucide-react';
@@ -157,6 +157,8 @@ const App = () => {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [existingProfile, setExistingProfile] = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   // Estado para archivos
   const [files, setFiles] = useState({
@@ -165,6 +167,29 @@ const App = () => {
     performanceExampleFile: null,
     tunedVocalsExampleFile: null,
   });
+
+  // Verificar si ya existe un perfil para este usuario
+  useEffect(() => {
+    const checkExistingProfile = async () => {
+      if (!session?.user?.id) return;
+
+      try {
+        const response = await fetch(`/api/creator-profiles?userId=${session.user.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.items && data.items.length > 0) {
+            setExistingProfile(data.items[0]);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking existing profile:', error);
+      } finally {
+        setLoadingProfile(false);
+      }
+    };
+
+    checkExistingProfile();
+  }, [session?.user?.id]);
 
   const formik = useFormik({
     initialValues,
@@ -184,6 +209,14 @@ const App = () => {
 
         // Crear FormData
         const formData = createCreatorProfileFormData(values, files, session?.user?.id);
+
+        // Si existe un perfil REJECTED, hacer UPDATE en lugar de CREATE
+        if (existingProfile && existingProfile.status === 'REJECTED') {
+          // TODO: Implementar endpoint de UPDATE
+          openNotification('info', 'Update functionality coming soon...');
+          setIsSubmitting(false);
+          return;
+        }
 
         // Enviar al API
         const result = await submitCreatorProfile(formData);
@@ -220,6 +253,93 @@ const App = () => {
   const handleFileChange = (fieldName, file) => {
     setFiles(prev => ({ ...prev, [fieldName]: file }));
   };
+
+  // Mensajes según el estado del perfil
+  const getStatusMessage = () => {
+    if (!existingProfile) return null;
+
+    const messages = {
+      PENDING: {
+        title: '⏳ Application Under Review',
+        message: 'Your Creator Security Pass application is currently being reviewed by our team. This process typically takes 24-48 hours. You cannot edit your application while it\'s under review.',
+        color: 'bg-blue-900/40 border-blue-600',
+      },
+      APPROVED: {
+        title: '✅ Application Approved',
+        message: 'Congratulations! Your Creator Security Pass has been approved. You can now access all creator features from your dashboard.',
+        color: 'bg-green-900/40 border-green-600',
+      },
+      REJECTED: {
+        title: '❌ Application Rejected',
+        message: 'Your application was not approved. Please review the feedback below, make the necessary improvements, and resubmit your application.',
+        color: 'bg-red-900/40 border-red-600',
+      },
+      SUSPENDED: {
+        title: '🛡️ Account Suspended',
+        message: 'Your Creator Security Pass has been suspended. Please contact support for more information about reactivating your account.',
+        color: 'bg-orange-900/40 border-orange-600',
+      },
+    };
+
+    return messages[existingProfile.status];
+  };
+
+  const statusMessage = getStatusMessage();
+  const canEdit = !existingProfile || existingProfile.status === 'REJECTED';
+
+  // Mostrar loading mientras verifica el perfil
+  if (loadingProfile) {
+    return (
+      <div className="max-w-4xl mx-auto bg-white/5 p-6 sm:p-10 rounded-xl shadow-2xl border-t-4 border-amber-500">
+        <div className="flex items-center justify-center py-20">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-500"></div>
+          <p className="ml-4 text-gray-300">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Si no puede editar, mostrar mensaje y botón para volver
+  if (!canEdit) {
+    return (
+      <div className="max-w-4xl mx-auto bg-white/5 p-6 sm:p-10 rounded-xl shadow-2xl border-t-4 border-amber-500">
+        <header className="text-center mb-10">
+          <p className="text-sm font-mono text-gray-400 mb-2">MIXA CREATOR SECURITY PASS</p>
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white flex items-center justify-center">
+            <Zap className="w-8 h-8 mr-3 text-amber-500" />
+            {statusMessage.title}
+          </h1>
+        </header>
+
+        <div className={`${statusMessage.color} border-2 rounded-xl p-8 mb-6`}>
+          <p className="text-gray-200 text-lg text-center mb-6">
+            {statusMessage.message}
+          </p>
+
+          {existingProfile.status === 'PENDING' && (
+            <div className="text-center text-sm text-gray-400">
+              <p>Submitted: {new Date(existingProfile.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-center">
+          <button
+            onClick={() => router.push('/creators/home')}
+            className="px-8 py-3 bg-amber-500 hover:bg-amber-400 text-gray-900 font-bold rounded-xl transition"
+          >
+            Go to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto bg-white/5 p-6 sm:p-10 rounded-xl shadow-2xl border-t-4 border-amber-500">

@@ -173,6 +173,23 @@ export default function useCreatorProfile() {
         }
     }, []);
 
+    const updateCreatorProfileStatus = async (id, status) => {
+        try {
+            await fetchClient({
+                method: 'PATCH',
+                endpoint: `/creator-profiles/${id}/status`,
+                data: { status }
+            });
+            fetchCreatorProfiles();
+            openNotification('success', `Creator profile status updated to ${status}`);
+            return true;
+        } catch (err) {
+            console.error('Error updating creator profile status:', err);
+            openNotification('error', err.message || 'Error updating status');
+            return err;
+        }
+    };
+
     return {
         handleChangeFilter,
         filters,
@@ -187,5 +204,6 @@ export default function useCreatorProfile() {
         deleteCreatorProfile,
         getCreatorProfileById,
         getCreatorProfileByUserId,
+        updateCreatorProfileStatus,
     };
 }

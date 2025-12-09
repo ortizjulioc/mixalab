@@ -1,4 +1,4 @@
- import prisma from '@/utils/lib/prisma';
+import prisma from '@/utils/lib/prisma';
 import { NextResponse } from 'next/server';
 
 function parseJSON(value) {
@@ -16,8 +16,10 @@ const CREATOR_ROLES = ['MIXING', 'MASTERING', 'RECORDING'];
 
 export async function GET(request, { params }) {
     try {
+        const { id } = await params;
+
         const item = await prisma.creatorProfile.findUnique({
-            where: { id: params.id },
+            where: { id },
             include: {
                 user: { select: { id: true, email: true, name: true } },
             },
@@ -34,6 +36,7 @@ export async function GET(request, { params }) {
 
 export async function PUT(request, { params }) {
     try {
+        const { id } = await params;
         const body = await request.json();
 
         const update = {};
@@ -116,7 +119,7 @@ export async function PUT(request, { params }) {
         }
 
         const item = await prisma.creatorProfile.update({
-            where: { id: params.id },
+            where: { id },
             data: update,
             include: { user: { select: { id: true, email: true, name: true } } },
         });
@@ -133,9 +136,11 @@ export async function PUT(request, { params }) {
 
 export async function DELETE(request, { params }) {
     try {
+        const { id } = await params;
+
         // Soft delete: set `deleted` to true to preserve relations
         const item = await prisma.creatorProfile.update({
-            where: { id: params.id },
+            where: { id },
             data: { deleted: true },
         });
 
