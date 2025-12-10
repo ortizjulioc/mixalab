@@ -1,245 +1,253 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import * as THREE from "three";
-import Link from "next/link";
+import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import Card from "@/components/Card";
+import { FaShieldAlt } from "react-icons/fa";
+import Link from "next/link";
 
-export default function AdminLogin() {
+export default function AdminLoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
+  const [error, setError] = useState("");
+
+  const canvasRef = useRef(null);
+  const notesRef = useRef([]);
 
   useEffect(() => {
-    // --- Fondo de partículas: notas musicales ---
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000
-    );
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    setError("");
+  }, [email, password]);
 
-    const canvasContainer = document.getElementById(
-      "bg-animation-canvas-container-creators"
-    );
-    if (canvasContainer) canvasContainer.appendChild(renderer.domElement);
+  // Animated musical notes background with RED accent for admin
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
 
-    const makeNoteTexture = (glyph) => {
-      const size = 128;
-      const c = document.createElement("canvas");
-      c.width = size;
-      c.height = size;
-      const ctx = c.getContext("2d");
+    let w = (canvas.width = window.innerWidth);
+    let h = (canvas.height = window.innerHeight);
+    const NOTES = ["♪", "♫", "♬", "♩"];
+    const count = Math.floor((w * h) / 50000) + 30;
 
-      ctx.clearRect(0, 0, size, size);
-      ctx.shadowColor = "rgba(0,0,0,0.25)";
-      ctx.shadowBlur = 10;
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font =
-        Math.floor(size * 0.8) +
-        'px "Segoe UI Symbol","Apple Color Emoji","Noto Color Emoji",Arial';
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(glyph, size / 2, size / 2 + size * 0.05);
-
-      const tex = new THREE.CanvasTexture(c);
-      const maxAniso = renderer.capabilities.getMaxAnisotropy
-        ? renderer.capabilities.getMaxAnisotropy()
-        : 1;
-      tex.anisotropy = Math.min(maxAniso, 8);
-      tex.needsUpdate = true;
-      return tex;
-    };
-
-    const glyphs = ["♪", "♫", "♩", "♬"];
-    const textures = glyphs.map(makeNoteTexture);
-
-    const total = 2000;
-    const groups = glyphs.length;
-    const perGroup = Math.ceil(total / groups);
-    const systems = [];
-    const materials = [];
-    const geometries = [];
-
-    for (let g = 0; g < groups; g++) {
-      const count =
-        g === groups - 1 ? total - perGroup * (groups - 1) : perGroup;
-
-      const positions = [];
-      const colors = [];
-      const color = new THREE.Color();
-
+    function initNotes() {
+      notesRef.current = [];
       for (let i = 0; i < count; i++) {
-        positions.push(Math.random() * 2000 - 1000);
-        positions.push(Math.random() * 2000 - 1000);
-        positions.push(Math.random() * 2000 - 1000);
-
-        color.setHSL(0, 0, Math.random() * 0.02);
-        colors.push(color.r, color.g, color.b);
+        notesRef.current.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          vy: 0.3 + Math.random() * 1,
+          vx: -0.5 + Math.random() * 1,
+          size: 12 + Math.random() * 28,
+          char: NOTES[Math.floor(Math.random() * NOTES.length)],
+          alpha: 0.2 + Math.random() * 0.8,
+          rot: (Math.random() - 0.5) * 0.4,
+          hue: Math.random() * 60 + 260,
+        });
       }
-
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(positions, 3)
-      );
-      geo.setAttribute(
-        "color",
-        new THREE.Float32BufferAttribute(colors, 3)
-      );
-
-      const mat = new THREE.PointsMaterial({
-        size: 22,
-        map: textures[g],
-        vertexColors: true,
-        transparent: true,
-        depthWrite: false,
-        opacity: 0.9,
-        blending: THREE.AdditiveBlending,
-        sizeAttenuation: true,
-      });
-
-      const pts = new THREE.Points(geo, mat);
-      pts.rotation.x = Math.random() * Math.PI;
-      pts.rotation.y = Math.random() * Math.PI;
-
-      scene.add(pts);
-      systems.push(pts);
-      materials.push(mat);
-      geometries.push(geo);
     }
 
-    camera.position.z = 500;
+    function onResize() {
+      w = canvas.width = window.innerWidth;
+      h = canvas.height = window.innerHeight;
+      initNotes();
+    }
 
-    let mouseX = 0,
-      mouseY = 0;
-    const handleMouseMove = (e) => {
-      mouseX = (e.clientX / window.innerWidth) * 2 - 1;
-      mouseY = -(e.clientY / window.innerHeight) * 2 + 1;
-    };
-    window.addEventListener("mousemove", handleMouseMove);
+    initNotes();
+    window.addEventListener("resize", onResize);
 
-    let rafId;
-    const animate = () => {
-      rafId = requestAnimationFrame(animate);
-      systems.forEach((sys, i) => {
-        const f = 0.0005 + i * 0.00015;
-        sys.rotation.y += (mouseX * 0.005 - sys.rotation.y) * 0.02 + f * 0.5;
-        sys.rotation.x += (mouseY * 0.005 - sys.rotation.x) * 0.02 + f * 0.25;
-      });
-      renderer.render(scene, camera);
-    };
-    animate();
+    let raf = null;
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
 
-    const handleResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    };
-    window.addEventListener("resize", handleResize);
+      // Background gradient - darker for admin
+      const g = ctx.createLinearGradient(0, 0, w, h);
+      g.addColorStop(0, "#000000");
+      g.addColorStop(0.5, "#0a0000"); // Slight red tint
+      g.addColorStop(1, "#000000");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      // Add RED glowing orbs for admin distinction
+      const gradient1 = ctx.createRadialGradient(w * 0.2, h * 0.3, 0, w * 0.2, h * 0.3, w * 0.4);
+      gradient1.addColorStop(0, "rgba(239, 68, 68, 0.08)"); // Red glow
+      gradient1.addColorStop(1, "transparent");
+      ctx.fillStyle = gradient1;
+      ctx.fillRect(0, 0, w, h);
+
+      const gradient2 = ctx.createRadialGradient(w * 0.8, h * 0.7, 0, w * 0.8, h * 0.7, w * 0.5);
+      gradient2.addColorStop(0, "rgba(249, 115, 22, 0.05)"); // Orange glow
+      gradient2.addColorStop(1, "transparent");
+      ctx.fillStyle = gradient2;
+      ctx.fillRect(0, 0, w, h);
+
+      // Draw notes with subtle red/orange tint
+      for (const n of notesRef.current) {
+        ctx.save();
+        ctx.globalAlpha = n.alpha * 0.5;
+        ctx.translate(n.x, n.y);
+        ctx.rotate(n.rot);
+        ctx.font = `${n.size}px system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
+
+        // Subtle red/orange color
+        const red = 220 + Math.sin(n.hue * 0.1) * 35;
+        const green = 180 + Math.sin(n.hue * 0.1) * 35;
+        ctx.fillStyle = `rgba(${red}, ${green}, 200, ${Math.max(0.05, Math.min(0.3, n.alpha))})`;
+        ctx.fillText(n.char, 0, 0);
+        ctx.restore();
+
+        n.x += n.vx;
+        n.y -= n.vy;
+        n.rot += (Math.random() - 0.5) * 0.02;
+        n.hue = (n.hue + 0.05) % 360;
+
+        if (n.y < -50 || n.x < -100 || n.x > w + 100) {
+          n.x = Math.random() * w;
+          n.y = h + 30 + Math.random() * 200;
+          n.vy = 0.3 + Math.random() * 1.2;
+          n.vx = -0.5 + Math.random() * 1;
+          n.size = 12 + Math.random() * 28;
+          n.alpha = 0.2 + Math.random() * 0.9;
+        }
+      }
+
+      raf = requestAnimationFrame(draw);
+    }
+
+    draw();
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-      window.removeEventListener("mousemove", handleMouseMove);
-      if (rafId) cancelAnimationFrame(rafId);
-      if (canvasContainer && renderer.domElement.parentNode === canvasContainer) {
-        canvasContainer.removeChild(renderer.domElement);
-      }
-      systems.forEach((s) => scene.remove(s));
-      geometries.forEach((g) => g.dispose());
-      materials.forEach((m) => {
-        if (m.map) m.map.dispose();
-        m.dispose();
-      });
-      textures.forEach((t) => t.dispose());
-      renderer.dispose();
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", onResize);
     };
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErrorMessage("");
     setLoading(true);
-
-    const email = e.target.email.value;
-    const password = e.target.password.value;
+    setError("");
 
     const res = await signIn("admin-login", {
+      redirect: false,
       email,
       password,
-      redirect: false,
     });
 
-    if (res?.error) {
-      setErrorMessage("Invalid email or password.");
-      setLoading(false);
+    setLoading(false);
+
+    if (!res) {
+      setError("Unknown error. Please try again.");
+      return;
+    }
+    if (res.error) {
+      setError("Invalid email or password.");
       return;
     }
 
-    window.location.href = "/admin/home"
+    router.push("/admin/home");
   };
 
   return (
-    <div className="bg-white text-black min-h-dvh overflow-hidden relative">
-      <div
-        id="bg-animation-canvas-container-creators"
-        className="absolute inset-0 z-0 opacity-10"
-      />
+    <div className="relative min-h-screen overflow-hidden">
+      {/* Animated musical-notes canvas background */}
+      <canvas ref={canvasRef} className="fixed inset-0 w-full h-full -z-10" />
 
-      {/* MAIN */}
-      <main className="relative z-10 min-h-dvh flex flex-col items-center justify-center p-4 font-poppins">
+      <div className="min-h-screen flex items-center justify-center p-6">
+        {/* Liquid glass container with RED accent for admin */}
+        <div className="max-w-md w-full rounded-3xl overflow-hidden relative">
+          {/* RED border glow for admin distinction */}
+          <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-red-500/20 via-orange-500/10 to-red-500/20 blur-xl -z-10"></div>
 
+          {/* Glass container */}
+          <div className="absolute inset-0 bg-white/[0.05] backdrop-blur-xl rounded-3xl border border-red-500/20 shadow-[0_0_50px_rgba(239,68,68,0.2)]"></div>
 
-        <Card className="bg-black/5 backdrop-blur-lg p-6 sm:p-10 rounded-3xl shadow-2xl w-full max-w-sm border border-black/20 liquid-glass">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl sm:text-6xl font-bold tracking-tight">
-              Mixa Lab
-            </h1>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-center">Admin Login</h2>
+          {/* Content */}
+          <div className="relative p-8 sm:p-12">
+            {/* Glassmorphism overlay */}
+            <div className="absolute inset-0 backdrop-blur-md bg-white/[0.02] rounded-3xl"></div>
 
-          {/* ERROR MESSAGE */}
-          {errorMessage && (
-            <div className="p-3 bg-red-100 text-red-700 border border-red-300 rounded-lg text-sm text-center mb-4">
-              {errorMessage}
+            <div className="relative z-10">
+              {/* Admin Badge */}
+              <div className="flex justify-center mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 backdrop-blur-sm">
+                  <FaShieldAlt className="text-red-400" />
+                  <span className="text-sm font-medium text-red-300">Admin Access</span>
+                </div>
+              </div>
+
+              <div className="mb-8 text-center">
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-red-300 via-orange-200 to-red-300 bg-clip-text text-transparent">
+                  Mixa Lab Admin
+                </h1>
+                <p className="mt-2 text-sm text-gray-400">
+                  Secure administrative access
+                </p>
+              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2 font-medium">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 backdrop-blur-sm border border-red-500/20 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/40 focus:bg-white/10 transition-all duration-300"
+                    placeholder="admin@mixalab.com"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm text-gray-300 mb-2 font-medium">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl bg-white/5 backdrop-blur-sm border border-red-500/20 text-white placeholder-gray-500 focus:outline-none focus:border-red-500/40 focus:bg-white/10 transition-all duration-300"
+                    placeholder="••••••••"
+                  />
+                </div>
+
+                {error && (
+                  <div className="text-sm text-red-300 bg-red-500/10 backdrop-blur-sm border border-red-500/20 rounded-xl p-3">
+                    {error}
+                  </div>
+                )}
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full px-6 py-3 rounded-xl font-bold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/50 hover:scale-105"
+                  >
+                    {loading ? 'Signing in...' : 'Admin Sign In'}
+                  </button>
+                </div>
+
+                <div className="mt-6 text-center">
+                  <Link
+                    href="/"
+                    className="text-sm text-gray-400 hover:text-white transition-colors duration-300 inline-flex items-center gap-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                    </svg>
+                    Back to main site
+                  </Link>
+                </div>
+              </form>
+
+              {/* Security Notice */}
+              <div className="mt-8 p-3 rounded-xl bg-red-500/5 border border-red-500/10 backdrop-blur-sm">
+                <p className="text-xs text-gray-400 text-center">
+                  🔒 This is a secure admin area. All access is logged and monitored.
+                </p>
+              </div>
             </div>
-          )}
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <input
-              name="email"
-              type="email"
-              placeholder="Email"
-              className="w-full p-3 bg-black/5 text-black placeholder-black/50 rounded-lg border border-black/20 focus:outline-none focus:ring-1 focus:ring-black/40"
-              required
-            />
-
-            <input
-              name="password"
-              type="password"
-              placeholder="Password"
-              className="w-full p-3 bg-black/5 text-black placeholder-black/50 rounded-lg border border-black/20 focus:outline-none focus:ring-1 focus:ring-black/40"
-              required
-            />
-
-            <button
-              type="submit"
-              disabled={loading}
-              className={`w-full p-3 rounded-lg text-white font-semibold tracking-wide transition-all duration-300 ${loading
-                  ? "bg-black/40 cursor-not-allowed"
-                  : "bg-black hover:scale-105 hover:shadow-lg"
-                }`}
-            >
-              {loading ? "Logging in..." : "Login"}
-            </button>
-          </form>
-        </Card>
-      </main>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
