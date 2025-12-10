@@ -3,39 +3,115 @@
 import React, { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import useCreatorProfile from '@/hooks/useCreatorProfile';
-import { ArrowLeft, User, Mail, Calendar, Music, Award, FileAudio } from 'lucide-react';
+import { ArrowLeft, Calendar, FileAudio, Home, User, Mail, Briefcase, Globe } from 'lucide-react';
 import { openNotification } from '@/utils/open-notification';
+import BreadcrumbsTitle from '@/components/Breadcrumbs';
+import Button from '@/components/Button';
+import Select from '@/components/Select';
 
 const STATUS_OPTIONS = [
-    { value: 'PENDING', label: 'Pending Review', color: 'bg-blue-600' },
-    { value: 'APPROVED', label: 'Approved', color: 'bg-green-600' },
-    { value: 'REJECTED', label: 'Rejected', color: 'bg-red-600' },
-    { value: 'SUSPENDED', label: 'Suspended', color: 'bg-orange-600' },
+    { value: 'PENDING', label: 'Pending Review', color: 'text-blue-400' },
+    { value: 'APPROVED', label: 'Approved', color: 'text-green-400' },
+    { value: 'REJECTED', label: 'Rejected', color: 'text-red-400' },
+    { value: 'SUSPENDED', label: 'Suspended', color: 'text-orange-400' },
 ];
+
+// Helper functions para formatear valores
+const formatCountry = (code) => {
+    const countries = {
+        'US': 'United States',
+        'GB': 'United Kingdom',
+        'CA': 'Canada',
+        'AU': 'Australia',
+        'DE': 'Germany',
+        'FR': 'France',
+        'ES': 'Spain',
+        'IT': 'Italy',
+        'MX': 'Mexico',
+        'BR': 'Brazil',
+        'AR': 'Argentina',
+        'CL': 'Chile',
+        'CO': 'Colombia',
+        'PE': 'Peru',
+        // Agregar más según necesites
+    };
+    return countries[code] || code;
+};
+
+const formatRole = (role) => {
+    const roles = {
+        'MIXING': 'Mixing Engineer',
+        'MASTERING': 'Mastering Engineer',
+        'RECORDING': 'Recording/Session Musician',
+    };
+    return roles[role] || role;
+};
+
+const formatAvailability = (availability) => {
+    const availabilities = {
+        'FULL_TIME': 'Full Time',
+        'PART_TIME': 'Part Time',
+        'ON_DEMAND': 'On Demand',
+    };
+    return availabilities[availability] || availability?.replace('_', ' ');
+};
+
+const formatDAW = (daw) => {
+    let formattedDaw = daw;
+    if (daw) {
+        formattedDaw = daw.replace(/_/g, ' '); // Replace underscores with spaces
+        formattedDaw = formattedDaw.replace(/\b\w/g, l => l.toUpperCase()); // Capitalize first letter of each word
+    }
+
+    const daws = {
+        'Ableton Live': 'Ableton Live',
+        'Logic Pro': 'Logic Pro',
+        'Pro Tools': 'Pro Tools',
+        'Fl Studio': 'FL Studio',
+        'Cubase': 'Cubase',
+        'Studio One': 'Studio One',
+        'Reaper': 'Reaper',
+        'Reason': 'Reason',
+        'Bitwig': 'Bitwig Studio',
+    };
+    return daws[formattedDaw] || formattedDaw;
+};
 
 export default function CreatorProfileDetailPage({ params }) {
     const router = useRouter();
-    // Unwrap params promise
     const { id } = use(params);
 
-    const { creatorProfile, getCreatorProfileById, updateCreatorProfileStatus, loading } = useCreatorProfile();
+    const { updateCreatorProfileStatus } = useCreatorProfile();
+    const [profile, setProfile] = useState(null);
     const [selectedStatus, setSelectedStatus] = useState('');
     const [updating, setUpdating] = useState(false);
+    const [loading, setLoading] = useState(true);
 
+    // Cargar perfil una sola vez
     useEffect(() => {
+        const loadProfile = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch(`/api/creator-profiles/${id}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setProfile(data);
+                    setSelectedStatus(data.status);
+                }
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         if (id) {
-            getCreatorProfileById(id);
+            loadProfile();
         }
-    }, [id, getCreatorProfileById]);
-
-    useEffect(() => {
-        if (creatorProfile) {
-            setSelectedStatus(creatorProfile.status);
-        }
-    }, [creatorProfile]);
+    }, [id]);
 
     const handleStatusChange = async () => {
-        if (selectedStatus === creatorProfile.status) {
+        if (!profile || selectedStatus === profile.status) {
             openNotification('info', 'Status is already set to this value');
             return;
         }
@@ -46,116 +122,129 @@ export default function CreatorProfileDetailPage({ params }) {
 
         if (result === true) {
             // Recargar el perfil
-            getCreatorProfileById(id);
+            const response = await fetch(`/api/creator-profiles/${id}`);
+            if (response.ok) {
+                const data = await response.json();
+                setProfile(data);
+            }
         }
     };
 
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
             </div>
         );
     }
 
-    if (!creatorProfile) {
+    if (!profile) {
         return (
-            <div className="p-6">
-                <div className="text-center py-12">
-                    <p className="text-gray-500">Creator profile not found</p>
-                    <button
+            <div className="p-6 max-w-6xl mx-auto">
+                <div className="text-center py-12 liquid-glass rounded-2xl border border-white/20">
+                    <p className="text-gray-400">Creator profile not found</p>
+                    <Button
                         onClick={() => router.push('/admin/creator-profiles')}
-                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                        color="blue"
+                        size="md"
+                        className="mt-4"
                     >
                         Back to List
-                    </button>
+                    </Button>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="p-6 max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="mb-6">
-                <button
-                    onClick={() => router.push('/admin/creator-profiles')}
-                    className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-2" />
-                    Back to List
-                </button>
-                <h1 className="text-3xl font-bold text-gray-900">Creator Profile Details</h1>
-            </div>
+        <div className="p-6 max-w-7xl mx-auto space-y-6">
+            {/* Breadcrumbs */}
+            <BreadcrumbsTitle
+                title="Creator Profile Details"
+                items={[
+                    { label: 'Dashboard', href: '/admin/home', icon: <Home size={18} /> },
+                    { label: 'Creator Profiles', href: '/admin/creator-profiles' },
+                    { label: profile.brandName || 'Profile' },
+                ]}
+            />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Main Info */}
                 <div className="lg:col-span-2 space-y-6">
                     {/* User Info Card */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">User Information</h2>
-                        <div className="grid grid-cols-2 gap-4">
+                    <div className="liquid-glass rounded-2xl border border-white/20 p-6">
+                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                            <User className="w-5 h-5 mr-2 text-blue-400" />
+                            User Information
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-sm text-gray-600">Name</label>
-                                <p className="text-gray-900 font-medium">{creatorProfile.user?.name || 'N/A'}</p>
+                                <label className="text-sm text-gray-400">Name</label>
+                                <p className="text-white font-medium">{profile.user?.name || 'N/A'}</p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-600">Email</label>
-                                <p className="text-gray-900 font-medium">{creatorProfile.user?.email || 'N/A'}</p>
+                                <label className="text-sm text-gray-400">Email</label>
+                                <p className="text-white font-medium">{profile.user?.email || 'N/A'}</p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-600">Brand Name</label>
-                                <p className="text-gray-900 font-medium">{creatorProfile.brandName || creatorProfile.stageName}</p>
+                                <label className="text-sm text-gray-400">Brand Name</label>
+                                <p className="text-white font-medium">{profile.brandName || profile.stageName}</p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-600">Country</label>
-                                <p className="text-gray-900 font-medium">{creatorProfile.country || 'N/A'}</p>
+                                <label className="text-sm text-gray-400">Country</label>
+                                <p className="text-white font-medium">{formatCountry(profile.country) || 'N/A'}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Professional Info */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">Professional Information</h2>
-                        <div className="grid grid-cols-2 gap-4">
+                    <div className="liquid-glass rounded-2xl border border-white/20 p-6">
+                        <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                            <Briefcase className="w-5 h-5 mr-2 text-blue-400" />
+                            Professional Information
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="text-sm text-gray-600">Role</label>
-                                <p className="text-gray-900 font-medium">{creatorProfile.roles || 'N/A'}</p>
+                                <label className="text-sm text-gray-400">Role</label>
+                                <p className="text-white font-medium">{formatRole(profile.roles) || 'N/A'}</p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-600">Years of Experience</label>
-                                <p className="text-gray-900 font-medium">{creatorProfile.yearsOfExperience}</p>
+                                <label className="text-sm text-gray-400">Years of Experience</label>
+                                <p className="text-white font-medium">{profile.yearsOfExperience}</p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-600">Availability</label>
-                                <p className="text-gray-900 font-medium">{creatorProfile.availability?.replace('_', ' ')}</p>
+                                <label className="text-sm text-gray-400">Availability</label>
+                                <p className="text-white font-medium">{formatAvailability(profile.availability) || 'N/A'}</p>
                             </div>
                             <div>
-                                <label className="text-sm text-gray-600">Main DAW</label>
-                                <p className="text-gray-900 font-medium">{creatorProfile.mainDaw || 'N/A'}</p>
+                                <label className="text-sm text-gray-400">Main DAW</label>
+                                <p className="text-white font-medium">{formatDAW(profile.mainDaw) || 'N/A'}</p>
                             </div>
                         </div>
                     </div>
 
                     {/* Files */}
-                    {creatorProfile.fileExamples && Object.keys(creatorProfile.fileExamples).length > 0 && (
-                        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">Uploaded Files</h2>
+                    {profile.fileExamples && Object.keys(profile.fileExamples).length > 0 && (
+                        <div className="liquid-glass rounded-2xl border border-white/20 p-6">
+                            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+                                <FileAudio className="w-5 h-5 mr-2 text-blue-400" />
+                                Uploaded Files
+                            </h2>
                             <div className="space-y-3">
-                                {Object.entries(creatorProfile.fileExamples).map(([key, file]) => (
-                                    <div key={key} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                {Object.entries(profile.fileExamples).map(([key, file]) => (
+                                    <div key={key} className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition">
                                         <div className="flex items-center">
-                                            <FileAudio className="w-5 h-5 text-gray-600 mr-3" />
+                                            <FileAudio className="w-5 h-5 text-blue-400 mr-3" />
                                             <div>
-                                                <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                                                <p className="text-xs text-gray-500">{file.category?.replace('_', ' ')}</p>
+                                                <p className="text-sm font-medium text-white">{file.name}</p>
+                                                <p className="text-xs text-gray-400">{file.category?.replace('_', ' ')}</p>
                                             </div>
                                         </div>
                                         <a
                                             href={file.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-sm text-blue-600 hover:text-blue-700"
+                                            className="text-sm text-blue-400 hover:text-blue-300 transition"
                                         >
                                             View
                                         </a>
@@ -169,55 +258,51 @@ export default function CreatorProfileDetailPage({ params }) {
                 {/* Sidebar - Status Management */}
                 <div className="space-y-6">
                     {/* Status Card */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">Status Management</h2>
+                    <div className="liquid-glass rounded-2xl border border-white/20 p-6">
+                        <h2 className="text-xl font-semibold text-white mb-4">Status Management</h2>
 
-                        <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Current Status
-                            </label>
-                            <select
-                                value={selectedStatus}
-                                onChange={(e) => setSelectedStatus(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            >
-                                {STATUS_OPTIONS.map((option) => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
+                        <Select
+                            label="Current Status"
+                            id="status"
+                            name="status"
+                            value={selectedStatus}
+                            onChange={(newValue) => setSelectedStatus(newValue)}
+                            options={STATUS_OPTIONS}
+                            className="mb-4"
+                        />
 
-                        <button
+                        <Button
                             onClick={handleStatusChange}
-                            disabled={updating || selectedStatus === creatorProfile.status}
-                            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            disabled={updating || selectedStatus === profile.status}
+                            color="blue"
+                            size="md"
+                            loading={updating}
+                            className="w-full"
                         >
                             {updating ? 'Updating...' : 'Update Status'}
-                        </button>
+                        </Button>
                     </div>
 
                     {/* Timeline */}
-                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">Timeline</h2>
+                    <div className="liquid-glass rounded-2xl border border-white/20 p-6">
+                        <h2 className="text-xl font-semibold text-white mb-4">Timeline</h2>
                         <div className="space-y-3">
                             <div className="flex items-start">
                                 <Calendar className="w-5 h-5 text-gray-400 mr-3 mt-0.5" />
                                 <div>
-                                    <p className="text-sm font-medium text-gray-900">Submitted</p>
-                                    <p className="text-xs text-gray-500">
-                                        {new Date(creatorProfile.createdAt).toLocaleString()}
+                                    <p className="text-sm font-medium text-white">Submitted</p>
+                                    <p className="text-xs text-gray-400">
+                                        {new Date(profile.createdAt).toLocaleString()}
                                     </p>
                                 </div>
                             </div>
-                            {creatorProfile.updatedAt !== creatorProfile.createdAt && (
+                            {profile.updatedAt !== profile.createdAt && (
                                 <div className="flex items-start">
                                     <Calendar className="w-5 h-5 text-gray-400 mr-3 mt-0.5" />
                                     <div>
-                                        <p className="text-sm font-medium text-gray-900">Last Updated</p>
-                                        <p className="text-xs text-gray-500">
-                                            {new Date(creatorProfile.updatedAt).toLocaleString()}
+                                        <p className="text-sm font-medium text-white">Last Updated</p>
+                                        <p className="text-xs text-gray-400">
+                                            {new Date(profile.updatedAt).toLocaleString()}
                                         </p>
                                     </div>
                                 </div>

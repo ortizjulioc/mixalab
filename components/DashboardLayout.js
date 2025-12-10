@@ -1,61 +1,63 @@
 'use client';
 
-import React from 'react';
-// Íconos para elementos fijos como logout, menu, etc. (puedes agregar más si es necesario)
-import { LogOut, Menu, Bell, Search, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { LogOut, Menu, Bell, Search, User, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Logo from './Logo';
-import navigationIcon from './navigationIcon'; // Importa el objeto de íconos pre-renderizados
+import navigationIcon from './navigationIcon';
 
 /**
  * Componente que representa un enlace o botón con estilo Liquid Glass.
- * Usa íconos pre-renderizados desde navigationIcon.
  */
-const GlassLink = ({ iconKey, label, href, isSelected = false, onClick }) => {
+const GlassLink = ({ iconKey, label, href, isSelected = false, onClick, isCollapsed }) => {
     if (onClick) {
-        // Para acciones como logout (usa íconos fijos aquí si es necesario)
         return (
             <button
                 onClick={onClick}
-                className={`flex items-center space-x-4 p-3 rounded-2xl transition duration-300 ease-in-out 
+                className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-4'} p-3 rounded-2xl transition duration-300 ease-in-out 
                         text-white font-medium hover:bg-white/10 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] w-full text-left liquid-glass
                         ${isSelected ? 'bg-white/15 border-l-4 border-white glow-border' : ''}`}
+                title={isCollapsed ? label : ''}
             >
-                <LogOut className="w-8 h-8 text-white/80" /> {/* Ícono fijo para logout, tamaño 32px */}
-                <span className="hidden lg:block">{label}</span>
+                <LogOut className="w-6 h-6 text-white/80 flex-shrink-0" />
+                {!isCollapsed && <span>{label}</span>}
             </button>
         );
     }
 
-    const IconElement = navigationIcon[iconKey]; // Obtiene el JSX del ícono
+    const IconElement = navigationIcon[iconKey];
 
     if (!IconElement) {
-        console.warn(`Ícono no encontrado para la clave: ${iconKey}`); // Fallback para claves no mapeadas
+        console.warn(`Ícono no encontrado para la clave: ${iconKey}`);
         return null;
     }
 
-    // Para enlaces de navegación
     return (
         <Link
             href={href}
-            className={`flex items-center space-x-4 p-3 rounded-2xl transition-all duration-300 ease-in-out 
+            className={`flex items-center ${isCollapsed ? 'justify-center' : 'space-x-4'} p-3 rounded-2xl transition-all duration-300 ease-in-out 
                     text-white font-medium hover:bg-white/10 hover:shadow-lg hover:-translate-y-1 hover:scale-[1.02] w-full text-left liquid-glass
-                    ${isSelected 
-                        ? 'bg-gradient-to-r from-blue-500/25 to-blue-400/15 border-l-8 border-blue-400/80 shadow-2xl shadow-blue-500/25 ring-2 ring-blue-400/40 ring-inset font-bold scale-[1.02] relative before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-r before:from-blue-500/10 before:to-transparent before:blur' 
-                        : ''}`}
+                    ${isSelected
+                    ? 'bg-gradient-to-r from-blue-500/25 to-blue-400/15 border-l-8 border-blue-400/80 shadow-2xl shadow-blue-500/25 ring-2 ring-blue-400/40 ring-inset font-bold scale-[1.02] relative before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-r before:from-blue-500/10 before:to-transparent before:blur'
+                    : ''}`}
+            title={isCollapsed ? label : ''}
         >
-            <div className={`flex-shrink-0 transition-colors duration-300 ${isSelected ? 'text-blue-300 drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'text-white/80'}`}> {/* Ícono con glow en selected */}
-                {IconElement} {/* Renderiza el JSX del ícono con size={32} definido en navigationIcon */}
+            <div className={`flex-shrink-0 transition-colors duration-300 ${isSelected ? 'text-blue-300 drop-shadow-[0_0_8px_rgba(59,130,246,0.6)]' : 'text-white/80'}`}>
+                {IconElement}
             </div>
-            <span className={`hidden lg:block transition-all duration-300 ${isSelected ? 'text-blue-200 drop-shadow-[0_0_4px_rgba(59,130,246,0.4)]' : ''}`}>{label}</span>
+            {!isCollapsed && (
+                <span className={`transition-all duration-300 ${isSelected ? 'text-blue-200 drop-shadow-[0_0_4px_rgba(59,130,246,0.4)]' : ''}`}>
+                    {label}
+                </span>
+            )}
         </Link>
     );
 };
 
 /**
- * Componente de badge para el rol del usuario en estilo Liquid Glass.
+ * Componente de badge para el rol del usuario.
  */
 const RoleBadge = ({ role }) => {
     const getRoleStyles = (role) => {
@@ -75,22 +77,15 @@ const RoleBadge = ({ role }) => {
 };
 
 /**
- * Layout principal del dashboard con estilo Liquid Glass (Glassmorphism).
- * Incluye barra lateral, menú superior y área de contenido para hijos (children).
- * Usa useSession para obtener datos del usuario en componentes del cliente.
- * 
- * Props:
- * - children: ReactNode - Contenido principal a renderizar.
- * - navItems: Array<{ iconKey: string, label: string, href: string }> - Arreglo de ítems para la navegación lateral.
- *   Cada ítem debe incluir: iconKey (clave del ícono de navigationIcon, ej. 'home'), label (nombre), href (URL/path para Next.js).
+ * Layout principal del dashboard con estilo Liquid Glass.
  */
 const DashboardLayout = ({ children, navItems }) => {
     const { data: session, status } = useSession();
     const pathname = usePathname();
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Para mobile
+    const [isCollapsed, setIsCollapsed] = useState(false); // Para desktop
 
-    console.log(session);
-
-    // Validar que se pase navItems
+    // Validar navItems
     if (!navItems || !Array.isArray(navItems)) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
@@ -108,17 +103,14 @@ const DashboardLayout = ({ children, navItems }) => {
         );
     }
 
-    // Si no hay sesión, redirigir o mostrar algo, pero por ahora asumir autenticado
     if (!session) {
-        return null; // O redirigir con useRouter si es necesario
+        return null;
     }
 
-    // Datos del usuario desde la sesión
     const userName = session?.user?.name || "User";
     const userImage = session?.user?.image;
-    const userRole = session?.user?.role || 'USER'; // Asume que el rol está en session.user.role
+    const userRole = session?.user?.role || 'USER';
 
-    // Definición de estilos CSS globales inspirados en el ejemplo (liquid-glass, glow-border, etc.)
     const globalStyles = `
         @keyframes pulse-glow {
             0%, 100% { 
@@ -129,11 +121,6 @@ const DashboardLayout = ({ children, navItems }) => {
                 text-shadow: 0 0 20px rgba(255, 255, 255, 0.5), 0 0 40px rgba(255, 255, 255, 0.5); 
                 box-shadow: 0 0 30px rgba(135, 206, 235, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
             }
-        }
-        @keyframes wave-move {
-            0% { transform: translateX(0) scaleX(1); }
-            50% { transform: translateX(-1%) scaleX(1.02); }
-            100% { transform: translateX(0) scaleX(1); }
         }
         
         .liquid-glass {
@@ -153,20 +140,53 @@ const DashboardLayout = ({ children, navItems }) => {
         .animate-pulse-glow {
             animation: pulse-glow 3s infinite ease-in-out;
         }
+
+        /* Estilos personalizados para scrollbar */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            transition: background 0.3s ease;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Para Firefox */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+        }
+
+        /* Ocultar scrollbar completamente (alternativa) */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     `;
 
     return (
         <>
-            {/* Inyectar estilos globales */}
             <style>{globalStyles}</style>
-            {/* Main container with dark, atmospheric background */}
             <div className="min-h-screen flex flex-col"
                 style={{
                     backgroundImage: 'linear-gradient(135deg, #101010 0%, #000000 100%)',
                     fontFamily: 'Inter, sans-serif'
                 }}>
 
-                {/* Background Atmosphere/Particle Effect */}
+                {/* Background Atmosphere */}
                 <div className="absolute inset-0 opacity-20 pointer-events-none"
                     style={{
                         backgroundImage: `radial-gradient(circle at top left, #333 1%, transparent 20%),
@@ -175,7 +195,6 @@ const DashboardLayout = ({ children, navItems }) => {
                         animation: 'pulse 15s infinite alternate'
                     }}
                 />
-                {/* Custom CSS for the pulse animation */}
                 <style>{`
             @keyframes pulse {
               0% { opacity: 0.15; }
@@ -184,20 +203,40 @@ const DashboardLayout = ({ children, navItems }) => {
           `}</style>
 
                 <div className="flex flex-1 relative z-10">
-                    {/* 1. Sidebar (Aside) - Estilo Liquid Glass */}
+                    {/* Overlay para mobile */}
+                    {isSidebarOpen && (
+                        <div
+                            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                            onClick={() => setIsSidebarOpen(false)}
+                        />
+                    )}
+
+                    {/* Sidebar */}
                     <aside
-                        className="w-20 lg:w-64 flex flex-col p-4 space-y-6 
-                         liquid-glass border-r border-white/20 
-                         shadow-2xl transition-all duration-300"
+                        className={`${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} 
+                            lg:translate-x-0 fixed lg:sticky lg:top-0 z-50
+                            ${isCollapsed ? 'w-20' : 'w-64'} 
+                            flex flex-col p-4 space-y-6 
+                            liquid-glass border-r border-white/20 
+                            shadow-2xl transition-all duration-300 h-screen`}
                     >
-                        {/* Logo/Title Area - Sin card style */}
-                        <div className="flex items-center lg:justify-start h-16 border-b border-white/20 pb-4">
-                            <Logo />
-                            <h2 className="hidden lg:block text-white text-2xl font-bold ml-2">Mixa Studio</h2>
+                        {/* Logo/Title Area */}
+                        <div className="flex items-center justify-between h-16 border-b border-white/20 pb-4">
+                            <div className="flex items-center">
+                                <Logo />
+                                {!isCollapsed && <h2 className="text-white text-2xl font-bold ml-2">Mixa Studio</h2>}
+                            </div>
+                            {/* Botón cerrar en mobile */}
+                            <button
+                                onClick={() => setIsSidebarOpen(false)}
+                                className="lg:hidden text-white/80 hover:text-white"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
                         </div>
 
                         {/* Navigation Links */}
-                        <nav className="flex-1 space-y-2">
+                        <nav className="flex-1 space-y-2 overflow-y-auto hide-scrollbar">
                             {navItems.map((item, index) => (
                                 <GlassLink
                                     key={index}
@@ -205,23 +244,35 @@ const DashboardLayout = ({ children, navItems }) => {
                                     label={item.label}
                                     href={item.href}
                                     isSelected={pathname === item.href}
+                                    isCollapsed={isCollapsed}
                                 />
                             ))}
                         </nav>
 
-                        {/* Logout Button - Sin card style adicional */}
-                        <div className="mt-auto pt-4 border-t border-white/20">
+                        {/* Logout Button */}
+                        <div className="space-y-2">
                             <GlassLink
                                 label="Sign Out"
                                 onClick={() => signOut({ callbackUrl: '/' })}
+                                isCollapsed={isCollapsed}
                             />
                         </div>
+
+                        {/* Botón collapse flotante (solo desktop) */}
+                        <button
+                            onClick={() => setIsCollapsed(!isCollapsed)}
+                            className="hidden lg:flex items-center justify-center absolute -right-3 top-1/2 transform -translate-y-1/2 
+                                w-6 h-6 rounded-full liquid-glass border border-white/30 text-white/80 hover:text-white 
+                                hover:bg-white/20 hover:scale-110 transition-all duration-300 shadow-lg z-50"
+                            title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                        >
+                            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                        </button>
                     </aside>
 
-                    {/* 2. Main Content Area */}
+                    {/* Main Content Area */}
                     <div className="flex-1 flex flex-col overflow-hidden">
-
-                        {/* 3. Header (Top Menu) - Estilo Liquid Glass */}
+                        {/* Header */}
                         <nav
                             className="h-16 flex items-center justify-between p-4 px-8 
                            liquid-glass border-b border-white/20 
@@ -229,7 +280,12 @@ const DashboardLayout = ({ children, navItems }) => {
                         >
                             {/* Search and Menu */}
                             <div className="flex items-center space-x-4">
-                                <button className="lg:hidden text-white/80 hover:text-white transition liquid-glass rounded-xl p-2 border border-white/20"><Menu className="w-5 h-5" /></button>
+                                <button
+                                    onClick={() => setIsSidebarOpen(true)}
+                                    className="lg:hidden text-white/80 hover:text-white transition liquid-glass rounded-xl p-2 border border-white/20"
+                                >
+                                    <Menu className="w-5 h-5" />
+                                </button>
                                 <div className="relative hidden sm:block">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                                     <input
@@ -241,30 +297,26 @@ const DashboardLayout = ({ children, navItems }) => {
                                 </div>
                             </div>
 
-                            {/* User Profile and Notifications - Sin card style adicional */}
+                            {/* User Profile and Notifications */}
                             <div className="flex items-center space-x-4 text-white">
-                                <Bell size={33} className=" hover:text-white/80 transition cursor-pointer liquid-glass rounded-xl p-2 border border-white/20 animate-pulse-glow" />
-                                 <RoleBadge role={userRole} />
-                                <div className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/10 transition">
+                                <Bell size={33} className="hover:text-white/80 transition cursor-pointer liquid-glass rounded-xl p-2 border border-white/20 animate-pulse-glow" />
+                                <RoleBadge role={userRole} />
+                                <div className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/10 transition rounded-xl">
                                     {userImage ? (
-                                        <img src={userImage} alt="User avatar" className="w-6 h-6 rounded-full" />
+                                        <img src={userImage} alt="User avatar" className="w-8 h-8 rounded-full" />
                                     ) : (
-                                        <User className="w-6 h-6" />
+                                        <User className="w-8 h-8" />
                                     )}
                                     <div className="hidden md:block">
                                         <span className="text-sm font-semibold">{userName}</span>
-                                       
                                     </div>
                                 </div>
                             </div>
                         </nav>
 
-                        {/* 4. Content (Children) - Área principal de las vistas */}
-                        <main className="flex-1 overflow-y-auto p-4 md:p-8">
-              
-                                {/* Aquí es donde se renderizarán los componentes hijos/vistas */}
-                                {children ? children : "Your view components will be rendered here."}
-                        
+                        {/* Content */}
+                        <main className="flex-1 overflow-y-auto p-4 md:p-8 hide-scrollbar">
+                            {children ? children : "Your view components will be rendered here."}
                         </main>
                     </div>
                 </div>

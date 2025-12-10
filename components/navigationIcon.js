@@ -25,6 +25,7 @@ const navigationIcon = {
   'maintain-requirements': <HiOutlineShieldCheck size={32} />, // Mantener: estabilidad / cumplimiento
   'upgrade-requirements': <HiOutlineTrendingUp size={32} />,   // Subir de nivel
   'downgrade-triggers': <HiOutlineArrowDown size={32} />,
+  'creator-profiles': <HiOutlineUserGroup size={32} />,
 
 }
 
