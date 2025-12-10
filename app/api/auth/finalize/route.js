@@ -9,15 +9,29 @@ import { UserRole } from "@prisma/client";
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
-    const role = searchParams.get("role");
+    const roleParam = searchParams.get("role");
 
-    // Validar rol
-    if (!role || !Object.values(UserRole).includes(role)) {
+    console.log("🔍 Finalize endpoint called with role:", roleParam);
+
+    // Normalizar y validar rol
+    if (!roleParam) {
       return NextResponse.json(
-        { error: "Rol inválido o no especificado." },
+        { error: "Rol no especificado." },
         { status: 400 }
       );
     }
+
+    const normalizedRole = roleParam.toUpperCase();
+
+    // Validar que sea ARTIST o CREATOR (no ADMIN)
+    if (normalizedRole !== "ARTIST" && normalizedRole !== "CREATOR") {
+      return NextResponse.json(
+        { error: "Rol inválido. Solo se permite ARTIST o CREATOR." },
+        { status: 400 }
+      );
+    }
+
+    const role = UserRole[normalizedRole];
 
     // Obtener sesión
     const session = await getServerSession(authOptions);
@@ -40,28 +54,22 @@ export async function GET(req) {
       );
     }
 
-    // Actualizar rol
+    console.log("🔄 Finalize: Updating role", {
+      email: user.email,
+      currentRole: user.role,
+      newRole: role
+    });
+
+    // Actualizar rol en la base de datos
     await db.user.update({
       where: { email: session.user.email },
       data: { role },
     });
 
-    // Definir redirección según el rol
-    let redirectUrl;
-    switch (role) {
-      case UserRole.ARTIST:
-        redirectUrl = "/artists/home";
-        break;
-      case UserRole.CREATOR:
-        redirectUrl = "/creators/home";
-        break;
-      case UserRole.ADMIN:
-        redirectUrl = "/admin/home"; // Puedes ajustarlo a tu ruta real
-        break;
-      default:
-        redirectUrl = "/";
-        break;
-    }
+    // Redirigir a página intermedia que fuerza la actualización de la sesión
+    const redirectUrl = `/role-switch?role=${normalizedRole}`;
+
+    console.log("✅ Finalize: Role updated successfully, redirecting to", redirectUrl);
 
     return NextResponse.redirect(new URL(redirectUrl, req.url));
   } catch (error) {

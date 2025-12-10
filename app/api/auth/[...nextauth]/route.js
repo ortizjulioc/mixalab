@@ -34,23 +34,47 @@ export const authOptions = {
             throw new Error("Unauthorized");
           }
 
-          // ✅ VALIDAR QUE EL ROL DEL USUARIO COINCIDA CON EL ROL SOLICITADO
-          if (credentials.role && userFound.role !== credentials.role) {
-            throw new Error(`This account is registered as ${userFound.role.toLowerCase()}. Please select the correct login mode.`);
-          }
-
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             userFound.password
           );
           if (!isPasswordValid) throw new Error("Invalid password");
 
+          // ✅ PERMITIR CAMBIO DE ROL DINÁMICO
+          let finalRole = userFound.role;
+
+          if (credentials.role) {
+            const requestedRole = credentials.role.toUpperCase();
+
+            console.log("🔍 Login attempt:", {
+              email: credentials.email,
+              requestedRole,
+              currentUserRole: userFound.role.toString(),
+              willUpdate: requestedRole !== userFound.role.toString()
+            });
+
+            // Validar que el rol solicitado sea válido (ARTIST o CREATOR)
+            if (requestedRole === "ARTIST" || requestedRole === "CREATOR") {
+              // Si el rol solicitado es diferente al actual, actualizarlo
+              if (requestedRole !== userFound.role.toString()) {
+                console.log(`🔄 Updating role from ${userFound.role} to ${requestedRole}`);
+
+                await db.user.update({
+                  where: { id: userFound.id },
+                  data: { role: UserRole[requestedRole] }
+                });
+
+                finalRole = UserRole[requestedRole];
+              }
+            }
+          }
+
           return {
             id: userFound.id,
             name: userFound.name,
             email: userFound.email,
             image: userFound.image,
-            role: userFound.role,
+            role: finalRole,
           };
         } catch (error) {
           console.error("Error in authorize:", error);
@@ -193,11 +217,35 @@ export const authOptions = {
     // --------------------------------------------------------------------------------------------
     // JWT
     // --------------------------------------------------------------------------------------------
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // Si es un nuevo login, guardar los datos del usuario
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.email = user.email;
       }
+
+      // Siempre verificar el rol actual en la base de datos
+      // Esto asegura que el token tenga el rol más actualizado
+      if (token.email) {
+        const dbUser = await db.user.findUnique({
+          where: { email: token.email },
+          select: { role: true, id: true }
+        });
+
+        if (dbUser) {
+          // Si el rol en la BD es diferente al del token, actualizarlo
+          if (dbUser.role !== token.role) {
+            console.log("🔄 JWT callback: Updating token role", {
+              email: token.email,
+              oldRole: token.role,
+              newRole: dbUser.role
+            });
+            token.role = dbUser.role;
+          }
+        }
+      }
+
       return token;
     },
 
@@ -218,6 +266,12 @@ export const authOptions = {
           where: { email: session.user.email },
         });
         if (dbUser) {
+          console.log("🔄 Session refresh:", {
+            email: session.user.email,
+            tokenRole: token.role,
+            dbRole: dbUser.role,
+            sessionRole: session.user.role
+          });
           session.user.role = dbUser.role;
         }
       }

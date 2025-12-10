@@ -128,8 +128,24 @@ export default function LoginPage() {
       return;
     }
 
-    if (mode === "ARTIST") router.push("/artists/home");
-    else router.push("/creators/home");
+    // Obtener la sesión actualizada para verificar el rol real del usuario
+    const { getSession } = await import("next-auth/react");
+    const session = await getSession();
+
+    if (session?.user?.role) {
+      // Redirigir basándose en el rol real del usuario
+      if (session.user.role === "ARTIST") {
+        router.push("/artists/home");
+      } else if (session.user.role === "CREATOR") {
+        router.push("/creators/home");
+      } else {
+        router.push("/");
+      }
+    } else {
+      // Fallback: usar el modo seleccionado si no hay sesión
+      if (mode === "ARTIST") router.push("/artists/home");
+      else router.push("/creators/home");
+    }
   };
 
   const handleSocial = async (provider) => {
@@ -152,7 +168,7 @@ export default function LoginPage() {
           <aside className={`p-8 flex flex-col justify-between ${isArtist ? 'bg-[rgba(0,0,0,0.35)]' : 'bg-[rgba(2,6,23,0.45)]'} sm:p-12`}>
             <div>
               <h2 className="text-3xl font-bold text-white">{isArtist ? 'Artist Login' : 'Creators Login'}</h2>
-              <p className="mt-3 text-sm text-white/80">{isArtist ? 'Sign in to manage your artist profile and music.' : 'Sign in to manage projects, sales and collaborations.'}</p>
+              <p className="mt-3 text-sm text-white/80">{isArtist ? 'Sign in as an artist to discover and request music services.' : 'Sign in as a creator to offer your services and collaborate.'}</p>
 
               <div className="mt-6 flex items-center gap-3">
                 <span className="text-sm text-white/70">Mode:</span>
@@ -173,9 +189,9 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* <div className="mt-8 text-sm text-white/80">
-              <p><strong>Note:</strong> The switch only indicates which account type you are using; the backend should use the `role` value to select authentication logic.</p>
-            </div> */}
+            <div className="mt-8 text-xs text-white/60 bg-white/5 p-3 rounded-lg border border-white/10">
+              <p>💡 <strong>Tip:</strong> You can switch between Artist and Creator modes anytime you login. Your account will be updated to the selected role.</p>
+            </div>
           </aside>
 
           {/* Right panel: form */}
