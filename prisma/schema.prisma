@@ -212,15 +212,16 @@ model CreatorProfile {
   // porfolioLinks  Json         @map("portfolio_links")
   // fileExamples   Json         @map("file_examples")
 
-  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mixing      MixingEngineerProfile?
-  genders     CreatorGenre[]
-  CreatorTier CreatorTier[]
-
-  deleted                  Boolean                   @default(false)
-  createdAt                DateTime                  @default(now()) @map("created_at")
-  updatedAt                DateTime                  @updatedAt @map("updated_at")
+  user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mixing                   MixingEngineerProfile?
   masteringEngineerProfile MasteringEngineerProfile?
+  instrumentalist          InstrumentalistProfile?
+  genders                  CreatorGenre[]
+  CreatorTier              CreatorTier[]
+
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("creators_profiles")
 }
@@ -299,6 +300,40 @@ model MasteringGenre {
   @@map("mastering_genres")
 }
 
+model InstrumentalistProfile {
+  id                      String @id @default(uuid())
+  creatorId               String @unique @map("creator_id")
+  yearsRecordingOrPlaying Int    @map("years_recording_or_playing")
+  studioSetupDescription  String @map("studio_setup_description")
+  instruments             Json
+
+  uploadExampleFileId String? @unique @map("upload_example_file_id")
+
+  creator               CreatorProfile         @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  uploadExampleFile     File?                  @relation("InstrumentalistExampleFile", fields: [uploadExampleFileId], references: [id], onDelete: Cascade)
+  instrumentalistGenres InstrumentalistGenre[]
+
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("instrumentalist_profiles")
+}
+
+model InstrumentalistGenre {
+  id                String @id @default(uuid())
+  instrumentalistId String @map("instrumentalist_id")
+  genreId           String @map("genre_id")
+
+  instrumentalist InstrumentalistProfile @relation(fields: [instrumentalistId], references: [id], onDelete: Cascade)
+  genre           Genre                  @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([instrumentalistId, genreId])
+  @@map("instrumentalist_genres")
+}
+
 model ArtistProfile {
   id         String  @id @default(uuid())
   userId     String  @unique @map("user_id")
@@ -352,13 +387,14 @@ model Genre {
   id   String @id @default(uuid())
   name String @unique
 
-  creators     CreatorGenre[]
-  artists      ArtistGenre[]
-  mixingGenres MixingGenre[]
+  creators        CreatorGenre[]
+  artists         ArtistGenre[]
+  mixing          MixingGenre[]
+  mastering       MasteringGenre[]
+  instrumentalist InstrumentalistGenre[]
 
-  createdAt       DateTime         @default(now()) @map("created_at")
-  updatedAt       DateTime         @updatedAt @map("updated_at")
-  masteringGenres MasteringGenre[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("genres")
 }
@@ -410,6 +446,8 @@ model File {
 
   beforeMasteringProfile MasteringEngineerProfile? @relation("BeforeMasterFile") // Antes: "BeforeMasteringFile"
   afterMasteringProfile  MasteringEngineerProfile? @relation("AfterMasterFile")
+
+  instrumentalistProfile InstrumentalistProfile? @relation("InstrumentalistExampleFile")
 
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
