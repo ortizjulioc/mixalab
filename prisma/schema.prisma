@@ -217,9 +217,10 @@ model CreatorProfile {
   genders     CreatorGenre[]
   CreatorTier CreatorTier[]
 
-  deleted   Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  deleted                  Boolean                   @default(false)
+  createdAt                DateTime                  @default(now()) @map("created_at")
+  updatedAt                DateTime                  @updatedAt @map("updated_at")
+  masteringEngineerProfile MasteringEngineerProfile?
 
   @@map("creators_profiles")
 }
@@ -260,6 +261,42 @@ model MixingGenre {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("mixing_genres")
+}
+
+model MasteringEngineerProfile {
+  id                        String  @id @default(uuid())
+  creatorId                 String  @unique @map("creator_id")
+  yearsMastering            Int     @map("years_mastering")
+  averageTurnaroundTimeDays Int     @map("average_turnaround_time_days")
+  preferredLoudnessRange    String? @map("preferred_loudness_range") // Campo Opcional
+  uploadBeforeMasterId      String? @unique @map("upload_before_master_id")
+  uploadAfterMasterId       String? @unique @map("upload_after_master_id")
+
+  creator            CreatorProfile   @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  uploadBeforeMaster File?            @relation("BeforeMasterFile", fields: [uploadBeforeMasterId], references: [id], onDelete: Cascade)
+  uploadAfterMaster  File?            @relation("AfterMasterFile", fields: [uploadAfterMasterId], references: [id], onDelete: Cascade)
+  masteringGenres    MasteringGenre[]
+
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("mastering_engineer_profiles")
+}
+
+model MasteringGenre {
+  id          String                   @id @default(uuid())
+  masteringId String
+  genreId     String
+  mastering   MasteringEngineerProfile @relation(fields: [masteringId], references: [id], onDelete: Cascade)
+  genre       Genre                    @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  deleted   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([masteringId, genreId])
+  @@map("mastering_genres")
 }
 
 model ArtistProfile {
@@ -319,8 +356,9 @@ model Genre {
   artists      ArtistGenre[]
   mixingGenres MixingGenre[]
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  masteringGenres MasteringGenre[]
 
   @@map("genres")
 }
@@ -369,6 +407,9 @@ model File {
   tunedVocalsProfile MixingEngineerProfile? @relation("TunedVocalsFile")
   beforeMixProfile   MixingEngineerProfile? @relation("BeforeMixFile")
   afterMixProfile    MixingEngineerProfile? @relation("AfterMixFile")
+
+  beforeMasteringProfile MasteringEngineerProfile? @relation("BeforeMasterFile") // Antes: "BeforeMasteringFile"
+  afterMasteringProfile  MasteringEngineerProfile? @relation("AfterMasterFile")
 
   createdAt        DateTime        @default(now()) @map("created_at")
   updatedAt        DateTime        @updatedAt @map("updated_at")
