@@ -63,103 +63,343 @@ export async function GET(request, { params }) {
     }
 }
 
-export async function PUT(request, { params }) {
+/**
+ * Handler for updating an existing CreatorProfile, including file uploads and nested role data.
+ * @param {Request} request - The incoming Next.js request object.
+ */
+export async function PUT(request) {
+    // 1. Procesar la solicitud multipart/form-data
+    let formData;
     try {
-        const { id } = await params;
-        const body = await request.json();
+        formData = await request.formData();
+    } catch (error) {
+        console.error("Error al leer form data:", error);
+        return NextResponse.json({ message: "Error al procesar los datos de la solicitud" }, { status: 500 });
+    }
 
-        const update = {};
+    // 2. Extraer y parsear datos JSON y archivos
+    let profileData, mixingData, masteringData, instrumentalistData;
 
-        if (body.userId !== undefined) {
-            if (typeof body.userId !== 'string') return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
-            update.userId = body.userId;
-        }
+    try {
+        profileData = parseJSON(formData.get('profileData'));
+        mixingData = parseJSON(formData.get('mixingData'));
+        masteringData = parseJSON(formData.get('masteringData'));
+        instrumentalistData = parseJSON(formData.get('instrumentalistData'));
+    } catch (error) {
+        return NextResponse.json({ message: "Formato de datos JSON inválido" }, { status: 400 });
+    }
 
-        if (body.brandName !== undefined) {
-            if (typeof body.brandName !== 'string' || body.brandName.trim().length === 0) return NextResponse.json({ error: 'brandName must be a non-empty string' }, { status: 400 });
-            update.brandName = body.brandName;
-        }
+    // Validación crucial: userId es necesario para identificar el perfil a actualizar
+    const { userId } = profileData;
 
-        if (body.yearsOfExperience !== undefined) {
-            const v = Number(body.yearsOfExperience);
-            if (!Number.isInteger(v) || v < 0) return NextResponse.json({ error: 'yearsOfExperience must be a non-negative integer' }, { status: 400 });
-            update.yearsOfExperience = v;
-        }
+    if (!userId) {
+        return NextResponse.json({ message: "Faltan datos de usuario (userId)." }, { status: 400 });
+    }
 
-        if (body.availability !== undefined) {
-            if (!AVAILABILITIES.includes(body.availability)) return NextResponse.json({ error: `availability must be one of ${AVAILABILITIES.join(', ')}` }, { status: 400 });
-            update.availability = body.availability;
-        }
+    // 3. Función para subir y registrar archivos (Subimos los archivos nuevos que reemplazan a los viejos)
+    const fileUploadPromises = [];
+    const fileFieldsMap = {
+        uploadExampleTunedVocals: "mixingData",
+        uploadBeforeMix: "mixingData",
+        uploadAfterMix: "mixingData",
+        uploadBeforeMaster: "masteringData",
+        uploadAfterMaster: "masteringData",
+        uploadExampleFile: "instrumentalistData",
+    };
 
-        if (body.country !== undefined) update.country = body.country === null ? null : String(body.country);
-        if (body.portfolio !== undefined) update.portfolio = body.portfolio === null ? null : String(body.portfolio);
-        if (body.mainDaw !== undefined) update.mainDaw = body.mainDaw === null ? null : String(body.mainDaw);
-        if (body.gearList !== undefined) update.gearList = body.gearList === null ? null : String(body.gearList);
+    // 3.1. Iterar sobre las claves de archivo esperadas y crear las promesas de subida
+    for (const fileKey of Object.keys(fileFieldsMap)) {
+        const fileObject = formData.get(fileKey);
 
-        if (body.socials !== undefined) {
-            const s = parseJSON(body.socials);
-            if (s === undefined && body.socials !== null) return NextResponse.json({ error: 'socials must be a valid JSON object or null' }, { status: 400 });
-            update.socials = s ?? null;
-        }
+        if (fileObject instanceof File && fileObject.size > 0) {
+            const project = fileKey;
 
-        // New optional fields
-        if (body.stageName !== undefined) update.stageName = body.stageName === null ? null : String(body.stageName);
-        if (body.mainDawProject !== undefined) {
-            const v = parseJSON(body.mainDawProject);
-            if (v === undefined && body.mainDawProject !== null) return NextResponse.json({ error: 'mainDawProject must be valid JSON or null' }, { status: 400 });
-            update.mainDawProject = v ?? null;
+            // Se asume que uploadFile gestiona el almacenamiento y devuelve metadatos
+            fileUploadPromises.push(
+                uploadFile(fileObject, userId, project).then(metadata => ({
+                    fileKey,
+                    metadata,
+                }))
+            );
         }
-        if (body.pluginChains !== undefined) {
-            const v = parseJSON(body.pluginChains);
-            if (v === undefined && body.pluginChains !== null) return NextResponse.json({ error: 'pluginChains must be valid JSON or null' }, { status: 400 });
-            update.pluginChains = v ?? null;
-        }
-        if (body.generalGenres !== undefined) {
-            const v = parseJSON(body.generalGenres);
-            if (v === undefined && body.generalGenres !== null) return NextResponse.json({ error: 'generalGenres must be valid JSON or null' }, { status: 400 });
-            update.generalGenres = v ?? null;
-        }
-        if (body.socialLinks !== undefined) {
-            const v = parseJSON(body.socialLinks);
-            if (v === undefined && body.socialLinks !== null) return NextResponse.json({ error: 'socialLinks must be valid JSON or null' }, { status: 400 });
-            update.socialLinks = v ?? null;
-        }
-        if (body.roles !== undefined) {
-            if (body.roles === null) {
-                update.roles = null;
-            } else if (!CREATOR_ROLES.includes(body.roles)) {
-                return NextResponse.json({ error: `roles must be one of ${CREATOR_ROLES.join(', ')}` }, { status: 400 });
-            } else {
-                update.roles = body.roles;
+    }
+
+    let uploadedFileMetadata = {};
+    try {
+        const results = await Promise.all(fileUploadPromises);
+        results.forEach(({ fileKey, metadata }) => {
+            uploadedFileMetadata[fileKey] = metadata;
+        });
+    } catch (error) {
+        console.error("Error durante la subida de archivos:", error);
+        return NextResponse.json({ message: "Error al subir archivos: " + error.message }, { status: 500 });
+    }
+
+    // 4. Iniciar la Transacción de Prisma para la actualización
+    try {
+        const transactionResult = await prisma.$transaction(async (tx) => {
+            // 4.0. Encontrar el perfil existente para obtener el creatorId
+            const existingCreatorProfile = await tx.creatorProfile.findUnique({
+                where: { userId: userId },
+                select: { id: true }
+            });
+
+            if (!existingCreatorProfile) {
+                // Si el perfil no existe, el PUT falla. Se debe usar POST para crear.
+                throw new Error("Creator Profile not found for this userId. Cannot perform update.");
             }
-        }
-        if (body.mixing !== undefined) update.mixing = body.mixing === null ? null : String(body.mixing);
-        if (body.mastering !== undefined) update.mastering = body.mastering === null ? null : String(body.mastering);
-        if (body.recording !== undefined) update.recording = body.recording === null ? null : String(body.recording);
-        if (body.porfolioLinks !== undefined) {
-            const v = parseJSON(body.porfolioLinks);
-            if (v === undefined && body.porfolioLinks !== null) return NextResponse.json({ error: 'porfolioLinks must be valid JSON or null' }, { status: 400 });
-            update.porfolioLinks = v ?? null;
-        }
-        if (body.fileExamples !== undefined) {
-            const v = parseJSON(body.fileExamples);
-            if (v === undefined && body.fileExamples !== null) return NextResponse.json({ error: 'fileExamples must be valid JSON or null' }, { status: 400 });
-            update.fileExamples = v ?? null;
-        }
 
-        const item = await prisma.creatorProfile.update({
-            where: { id },
-            data: update,
-            include: { user: { select: { id: true, email: true, name: true } } },
+            const creatorId = existingCreatorProfile.id;
+
+            // 4.1. Registrar nuevos archivos subidos
+            // (Si se sube un archivo nuevo, creamos un registro File nuevo, y luego actualizamos el campo
+            // de ID en el perfil de rol correspondiente. El archivo viejo queda huérfano para su posterior limpieza).
+            const fileRecords = {};
+            for (const [fileKey, metadata] of Object.entries(uploadedFileMetadata)) {
+                const fileRecord = await tx.file.create({
+                    data: {
+                        ...metadata,
+                        userId: userId,
+                        serviceRequestId: null,
+                    },
+                });
+                fileRecords[fileKey] = fileRecord;
+            }
+
+            // --- 4.2. Actualizar CreatorProfile ---
+            const {
+                genders: creatorGenders,
+                CreatorTier: creatorTiers,
+                userId: profileUserId, // Excluimos userId para evitar re-asignación
+                ...creatorData
+            } = profileData;
+
+            // Asegurar que los campos JSON sean arrays o parseados correctamente
+            const pluginChains = Array.isArray(creatorData.pluginChains)
+                ? creatorData.pluginChains
+                : parseJSON(creatorData.pluginChains).plugins || [];
+
+            const socials = Array.isArray(creatorData.socials)
+                ? creatorData.socials
+                : parseJSON(creatorData.socials).socials || [];
+
+
+            const updatedCreatorProfile = await tx.creatorProfile.update({
+                where: { id: creatorId },
+                data: {
+                    ...creatorData,
+                    pluginChains: pluginChains,
+                    socials: socials,
+                },
+            });
+
+            // --- 4.3. Actualizar relaciones CreatorGenre (Borrar existentes y Crear nuevas) ---
+            await tx.creatorGenre.deleteMany({
+                where: { creatorId: creatorId }
+            });
+
+            if (Array.isArray(creatorGenders) && creatorGenders.length > 0) {
+                await tx.creatorGenre.createMany({
+                    data: creatorGenders.map(genreId => ({
+                        creatorId: creatorId,
+                        genreId: genreId,
+                    })),
+                });
+            }
+
+            // --- 4.4. Actualizar CreatorTier (Borrar existentes y Crear nuevas) ---
+            await tx.creatorTier.deleteMany({
+                where: { creatorId: creatorId }
+            });
+
+            if (Array.isArray(creatorTiers) && creatorTiers.length > 0) {
+                await tx.creatorTier.createMany({
+                    data: creatorTiers.map(tierId => ({
+                        creatorId: creatorId,
+                        tierId: tierId,
+                    }))
+                });
+            }
+
+
+            // --- 4.5. Actualizar/Crear perfiles de rol (Upsert Lógico) ---
+            const results = {
+                creatorProfile: updatedCreatorProfile,
+                mixing: null,
+                mastering: null,
+                instrumentalist: null,
+            };
+
+            // A) Mixing Engineer Profile (Upsert)
+            if (Object.keys(mixingData).length > 0) {
+                const { mixingGenres: genres, ...data } = mixingData;
+
+                const uploadExampleTunedVocalsId = fileRecords.uploadExampleTunedVocals?.id;
+                const uploadBeforeMixId = fileRecords.uploadBeforeMix?.id;
+                const uploadAfterMixId = fileRecords.uploadAfterMix?.id;
+
+                const existingMixingProfile = await tx.mixingEngineerProfile.findUnique({
+                    where: { creatorId: creatorId },
+                    select: { id: true }
+                });
+
+                let newMixingProfile;
+                if (existingMixingProfile) {
+                    newMixingProfile = await tx.mixingEngineerProfile.update({
+                        where: { id: existingMixingProfile.id },
+                        data: {
+                            ...data,
+                            // Solo actualiza el ID del archivo si se subió uno nuevo en este request
+                            ...(uploadExampleTunedVocalsId && { uploadExampleTunedVocalsId }),
+                            ...(uploadBeforeMixId && { uploadBeforeMixId }),
+                            ...(uploadAfterMixId && { uploadAfterMixId }),
+                        },
+                    });
+                } else {
+                    // Si la data viene en el payload pero el perfil no existía, lo creamos
+                    newMixingProfile = await tx.mixingEngineerProfile.create({
+                        data: {
+                            ...data,
+                            creatorId: creatorId,
+                            uploadExampleTunedVocalsId: uploadExampleTunedVocalsId,
+                            uploadBeforeMixId: uploadBeforeMixId,
+                            uploadAfterMixId: uploadAfterMixId,
+                        },
+                    });
+                }
+                results.mixing = newMixingProfile;
+
+                // Actualizar Mixing Genres (Borrar y Crear)
+                await tx.mixingGenre.deleteMany({
+                    where: { mixingId: newMixingProfile.id }
+                });
+                if (Array.isArray(genres) && genres.length > 0) {
+                    await tx.mixingGenre.createMany({
+                        data: genres.map(genreId => ({
+                            mixingId: newMixingProfile.id,
+                            genreId: genreId,
+                        })),
+                    });
+                }
+            }
+
+
+            // B) Mastering Engineer Profile (Upsert)
+            if (Object.keys(masteringData).length > 0) {
+                const { masteringGenres: genres, ...data } = masteringData;
+
+                const uploadBeforeMasterId = fileRecords.uploadBeforeMaster?.id;
+                const uploadAfterMasterId = fileRecords.uploadAfterMaster?.id;
+
+                const existingMasteringProfile = await tx.masteringEngineerProfile.findUnique({
+                    where: { creatorId: creatorId },
+                    select: { id: true }
+                });
+
+                let newMasteringProfile;
+                if (existingMasteringProfile) {
+                    newMasteringProfile = await tx.masteringEngineerProfile.update({
+                        where: { id: existingMasteringProfile.id },
+                        data: {
+                            ...data,
+                            ...(uploadBeforeMasterId && { uploadBeforeMasterId }),
+                            ...(uploadAfterMasterId && { uploadAfterMasterId }),
+                        },
+                    });
+                } else {
+                    newMasteringProfile = await tx.masteringEngineerProfile.create({
+                        data: {
+                            ...data,
+                            creatorId: creatorId,
+                            uploadBeforeMasterId: uploadBeforeMasterId,
+                            uploadAfterMasterId: uploadAfterMasterId,
+                        },
+                    });
+                }
+                results.mastering = newMasteringProfile;
+
+                // Actualizar Mastering Genres (Borrar y Crear)
+                await tx.masteringGenre.deleteMany({
+                    where: { masteringId: newMasteringProfile.id }
+                });
+                if (Array.isArray(genres) && genres.length > 0) {
+                    await tx.masteringGenre.createMany({
+                        data: genres.map(genreId => ({
+                            masteringId: newMasteringProfile.id,
+                            genreId: genreId,
+                        })),
+                    });
+                }
+            }
+
+            // C) Instrumentalist Profile (Upsert)
+            if (Object.keys(instrumentalistData).length > 0) {
+                const { instrumentalistGenres: genres, ...data } = instrumentalistData;
+
+                const uploadExampleFileId = fileRecords.uploadExampleFile?.id;
+
+                const instruments = Array.isArray(data.instruments)
+                    ? data.instruments
+                    : parseJSON(data.instruments).instruments || [];
+
+                const existingInstrumentalistProfile = await tx.instrumentalistProfile.findUnique({
+                    where: { creatorId: creatorId },
+                    select: { id: true }
+                });
+
+                let newInstrumentalistProfile;
+                if (existingInstrumentalistProfile) {
+                    newInstrumentalistProfile = await tx.instrumentalistProfile.update({
+                        where: { id: existingInstrumentalistProfile.id },
+                        data: {
+                            ...data,
+                            instruments: instruments, // Guardar como JSON
+                            ...(uploadExampleFileId && { uploadExampleFileId }),
+                        },
+                    });
+                } else {
+                    newInstrumentalistProfile = await tx.instrumentalistProfile.create({
+                        data: {
+                            ...data,
+                            creatorId: creatorId,
+                            instruments: instruments, // Guardar como JSON
+                            uploadExampleFileId: uploadExampleFileId,
+                        },
+                    });
+                }
+                results.instrumentalist = newInstrumentalistProfile;
+
+                // Actualizar Instrumentalist Genres (Borrar y Crear)
+                await tx.instrumentalistGenre.deleteMany({
+                    where: { instrumentalistId: newInstrumentalistProfile.id }
+                });
+                if (Array.isArray(genres) && genres.length > 0) {
+                    await tx.instrumentalistGenre.createMany({
+                        data: genres.map(genreId => ({
+                            instrumentalistId: newInstrumentalistProfile.id,
+                            genreId: genreId,
+                        })),
+                    });
+                }
+            }
+
+            return results;
         });
 
-        return NextResponse.json(item);
+        return NextResponse.json({
+            message: "Perfiles de creador y archivos actualizados exitosamente.",
+            data: transactionResult,
+        }, { status: 200 });
+
     } catch (error) {
-        console.error('CreatorProfile PUT Error:', error);
-        if (error.code === 'P2025') return NextResponse.json({ error: 'CreatorProfile not found' }, { status: 404 });
-        if (error.code === 'P2003') return NextResponse.json({ error: 'Invalid foreign key' }, { status: 400 });
-        if (error.code === 'P2002') return NextResponse.json({ error: 'Unique constraint violation' }, { status: 409 });
-        return NextResponse.json({ error: 'Error updating creator profile' }, { status: 500 });
+        console.error("Error en la transacción de Prisma durante la actualización:", error);
+        if (error.message.includes("Creator Profile not found")) {
+             return NextResponse.json({ message: error.message }, { status: 404 });
+        }
+        return NextResponse.json({
+            message: "Error interno del servidor al actualizar los perfiles.",
+            error: error.message,
+        }, { status: 500 });
     }
 }
 
