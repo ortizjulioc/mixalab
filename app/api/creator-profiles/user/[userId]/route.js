@@ -28,18 +28,30 @@ export async function GET(request, { params }) {
                         genre: true
                     }
                 },
-                services: {
-                    where: { deleted: false },
-                    include: {
-                        service: true
-                    }
-                },
                 CreatorTier: {
                     where: { active: true },
                     include: {
                         tier: true
                     }
-                }
+                },
+                mixing: {
+                    include: {
+                        uploadExampleTunedVocals: true,
+                        uploadBeforeMix: true,
+                        uploadAfterMix: true,
+                    }
+                },
+                masteringEngineerProfile: {
+                    include: {
+                        uploadBeforeMaster: true,
+                        uploadAfterMaster: true,
+                    }
+                },
+                instrumentalist: {
+                    include: {
+                        uploadExampleFile: true,
+                    }
+                },
             },
         });
 

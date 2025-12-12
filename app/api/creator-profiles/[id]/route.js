@@ -22,6 +22,35 @@ export async function GET(request, { params }) {
             where: { id },
             include: {
                 user: { select: { id: true, email: true, name: true } },
+                genders: {
+                    include: {
+                        genre: true
+                    }
+                },
+                CreatorTier: {
+                    where: { active: true },
+                    include: {
+                        tier: true
+                    }
+                },
+                mixing: {
+                    include: {
+                        uploadExampleTunedVocals: true,
+                        uploadBeforeMix: true,
+                        uploadAfterMix: true,
+                    }
+                },
+                masteringEngineerProfile: {
+                    include: {
+                        uploadBeforeMaster: true,
+                        uploadAfterMaster: true,
+                    }
+                },
+                instrumentalist: {
+                    include: {
+                        uploadExampleFile: true,
+                    }
+                },
             },
         });
 

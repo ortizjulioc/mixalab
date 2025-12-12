@@ -13,97 +13,72 @@
 export function createCreatorProfileFormData(values, files, userId) {
     const formData = new FormData();
 
-    // ===== CAMPOS REQUERIDOS =====
-    formData.append('userId', userId);
-    formData.append('brandName', values.stageName || '');
-    formData.append('availability', values.availability || '');
-    formData.append('yearsOfExperience', values.yearsExperience || '0');
+    // 1. Preparar objetos de datos
+    // Perfil Principal
+    const profileData = {
+        userId: userId,
+        brandName: values.stageName,
+        country: values.country,
+        yearsOfExperience: parseInt(values.yearsExperience) || 0,
+        availability: values.availability,
+        portfolio: values.portfolioLink,
+        mainDaw: values.mainDAWs?.[0]?.label || values.mainDAWs?.[0]?.value || values.mainDAWs?.[0],
+        pluginChains: values.pluginChains?.map(p => p.label || p.value || p) || [],
+        gearList: (values.pluginChains?.map(p => p.label || p.value || p) || [])[0] || "",
+        socials: values.socialLinks || [],
+        genders: values.generalGenres || [], // Array de IDs
+        // CreatorTier se maneja en backend o por defecto
+    };
 
-    // ===== CAMPOS OPCIONALES DE TEXTO =====
-    if (values.country) formData.append('country', values.country);
-    if (values.portfolioLink) formData.append('portfolio', values.portfolioLink);
-    if (values.stageName) formData.append('stageName', values.stageName);
+    // Datos Mixing
+    const mixingData = values.roles.mixing ? {
+        yearsMixing: parseInt(values.yearsMixing) || 0,
+        averageTurnaroundTimeDays: parseInt(values.mixingTurnaround) || 0,
+        mixingGenres: values.mixingGenresList || [],
+        notableArtists: values.notableArtists,
+        doYouTuneVocals: values.tunedVocalExampleNeeded,
+    } : {};
 
-    // ===== CAMPOS JSON (arrays y objetos) =====
-    // Convertir a JSON string antes de agregar a FormData
-    if (values.mainDAWs && values.mainDAWs.length > 0) {
-        formData.append('mainDawProject', JSON.stringify(values.mainDAWs));
-        // mainDaw es requerido, usar el primero de la lista
-        formData.append('mainDaw', values.mainDAWs[0].label || values.mainDAWs[0].value || values.mainDAWs[0]);
-    }
+    // Datos Mastering
+    const masteringData = values.roles.mastering ? {
+        yearsMastering: parseInt(values.yearsMastering) || 0,
+        averageTurnaroundTimeDays: parseInt(values.masteringTurnaround) || 0,
+        masteringGenres: values.masteringGenresList || [],
+        preferredLoudnessRange: values.loudnessRange,
+    } : {};
 
-    if (values.pluginChains && values.pluginChains.length > 0) {
-        formData.append('pluginChains', JSON.stringify(values.pluginChains));
-        // gearList es requerido, usar el primero de la lista
-        formData.append('gearList', values.pluginChains[0].label || values.pluginChains[0].value || values.pluginChains[0]);
-    }
+    // Datos Instrumentalist (Recording)
+    const instrumentalistData = values.roles.recording ? {
+        yearsRecordingOrPlaying: parseInt(values.yearsRecording) || 0, // Ajustado nombre de campo
+        instruments: values.instrumentsPlayed?.map(i => i.label || i.value || i) || [],
+        instrumentalistGenres: values.recordingGenresList || [],
+        studioSetupDescription: values.studioSetup, // Ajustado nombre de campo
+    } : {};
 
-    if (values.generalGenres && values.generalGenres.length > 0) {
-        formData.append('generalGenres', JSON.stringify(values.generalGenres));
-    }
+    // 2. Agregar JSON strings al FormData
+    formData.append('profileData', JSON.stringify(profileData));
+    formData.append('mixingData', JSON.stringify(mixingData));
+    formData.append('masteringData', JSON.stringify(masteringData));
+    formData.append('instrumentalistData', JSON.stringify(instrumentalistData));
 
-    if (values.socialLinks && values.socialLinks.length > 0) {
-        formData.append('socialLinks', JSON.stringify(values.socialLinks));
-    }
-
-    // ===== ROLES =====
-    // Determinar el rol principal (el primero seleccionado)
-    const selectedRoles = [];
-    if (values.roles.mixing) selectedRoles.push('MIXING');
-    if (values.roles.mastering) selectedRoles.push('MASTERING');
-    if (values.roles.recording) selectedRoles.push('RECORDING');
-
-    if (selectedRoles.length > 0) {
-        formData.append('roles', selectedRoles[0]); // El schema solo acepta un rol
-    }
-
-    // ===== DATOS ESPECÍFICOS DE MIXING =====
-    if (values.roles.mixing) {
-        if (values.yearsMixing) formData.append('mixing', JSON.stringify({
-            years: values.yearsMixing,
-            turnaround: values.mixingTurnaround,
-            genres: values.mixingGenresList,
-            notableArtists: values.notableArtists,
-            tunesVocals: values.tunedVocalExampleNeeded,
-        }));
-    }
-
-    // ===== DATOS ESPECÍFICOS DE MASTERING =====
-    if (values.roles.mastering) {
-        if (values.yearsMastering) formData.append('mastering', JSON.stringify({
-            years: values.yearsMastering,
-            turnaround: values.masteringTurnaround,
-            genres: values.masteringGenresList,
-            loudnessRange: values.loudnessRange,
-        }));
-    }
-
-    // ===== DATOS ESPECÍFICOS DE RECORDING =====
-    if (values.roles.recording) {
-        if (values.yearsRecording) formData.append('recording', JSON.stringify({
-            years: values.yearsRecording,
-            instruments: values.instrumentsPlayed,
-            genres: values.recordingGenresList,
-            studioSetup: values.studioSetup,
-        }));
-    }
-
-    // ===== ARCHIVOS =====
-    // Agregar archivos si existen
-    if (files.mixExampleFile) {
-        formData.append('mixExample', files.mixExampleFile);
-    }
-
-    if (files.masterExampleFile) {
-        formData.append('masterExample', files.masterExampleFile);
-    }
-
-    if (files.performanceExampleFile) {
-        formData.append('performanceExample', files.performanceExampleFile);
-    }
-
+    // 3. Agregar Archivos con las claves esperadas por el endpoint
     if (files.tunedVocalsExampleFile) {
-        formData.append('tunedVocalsExample', files.tunedVocalsExampleFile);
+        formData.append('uploadExampleTunedVocals', files.tunedVocalsExampleFile);
+    }
+
+    // Mapeo de archivos de mezcla
+    if (files.mixExampleFile) {
+        formData.append('uploadAfterMix', files.mixExampleFile);
+    }
+
+    // Mapeo de archivos de mastering
+    if (files.masterExampleFile) {
+        formData.append('uploadAfterMaster', files.masterExampleFile);
+    }
+
+    // Mapeo de archivo de instrumentista
+    if (files.performanceExampleFile) {
+        formData.append('uploadExampleFile', files.performanceExampleFile);
     }
 
     return formData;
@@ -119,12 +94,11 @@ export async function submitCreatorProfile(formData) {
         const response = await fetch('/api/creator-profiles', {
             method: 'POST',
             body: formData,
-            // NO incluir Content-Type header, el browser lo configura automáticamente con boundary
         });
 
         if (!response.ok) {
             const error = await response.json();
-            throw new Error(error.error || 'Error creating creator profile');
+            throw new Error(error.message || error.error || 'Error creating creator profile');
         }
 
         const result = await response.json();
