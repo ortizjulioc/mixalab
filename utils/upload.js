@@ -32,7 +32,7 @@ function buildUploadFolder(userName, project) {
  */
 export async function uploadFile(file, options) {
   const {
-    username,
+    username = "developer",
     project,
     allowedTypes = [
       "image/jpeg",

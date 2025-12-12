@@ -1,4 +1,5 @@
 import prisma from '@/utils/lib/prisma';
+import { uploadFile } from '@/utils/upload';
 import { NextResponse } from 'next/server';
 
 function parseJSON(value) {
@@ -15,6 +16,7 @@ const AVAILABILITIES = ['FULL_TIME', 'PART_TIME', 'ON_DEMAND'];
 const CREATOR_ROLES = ['MIXING', 'MASTERING', 'RECORDING'];
 
 export async function GET(request) {
+
     try {
         const { searchParams } = new URL(request.url);
         const page = parseInt(searchParams.get('page') || '1', 10);
@@ -53,103 +55,264 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+    // 1. Procesar la solicitud multipart/form-data con request.formData()
+    let formData;
     try {
-        const contentType = request.headers.get('content-type');
-        const isFormData = contentType?.includes('multipart/form-data');
+        // Next.js handles the stream and parses multipart/form-data into a FormData object
+        formData = await request.formData();
+    } catch (error) {
+        console.error("Error al leer form data:", error);
+        return NextResponse.json({ message: "Error al procesar los datos de la solicitud" }, { status: 500 });
+    }
 
-        let body;
-        let files = {};
+    // 2. Extraer y parsear datos JSON y archivos
+    let profileData, mixingData, masteringData, instrumentalistData;
 
-        if (isFormData) {
-            // Procesar FormData (con archivos)
-            const formData = await request.formData();
-            body = {};
+    try {
+        // Los datos complejos se envían como strings JSON desde el frontend
+        profileData = parseJSON(formData.get('profileData') || "{}");
+        mixingData = parseJSON(formData.get('mixingData') || "{}");
+        masteringData = parseJSON(formData.get('masteringData') || "{}");
+        instrumentalistData = parseJSON(formData.get('instrumentalistData') || "{}");
+    } catch (error) {
+        return NextResponse.json({ message: "Formato de datos JSON inválido en profileData, mixingData, masteringData o instrumentalistData" }, { status: 400 });
+    }
 
-            // Extraer campos de texto y archivos
-            for (const [key, value] of formData.entries()) {
-                if (value instanceof File) {
-                    // Es un archivo
-                    files[key] = value;
-                } else {
-                    // Es un campo de texto
-                    body[key] = value;
+    console.log('profileData', profileData);
+    console.log('mixingData', mixingData);
+    console.log('masteringData', masteringData);
+    console.log('instrumentalistData', instrumentalistData);
+
+    // Datos cruciales para la subida de archivos
+    const { userId } = profileData;
+
+    if (!userId) {
+        return NextResponse.json({ message: "Faltan datos de usuario (userId)." }, { status: 400 });
+    }
+
+    // 3. Función para subir y registrar archivos
+    const fileUploadPromises = [];
+
+    // Mapeo de archivos y sus campos en DB
+    const fileFieldsMap = {
+        // Mixing Engineer Files
+        uploadExampleTunedVocals: "mixingData",
+        uploadBeforeMix: "mixingData",
+        uploadAfterMix: "mixingData",
+        // Mastering Engineer Files
+        uploadBeforeMaster: "masteringData",
+        uploadAfterMaster: "masteringData",
+        // Instrumentalist Files
+        uploadExampleFile: "instrumentalistData",
+    };
+
+    // 3.1. Iterar sobre las claves de archivo esperadas y crear las promesas de subida
+    for (const fileKey of Object.keys(fileFieldsMap)) {
+        // formData.get() returns the first matching value, which is a File object if uploaded.
+        const fileObject = formData.get(fileKey);
+
+        // Check if the item is a valid file object (instanceof File and has content)
+        if (fileObject instanceof File && fileObject.size > 0) {
+            // Usamos el nombre de la KEY del archivo (ej: 'uploadBeforeMix') como nombre de proyecto temporal
+            const project = fileKey;
+
+            // uploadFile must be able to handle the Web API File object (which supports methods like .stream() or .arrayBuffer())
+            fileUploadPromises.push(
+                uploadFile(fileObject, userId, project).then(metadata => ({
+                    fileKey,
+                    metadata,
+                }))
+            );
+        }
+    }
+
+    let uploadedFileMetadata = {};
+    try {
+        const results = await Promise.all(fileUploadPromises);
+        results.forEach(({ fileKey, metadata }) => {
+            uploadedFileMetadata[fileKey] = metadata;
+        });
+    } catch (error) {
+        console.error("Error durante la subida de archivos:", error);
+        return NextResponse.json({ message: "Error al subir archivos: " + error.message }, { status: 500 });
+    }
+
+    // 4. Iniciar la Transacción de Prisma
+    try {
+        const transactionResult = await prisma.$transaction(async (tx) => {
+            // 4.1. Registrar archivos en la tabla File
+            const fileRecords = {};
+            for (const [fileKey, metadata] of Object.entries(uploadedFileMetadata)) {
+                // Ensure the file data is properly sanitized/validated before creation
+                const fileRecord = await tx.file.create({
+                    data: {
+                        // Assuming metadata contains necessary fields like fileName, mimeType, size, url, etc.
+                        ...metadata,
+                        userId: userId,
+                        serviceRequestId: null,
+                    },
+                });
+                fileRecords[fileKey] = fileRecord;
+            }
+
+            // 4.2. Crear CreatorProfile
+            // Extraemos los datos del CreatorProfile
+            const {
+                genders: creatorGenders,
+                CreatorTier: creatorTiers,
+                ...creatorData
+            } = profileData;
+
+            // Aseguramos que los campos JSON sean arrays o parseados correctamente (Prisma lo maneja si son JSON nativo)
+            const pluginChains = Array.isArray(creatorData.pluginChains)
+                ? creatorData.pluginChains
+                : JSON.parse(creatorData.pluginChains || "[]");
+
+            const socials = Array.isArray(creatorData.socials)
+                ? creatorData.socials
+                : JSON.parse(creatorData.socials || "[]");
+
+            const newCreatorProfile = await tx.creatorProfile.create({
+                data: {
+                    ...creatorData,
+                    userId: userId,
+                    pluginChains: pluginChains,
+                    socials: socials,
+                    // Las demás relaciones se crearán a continuación
+                },
+            });
+            const creatorId = newCreatorProfile.id;
+
+            // 4.3. Crear relaciones CreatorGenre
+            if (Array.isArray(creatorGenders) && creatorGenders.length > 0) {
+                await tx.creatorGenre.createMany({
+                    data: creatorGenders.map(genreId => ({
+                        creatorId: creatorId,
+                        genreId: genreId,
+                    })),
+                });
+            }
+
+            // 4.4. Crear CreatorTier (asumiendo que creatorTiers es un array de tierIds)
+            if (Array.isArray(creatorTiers) && creatorTiers.length > 0) {
+                await tx.creatorTier.createMany({
+                    data: creatorTiers.map(tierId => ({
+                        creatorId: creatorId,
+                        tierId: tierId,
+                    }))
+                });
+            }
+
+
+            // 4.5. Crear perfiles de rol (Mixing, Mastering, Instrumentalist) si existen
+            const results = {
+                creatorProfile: newCreatorProfile,
+                mixing: null,
+                mastering: null,
+                instrumentalist: null,
+            };
+
+            // A) Mixing Engineer Profile
+            if (Object.keys(mixingData).length > 0) {
+                const { mixingGenres: genres, ...data } = mixingData;
+
+                // IDs de archivos subidos
+                const uploadExampleTunedVocalsId = fileRecords.uploadExampleTunedVocals?.id;
+                const uploadBeforeMixId = fileRecords.uploadBeforeMix?.id;
+                const uploadAfterMixId = fileRecords.uploadAfterMix?.id;
+
+                const newMixingProfile = await tx.mixingEngineerProfile.create({
+                    data: {
+                        ...data,
+                        creatorId: creatorId,
+                        uploadExampleTunedVocalsId: uploadExampleTunedVocalsId,
+                        uploadBeforeMixId: uploadBeforeMixId,
+                        uploadAfterMixId: uploadAfterMixId,
+                    },
+                });
+                results.mixing = newMixingProfile;
+
+                if (Array.isArray(genres) && genres.length > 0) {
+                    await tx.mixingGenre.createMany({
+                        data: genres.map(genreId => ({
+                            mixingId: newMixingProfile.id,
+                            genreId: genreId,
+                        })),
+                    });
                 }
             }
-        } else {
-            // Procesar JSON (sin archivos)
-            body = await request.json();
-        }
 
-        // Validaciones
-        if (!body.userId || typeof body.userId !== 'string') {
-            return NextResponse.json({ error: 'userId is required' }, { status: 400 });
-        }
+            // B) Mastering Engineer Profile
+            if (Object.keys(masteringData).length > 0) {
+                const { masteringGenres: genres, ...data } = masteringData;
 
-        if (!body.brandName || typeof body.brandName !== 'string' || body.brandName.trim().length === 0) {
-            return NextResponse.json({ error: 'brandName is required' }, { status: 400 });
-        }
+                // IDs de archivos subidos
+                const uploadBeforeMasterId = fileRecords.uploadBeforeMaster?.id;
+                const uploadAfterMasterId = fileRecords.uploadAfterMaster?.id;
 
-        const yearsOfExperience = Number(body.yearsOfExperience ?? 0);
-        if (!Number.isInteger(yearsOfExperience) || yearsOfExperience < 0) {
-            return NextResponse.json({ error: 'yearsOfExperience must be a non-negative integer' }, { status: 400 });
-        }
+                const newMasteringProfile = await tx.masteringEngineerProfile.create({
+                    data: {
+                        ...data,
+                        creatorId: creatorId,
+                        uploadBeforeMasterId: uploadBeforeMasterId,
+                        uploadAfterMasterId: uploadAfterMasterId,
+                    },
+                });
+                results.mastering = newMasteringProfile;
 
-        const availability = body.availability;
-        if (!AVAILABILITIES.includes(availability)) {
-            return NextResponse.json({ error: `availability must be one of ${AVAILABILITIES.join(', ')}` }, { status: 400 });
-        }
+                if (Array.isArray(genres) && genres.length > 0) {
+                    await tx.masteringGenre.createMany({
+                        data: genres.map(genreId => ({
+                            masteringId: newMasteringProfile.id,
+                            genreId: genreId,
+                        })),
+                    });
+                }
+            }
 
-        const socials = parseJSON(body.socials);
-        const mainDawProject = parseJSON(body.mainDawProject);
-        const pluginChains = parseJSON(body.pluginChains);
-        const generalGenres = parseJSON(body.generalGenres);
-        const socialLinks = parseJSON(body.socialLinks);
-        const porfolioLinks = parseJSON(body.porfolioLinks);
-        const roles = body.roles ?? null;
+            // C) Instrumentalist Profile
+            if (Object.keys(instrumentalistData).length > 0) {
+                const { instrumentalistGenres: genres, ...data } = instrumentalistData;
 
-        if (roles !== null && !CREATOR_ROLES.includes(roles)) {
-            return NextResponse.json({ error: `roles must be one of ${CREATOR_ROLES.join(', ')}` }, { status: 400 });
-        }
+                // ID del archivo subido
+                const uploadExampleFileId = fileRecords.uploadExampleFile?.id;
 
-        const profileData = {
-            userId: body.userId,
-            brandName: body.brandName,
-            country: body.country ?? null,
-            portfolio: body.portfolio ?? null,
-            socials: socials ?? null,
-            yearsOfExperience,
-            mainDaw: body.mainDaw ?? null,
-            gearList: body.gearList ?? null,
-            availability,
-            // optional new fields
-            stageName: body.stageName ?? null,
-            mainDawProject: mainDawProject ?? null,
-            pluginChains: pluginChains ?? null,
-            generalGenres: generalGenres ?? null,
-            socialLinks: socialLinks ?? null,
-            roles: roles ?? null,
-            mixing: body.mixing ?? null,
-            mastering: body.mastering ?? null,
-            recording: body.recording ?? null,
-            porfolioLinks: porfolioLinks ?? null,
-        };
+                const instruments = Array.isArray(data.instruments)
+                    ? data.instruments
+                    : JSON.parse(data.instruments || "[]");
 
-        // Crear perfil con archivos usando el servicio de transacción
-        const { createCreatorProfileWithFiles } = await import('@/utils/creator-profile-files');
-        const result = await createCreatorProfileWithFiles(profileData, files);
+                const newInstrumentalistProfile = await tx.instrumentalistProfile.create({
+                    data: {
+                        ...data,
+                        creatorId: creatorId,
+                        instruments: instruments, // Guardar como JSON
+                        uploadExampleFileId: uploadExampleFileId,
+                    },
+                });
+                results.instrumentalist = newInstrumentalistProfile;
 
-        return NextResponse.json(result, { status: 201 });
+                if (Array.isArray(genres) && genres.length > 0) {
+                    await tx.instrumentalistGenre.createMany({
+                        data: genres.map(genreId => ({
+                            instrumentalistId: newInstrumentalistProfile.id,
+                            genreId: genreId,
+                        })),
+                    });
+                }
+            }
+
+            return results;
+        });
+
+        return NextResponse.json({
+            message: "Perfiles de creador y archivos guardados exitosamente.",
+            data: transactionResult,
+        }, { status: 200 });
     } catch (error) {
-        console.error('CreatorProfile POST Error:', error);
-        if (error.code === 'P2002') {
-            return NextResponse.json({ error: 'CreatorProfile for this user already exists' }, { status: 409 });
-        }
-        if (error.code === 'P2003') {
-            return NextResponse.json({ error: 'Invalid userId' }, { status: 400 });
-        }
-        if (error.message?.includes('Tipo de archivo no permitido')) {
-            return NextResponse.json({ error: error.message }, { status: 400 });
-        }
-        return NextResponse.json({ error: 'Error creating creator profile' }, { status: 500 });
+        console.error("Error en la transacción de Prisma:", error);
+        return NextResponse.json({
+            message: "Error interno del servidor al guardar los perfiles.",
+            error: error.message,
+        }, { status: 500 });
     }
 }

@@ -8,7 +8,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  // url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL")
 }
 
 // ---------------------------------------------------------
@@ -200,17 +200,6 @@ model CreatorProfile {
   availability      AvailabilityStatus
   pluginChains      Json                 @map("plugin_chains")
   status            CreatorProfileStatus @default(PENDING)
-
-  // stageName      String?      @map("stage_name")
-  // mainDawProject Json         @map("main_daw_project")
-  // generalGenres  Json         @map("general_genres")
-  // socialLinks    Json         @map("social_links")
-  // roles          CreatorRoles @map("roles")
-  // mixing         String?      @map("mixing")
-  // mastering      String?      @map("mastering")
-  // recording      String?      @map("recording")
-  // porfolioLinks  Json         @map("portfolio_links")
-  // fileExamples   Json         @map("file_examples")
 
   user                     User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   mixing                   MixingEngineerProfile?
