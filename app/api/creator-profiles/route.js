@@ -78,11 +78,6 @@ export async function POST(request) {
         return NextResponse.json({ message: "Formato de datos JSON inválido en profileData, mixingData, masteringData o instrumentalistData" }, { status: 400 });
     }
 
-    console.log('profileData', profileData);
-    console.log('mixingData', mixingData);
-    console.log('masteringData', masteringData);
-    console.log('instrumentalistData', instrumentalistData);
-
     // Datos cruciales para la subida de archivos
     const { userId } = profileData;
 
