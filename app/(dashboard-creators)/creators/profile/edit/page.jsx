@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useFormik } from 'formik'
 import * as Yup from 'yup'
-import { Home, Save, X, AlertCircle, User, Headphones, Sliders, Mic } from 'lucide-react'
+import { Home, Save, X, AlertCircle, User, Headphones, Sliders, Mic, Music, Sparkles } from 'lucide-react'
 
 import BreadcrumbsTitle from '@/components/Breadcrumbs'
 import Button from '@/components/Button'
@@ -14,6 +14,7 @@ import Select from '@/components/Select'
 import Checkbox from '@/components/Checkbox'
 import SectionHeader from '@/components/SectionHeader'
 import SelectGenres from '@/components/SelectGenres'
+import FileUploadPlaceholder from '@/components/FileUploadPlaceholder'
 
 import { createCreatorProfileFormData } from '@/utils/submit-creator-profile'
 import SocialsInput from '../../securitypass/SocialsInput'
@@ -45,6 +46,75 @@ const validationSchema = Yup.object({
     generalGenres: Yup.array().min(1, 'At least one genre is required').required('Genres are required'),
     socialLinks: Yup.array().min(1, 'At least one social link is required').required('Social links are required'),
     portfolioLink: Yup.string().url('Must be a valid URL').notRequired(),
+
+    // Validación de roles
+    roles: Yup.object({
+        mixing: Yup.boolean(),
+        mastering: Yup.boolean(),
+        recording: Yup.boolean(),
+    }).test('at-least-one-role', 'At least one service must be selected', function (value) {
+        const { mixing, mastering, recording } = value || {}
+        return mixing || mastering || recording
+    }),
+
+    // Mixing fields (conditional)
+    yearsMixing: Yup.number().when('roles.mixing', {
+        is: true,
+        then: (schema) => schema.min(0).required('Years mixing is required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    mixingTurnaround: Yup.number().when('roles.mixing', {
+        is: true,
+        then: (schema) => schema.min(1).required('Turnaround time is required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    mixingGenresList: Yup.array().when('roles.mixing', {
+        is: true,
+        then: (schema) => schema.min(1, 'At least one mixing genre is required').required('Mixing genres are required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    notableArtists: Yup.string().notRequired(),
+    tunedVocalExampleNeeded: Yup.boolean().notRequired(),
+
+    // Mastering fields (conditional)
+    yearsMastering: Yup.number().when('roles.mastering', {
+        is: true,
+        then: (schema) => schema.min(0).required('Years mastering is required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    masteringTurnaround: Yup.number().when('roles.mastering', {
+        is: true,
+        then: (schema) => schema.min(1).required('Turnaround time is required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    masteringGenresList: Yup.array().when('roles.mastering', {
+        is: true,
+        then: (schema) => schema.min(1, 'At least one mastering genre is required').required('Mastering genres are required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    loudnessRange: Yup.string().notRequired(),
+
+    // Recording fields (conditional)
+    yearsRecording: Yup.number().when('roles.recording', {
+        is: true,
+        then: (schema) => schema.min(0).required('Years recording is required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    instrumentsPlayed: Yup.array().when('roles.recording', {
+        is: true,
+        then: (schema) => schema.min(1, 'At least one instrument is required').required('Instruments are required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    recordingGenresList: Yup.array().when('roles.recording', {
+        is: true,
+        then: (schema) => schema.min(1, 'At least one recording genre is required').required('Recording genres are required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
+    studioSetup: Yup.string().when('roles.recording', {
+        is: true,
+        then: (schema) => schema.required('Studio setup is required'),
+        otherwise: (schema) => schema.notRequired(),
+    }),
 })
 
 export default function EditCreatorProfilePage() {
@@ -54,6 +124,14 @@ export default function EditCreatorProfilePage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // Estado para archivos
+    const [files, setFiles] = useState({
+        mixExampleFile: null,
+        masterExampleFile: null,
+        performanceExampleFile: null,
+        tunedVocalsExampleFile: null,
+    })
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -88,9 +166,16 @@ export default function EditCreatorProfilePage() {
             yearsExperience: profile?.yearsOfExperience || 0,
             availability: profile?.availability || 'ON_DEMAND',
             portfolioLink: profile?.portfolio || '',
-            mainDAWs: [],
-            pluginChains: [],
-            socialLinks: [],
+            // mainDaw es un string simple como "fl_studio"
+            mainDAWs: profile?.mainDaw ? [profile.mainDaw] : [],
+            // pluginChains es un array de strings como ['fabfilter']
+            pluginChains: profile?.pluginChains && Array.isArray(profile.pluginChains)
+                ? profile.pluginChains
+                : [],
+            // socials es un array de objetos {link, platform}
+            socialLinks: profile?.socials && Array.isArray(profile.socials)
+                ? profile.socials
+                : [],
             generalGenres: profile?.genders?.map(g => g.genreId) || [],
             roles: {
                 mixing: !!profile?.mixing,
@@ -100,18 +185,21 @@ export default function EditCreatorProfilePage() {
             // Mixing fields
             yearsMixing: profile?.mixing?.yearsMixing || 0,
             mixingTurnaround: profile?.mixing?.averageTurnaroundTimeDays || 0,
-            mixingGenresList: [],
-            notableArtists: '',
+            mixingGenresList: profile?.mixing?.mixingGenres?.map(g => g.genreId) || [],
+            notableArtists: profile?.mixing?.notableArtists || '',
             tunedVocalExampleNeeded: profile?.mixing?.doYouTuneVocals || false,
             // Mastering fields
             yearsMastering: profile?.masteringEngineerProfile?.yearsMastering || 0,
             masteringTurnaround: profile?.masteringEngineerProfile?.averageTurnaroundTimeDays || 0,
-            masteringGenresList: [],
+            masteringGenresList: profile?.masteringEngineerProfile?.masteringGenres?.map(g => g.genreId) || [],
             loudnessRange: profile?.masteringEngineerProfile?.preferredLoudnessRange || '',
             // Recording fields
             yearsRecording: profile?.instrumentalist?.yearsRecordingOrPlaying || 0,
-            instrumentsPlayed: profile?.instrumentalist?.instruments || [],
-            recordingGenresList: [],
+            // instruments debe ser un array de strings
+            instrumentsPlayed: profile?.instrumentalist?.instruments && Array.isArray(profile.instrumentalist.instruments)
+                ? profile.instrumentalist.instruments
+                : [],
+            recordingGenresList: profile?.instrumentalist?.instrumentalistGenres?.map(g => g.genreId) || [],
             studioSetup: profile?.instrumentalist?.studioSetupDescription || '',
         },
         validationSchema,
@@ -120,7 +208,7 @@ export default function EditCreatorProfilePage() {
             setError(null)
 
             try {
-                const formData = createCreatorProfileFormData(values, {}, session?.user?.id)
+                const formData = createCreatorProfileFormData(values, files, session?.user?.id)
 
                 const response = await fetch(`/api/creator-profiles/${profile.id}`, {
                     method: 'PUT',
@@ -143,6 +231,10 @@ export default function EditCreatorProfilePage() {
     })
 
     const { values, errors, touched, handleChange, handleBlur, setFieldValue } = formik
+
+    const handleFileChange = (fieldName, file) => {
+        setFiles(prev => ({ ...prev, [fieldName]: file }))
+    }
 
     if (status === 'loading' || loading) {
         return (
@@ -236,6 +328,33 @@ export default function EditCreatorProfilePage() {
             {/* Edit Form */}
             <div className="p-8 border border-white/20 rounded-2xl liquid-glass">
                 <form onSubmit={formik.handleSubmit} className="space-y-8">
+                    {/* Role Selection */}
+                    <div className="bg-gray-700/50 p-6 rounded-lg border border-gray-700">
+                        <h3 className="text-xl font-semibold mb-4 text-blue-300">Select Your Services</h3>
+                        <p className="text-sm text-gray-400 mb-4">Choose which services you want to offer. You can add or remove services at any time.</p>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {['mixing', 'mastering', 'recording'].map(role => (
+                                <label key={role} className="flex items-center p-3 rounded-lg cursor-pointer bg-black hover:bg-gray-900 transition duration-150 ease-in-out border border-transparent has-[:checked]:border-blue-500 has-[:checked]:bg-gray-700/70">
+                                    <Checkbox
+                                        id={`${role}-checkbox`}
+                                        checked={values.roles[role]}
+                                        onChange={(e) => setFieldValue(`roles.${role}`, e.target.checked)}
+                                        label={
+                                            role === 'mixing' ? 'Mixing Engineer' :
+                                                role === 'mastering' ? 'Mastering Engineer' :
+                                                    'Recording Session (Musician)'
+                                        }
+                                        className="capitalize text-gray-200"
+                                        containerClassName="w-full"
+                                    />
+                                </label>
+                            ))}
+                        </div>
+                        {!values.roles.mixing && !values.roles.mastering && !values.roles.recording && (
+                            <p className="text-yellow-400 text-sm mt-3">Please select at least one service to continue.</p>
+                        )}
+                    </div>
+
                     {/* General Info Section */}
                     <SectionHeader title="General Info" icon={User} id="general-info" />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -369,6 +488,264 @@ export default function EditCreatorProfilePage() {
                         />
                     </div>
 
+                    {/* 🎧 MIXING ENGINEER SECTION */}
+                    {values.roles.mixing && (
+                        <>
+                            <SectionHeader title="Mixing Engineer" icon={Headphones} id="mixing-engineer" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <Input
+                                    label="Years Mixing"
+                                    id="yearsMixing"
+                                    name="yearsMixing"
+                                    required
+                                    type="number"
+                                    placeholder="3"
+                                    min="0"
+                                    value={values.yearsMixing}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.yearsMixing && errors.yearsMixing}
+                                />
+                                <Input
+                                    label="Average Turnaround Time (days)"
+                                    id="mixingTurnaround"
+                                    name="mixingTurnaround"
+                                    required
+                                    type="number"
+                                    placeholder="3"
+                                    min="1"
+                                    value={values.mixingTurnaround}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.mixingTurnaround && errors.mixingTurnaround}
+                                />
+
+                                <SelectGenres
+                                    label="Genres You Mix"
+                                    id="mixingGenres"
+                                    name="mixingGenresList"
+                                    required
+                                    value={values.mixingGenresList}
+                                    onChange={(event) => setFieldValue('mixingGenresList', event.target.value)}
+                                    onBlur={handleBlur}
+                                    error={touched.mixingGenresList && errors.mixingGenresList}
+                                    className="sm:col-span-2"
+                                />
+
+                                <Input
+                                    label="Notable Artists You've Worked With (optional)"
+                                    id="notableArtists"
+                                    name="notableArtists"
+                                    placeholder="Artist X, Band Y"
+                                    value={values.notableArtists}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.notableArtists && errors.notableArtists}
+                                    className="sm:col-span-2"
+                                />
+
+                                <div className="sm:col-span-2 space-y-3">
+                                    <label className="text-sm font-medium text-gray-300 block">Do You Tune Vocals? <span className="text-red-400">*</span></label>
+                                    <div className="flex space-x-6">
+                                        <Checkbox
+                                            id="tuneVocals-yes"
+                                            checked={values.tunedVocalExampleNeeded}
+                                            onChange={(e) => setFieldValue('tunedVocalExampleNeeded', e.target.checked)}
+                                            label="Yes"
+                                            containerClassName="mr-4"
+                                        />
+                                        <Checkbox
+                                            id="tuneVocals-no"
+                                            checked={!values.tunedVocalExampleNeeded}
+                                            onChange={(e) => setFieldValue('tunedVocalExampleNeeded', !e.target.checked)}
+                                            label="No"
+                                        />
+                                    </div>
+
+                                    {values.tunedVocalExampleNeeded && (
+                                        <FileUploadPlaceholder
+                                            label="Upload Example with Tuned Vocals"
+                                            id="tunedVocalsExample"
+                                            helperText="Upload an audio example showcasing your vocal tuning skill."
+                                            icon={Sparkles}
+                                            onChange={(file) => handleFileChange('tunedVocalsExampleFile', file)}
+                                            accept="audio/*"
+                                        />
+                                    )}
+                                </div>
+
+                                <FileUploadPlaceholder
+                                    label="Upload 1 Before & After Mix"
+                                    id="mixExample"
+                                    helperText="Please upload one pair of 'before' (raw) and 'after' (mixed) files."
+                                    icon={Music}
+                                    className="sm:col-span-2"
+                                    onChange={(file) => handleFileChange('mixExampleFile', file)}
+                                    accept="audio/*"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {/* 🔊 MASTERING ENGINEER SECTION */}
+                    {values.roles.mastering && (
+                        <>
+                            <SectionHeader title="Mastering Engineer" icon={Sliders} id="mastering-engineer" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <Input
+                                    label="Years Mastering"
+                                    id="yearsMastering"
+                                    name="yearsMastering"
+                                    required
+                                    type="number"
+                                    placeholder="2"
+                                    min="0"
+                                    value={values.yearsMastering}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.yearsMastering && errors.yearsMastering}
+                                />
+                                <Input
+                                    label="Average Turnaround Time (days)"
+                                    id="masteringTurnaround"
+                                    name="masteringTurnaround"
+                                    required
+                                    type="number"
+                                    placeholder="2"
+                                    min="1"
+                                    value={values.masteringTurnaround}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.masteringTurnaround && errors.masteringTurnaround}
+                                />
+
+                                <SelectGenres
+                                    label="Genres You Master"
+                                    id="masteringGenres"
+                                    name="masteringGenresList"
+                                    required
+                                    value={values.masteringGenresList}
+                                    onChange={(event) => setFieldValue('masteringGenresList', event.target.value)}
+                                    onBlur={handleBlur}
+                                    error={touched.masteringGenresList && errors.masteringGenresList}
+                                    className="sm:col-span-2"
+                                />
+
+                                <Input
+                                    label="Preferred Loudness Range (LUFS or RMS, optional)"
+                                    id="loudnessRange"
+                                    name="loudnessRange"
+                                    placeholder="-12 LUFS to -8 LUFS"
+                                    value={values.loudnessRange}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.loudnessRange && errors.loudnessRange}
+                                    className="sm:col-span-2"
+                                />
+
+                                <FileUploadPlaceholder
+                                    label="Upload 1 Before & After Master"
+                                    id="masterExample"
+                                    helperText="Please upload one pair of 'before' (mixed) and 'after' (mastered) files."
+                                    icon={Music}
+                                    className="sm:col-span-2"
+                                    onChange={(file) => handleFileChange('masterExampleFile', file)}
+                                    accept="audio/*"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {/* 🎙️ RECORDING SESSION SECTION */}
+                    {values.roles.recording && (
+                        <>
+                            <SectionHeader title="Recording Session (Instrumentalist)" icon={Mic} id="recording-session" />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <Input
+                                    label="Years of Recording or Playing"
+                                    id="yearsRecording"
+                                    name="yearsRecording"
+                                    required
+                                    type="number"
+                                    placeholder="10"
+                                    min="0"
+                                    value={values.yearsRecording}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.yearsRecording && errors.yearsRecording}
+                                />
+                                <div></div>
+
+                                <Select
+                                    label="What Instruments do you play"
+                                    id="instrumentsPlayed"
+                                    name="instrumentsPlayed"
+                                    required
+                                    placeholder="Type instrument names, press Enter to add"
+                                    value={values.instrumentsPlayed}
+                                    onChange={(newValue) => setFieldValue('instrumentsPlayed', newValue)}
+                                    onBlur={handleBlur}
+                                    error={touched.instrumentsPlayed && errors.instrumentsPlayed}
+                                    isMulti
+                                    isCreatable
+                                    options={[
+                                        { label: 'Guitar', value: 'guitar' },
+                                        { label: 'Bass', value: 'bass' },
+                                        { label: 'Drums', value: 'drums' },
+                                        { label: 'Piano', value: 'piano' },
+                                        { label: 'Keyboard', value: 'keyboard' },
+                                        { label: 'Vocals', value: 'vocals' },
+                                        { label: 'Saxophone', value: 'saxophone' },
+                                        { label: 'Trumpet', value: 'trumpet' },
+                                        { label: 'Violin', value: 'violin' },
+                                        { label: 'Cello', value: 'cello' },
+                                        { label: 'Flute', value: 'flute' },
+                                        { label: 'Clarinet', value: 'clarinet' },
+                                        { label: 'Synthesizer', value: 'synthesizer' },
+                                        { label: 'Percussion', value: 'percussion' },
+                                    ]}
+                                    className="sm:col-span-2"
+                                />
+
+                                <SelectGenres
+                                    label="Genres You Record or Perform"
+                                    id="recordingGenres"
+                                    name="recordingGenresList"
+                                    required
+                                    value={values.recordingGenresList}
+                                    onChange={(event) => setFieldValue('recordingGenresList', event.target.value)}
+                                    onBlur={handleBlur}
+                                    error={touched.recordingGenresList && errors.recordingGenresList}
+                                    className="sm:col-span-2"
+                                />
+
+                                <Input
+                                    label="Studio Setup (brief description)"
+                                    id="studioSetup"
+                                    name="studioSetup"
+                                    required
+                                    placeholder="Home studio, custom acoustic treatment, Focusrite interface, specific mic models."
+                                    as="textarea"
+                                    value={values.studioSetup}
+                                    onChange={handleChange}
+                                    onBlur={handleBlur}
+                                    error={touched.studioSetup && errors.studioSetup}
+                                    className="sm:col-span-2"
+                                />
+
+                                <FileUploadPlaceholder
+                                    label="Upload Audio or Video Example"
+                                    id="performanceExample"
+                                    helperText="Upload an example showcasing your performance/recording quality."
+                                    icon={Music}
+                                    className="sm:col-span-2"
+                                    onChange={(file) => handleFileChange('performanceExampleFile', file)}
+                                    accept="audio/*,video/*"
+                                />
+                            </div>
+                        </>
+                    )}
+
                     <div className="flex gap-4 justify-end pt-4 border-t border-white/10">
                         <Button
                             type="button"
@@ -384,12 +761,16 @@ export default function EditCreatorProfilePage() {
                             type="submit"
                             color="blue"
                             loading={isSubmitting}
+                            disabled={isSubmitting || (!values.roles.mixing && !values.roles.mastering && !values.roles.recording)}
                             className="flex items-center gap-2"
                         >
                             <Save size={18} />
                             Save Changes
                         </Button>
                     </div>
+                    {!values.roles.mixing && !values.roles.mastering && !values.roles.recording && (
+                        <p className="text-center text-sm text-yellow-400 mt-3">You must select at least one service to save changes.</p>
+                    )}
                 </form>
             </div>
         </div>

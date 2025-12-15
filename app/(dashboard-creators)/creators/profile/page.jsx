@@ -84,6 +84,41 @@ export default function CreatorProfilePage() {
         }
     }, [session, status])
 
+    // Helper functions para formatear datos
+    const formatCountry = (countryCode) => {
+        const countries = {
+            'AR': 'Argentina',
+            'US': 'United States',
+            'MX': 'Mexico',
+            'ES': 'Spain',
+            'CO': 'Colombia',
+            'CL': 'Chile',
+            'PE': 'Peru',
+            'BR': 'Brazil',
+            // Agregar más países según sea necesario
+        }
+        return countries[countryCode] || countryCode
+    }
+
+    const formatDAW = (daw) => {
+        const daws = {
+            'fl_studio': 'FL Studio',
+            'ableton_live': 'Ableton Live',
+            'logic_pro': 'Logic Pro',
+            'pro_tools': 'Pro Tools',
+            'cubase': 'Cubase',
+            'studio_one': 'Studio One',
+            'reaper': 'Reaper',
+            // Agregar más DAWs según sea necesario
+        }
+        return daws[daw] || daw
+    }
+
+    const formatAvailability = (availability) => {
+        if (!availability) return 'Not specified'
+        return availability.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+    }
+
     if (status === 'loading' || loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -239,19 +274,19 @@ export default function CreatorProfilePage() {
                     </div>
                     <div>
                         <label className="text-sm text-gray-400">Country</label>
-                        <p className="text-white font-medium mt-1">{profile.country || 'Not specified'}</p>
+                        <p className="text-white font-medium mt-1">{formatCountry(profile.country) || 'Not specified'}</p>
                     </div>
                     <div>
                         <label className="text-sm text-gray-400">Years of Experience</label>
-                        <p className="text-white font-medium mt-1">{profile.yearsOfExperience} years</p>
+                        <p className="text-white font-medium mt-1">{profile.yearsOfExperience} {profile.yearsOfExperience === 1 ? 'year' : 'years'}</p>
                     </div>
                     <div>
                         <label className="text-sm text-gray-400">Main DAW</label>
-                        <p className="text-white font-medium mt-1">{profile.mainDaw}</p>
+                        <p className="text-white font-medium mt-1">{formatDAW(profile.mainDaw)}</p>
                     </div>
                     <div>
                         <label className="text-sm text-gray-400">Availability</label>
-                        <p className="text-white font-medium mt-1">{profile.availability?.replace('_', ' ')}</p>
+                        <p className="text-white font-medium mt-1">{formatAvailability(profile.availability)}</p>
                     </div>
                     <div>
                         <label className="text-sm text-gray-400">Portfolio</label>

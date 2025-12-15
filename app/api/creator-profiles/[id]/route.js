@@ -1,4 +1,5 @@
 import prisma from '@/utils/lib/prisma';
+import { uploadFile } from '@/utils/upload';
 import { NextResponse } from 'next/server';
 
 function parseJSON(value) {
