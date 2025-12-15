@@ -148,5 +148,6 @@ export default function useTiers() {
     updateTier,
     deleteTier,
     getTierById,
+    fetchTierById: getTierById, // Alias for consistency
   };
 }

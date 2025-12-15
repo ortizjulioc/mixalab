@@ -447,10 +447,14 @@ model File {
 }
 
 model Tier {
-  id          String   @id @default(uuid())
-  name        TierName @unique
-  description String?
-  order       Int      @unique
+  id                String   @id @default(uuid())
+  name              TierName @unique
+  description       String?  @db.Text // Texto enriquecido (rich text)
+  order             Int      @unique
+  price             Float    @default(0) // Precio del tier
+  numberOfRevisions Int      @default(0) @map("number_of_revisions") // Número de revisiones incluidas
+  stems             Int      @default(0) // Número de stems
+  deliveryDays      Int      @default(0) @map("delivery_days") // Duración aproximada en días
 
   CreatorTier          CreatorTier[]
   UpgradeRequirements  UpgradeRequirements?

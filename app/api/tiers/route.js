@@ -11,11 +11,11 @@ export async function GET(request) {
 
     const where = search
       ? {
-          OR: [
-            { name: { contains: search } },
-            { description: { contains: search } },
-          ],
-        }
+        OR: [
+          { name: { contains: search } },
+          { description: { contains: search } },
+        ],
+      }
       : {};
 
     const [tiers, total] = await Promise.all([
@@ -40,15 +40,31 @@ export async function POST(request) {
     const body = await request.json();
 
     if (!body.name || typeof body.name !== 'string') {
-      return NextResponse.json({ error: 'Invalid name' }, { status: 400 });
+      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid name' } }, { status: 400 });
     }
 
-    if (body.description && (typeof body.description !== 'string' || body.description.length > 500)) {
-      return NextResponse.json({ error: 'Invalid description' }, { status: 400 });
+    if (body.description && typeof body.description !== 'string') {
+      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid description' } }, { status: 400 });
     }
 
     if (body.order === undefined || isNaN(Number(body.order))) {
-      return NextResponse.json({ error: 'Invalid order' }, { status: 400 });
+      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid order' } }, { status: 400 });
+    }
+
+    if (body.price !== undefined && (isNaN(Number(body.price)) || Number(body.price) < 0)) {
+      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid price' } }, { status: 400 });
+    }
+
+    if (body.numberOfRevisions !== undefined && (isNaN(Number(body.numberOfRevisions)) || Number(body.numberOfRevisions) < 0)) {
+      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid number of revisions' } }, { status: 400 });
+    }
+
+    if (body.stems !== undefined && (isNaN(Number(body.stems)) || Number(body.stems) < 0)) {
+      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid stems count' } }, { status: 400 });
+    }
+
+    if (body.deliveryDays !== undefined && (isNaN(Number(body.deliveryDays)) || Number(body.deliveryDays) < 0)) {
+      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid delivery days' } }, { status: 400 });
     }
 
     const tier = await prisma.tier.create({
@@ -56,6 +72,10 @@ export async function POST(request) {
         name: body.name.toUpperCase(),
         description: body.description || null,
         order: Number(body.order),
+        price: body.price !== undefined ? Number(body.price) : 0,
+        numberOfRevisions: body.numberOfRevisions !== undefined ? Number(body.numberOfRevisions) : 0,
+        stems: body.stems !== undefined ? Number(body.stems) : 0,
+        deliveryDays: body.deliveryDays !== undefined ? Number(body.deliveryDays) : 0,
       },
     });
 
@@ -63,8 +83,8 @@ export async function POST(request) {
   } catch (error) {
     console.error('POST /tiers Error:', error);
     if (error.code === 'P2002') {
-      return NextResponse.json({ error: 'A tier with that name or order already exists' }, { status: 400 });
+      return NextResponse.json({ success: false, error: { code: 'DUPLICATE_ERROR', message: 'A tier with that name or order already exists' } }, { status: 400 });
     }
-    return NextResponse.json({ error: 'Error creating tier' }, { status: 500 });
+    return NextResponse.json({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Error creating tier' } }, { status: 500 });
   }
 }
