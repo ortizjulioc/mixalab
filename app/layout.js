@@ -1,7 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import SessionWrapper from "../components/SessionWrapper";
-
+import NextTopLoader from "nextjs-toploader";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -23,7 +23,8 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-           <SessionWrapper>{children}</SessionWrapper>
+        <NextTopLoader showSpinner={false} color="#4361ee" />
+        <SessionWrapper>{children}</SessionWrapper>
       </body>
     </html>
   );
