@@ -89,6 +89,28 @@ async function main() {
   } else {
     console.log(`✔ Tiers already exist (${existingTiers} tiers found)`);
   }
+
+  // Crear Géneros por defecto
+  const defaultGenres = settings.genres || [
+    "Pop", "Rock", "Hip Hop", "R&B", "Electronic", "Dance", "House",
+    "Techno", "Trap", "Reggaeton", "Latin", "Jazz", "Blues", "Country",
+    "Folk", "Classical", "Metal", "Punk", "Indie", "Alternative"
+  ];
+
+  const existingGenres = await prisma.genre.count();
+
+  if (existingGenres === 0) {
+    console.log('🎵 Creating default genres...');
+    for (const genreName of defaultGenres) {
+      const genre = await prisma.genre.create({
+        data: { name: genreName },
+      });
+      console.log(`✅ Created genre: ${genre.name}`);
+    }
+    console.log('🎉 Genres created successfully!');
+  } else {
+    console.log(`✔ Genres already exist (${existingGenres} genres found)`);
+  }
 }
 
 main()
