@@ -80,26 +80,42 @@ function DashboardStats({ creatorProfile }) {
     return null
   }
 
+  // Determinar servicios activos
+  const activeServices = []
+  if (creatorProfile.mixing) activeServices.push('Mixing')
+  if (creatorProfile.masteringEngineerProfile) activeServices.push('Mastering')
+  if (creatorProfile.instrumentalist) activeServices.push('Recording')
+
+  // Obtener tier actual
+  const currentTier = creatorProfile.CreatorTier?.find(t => t.active)?.tier
+  const tierName = currentTier?.name || 'BRONZE'
+  const tierColors = {
+    BRONZE: 'text-orange-400',
+    SILVER: 'text-gray-300',
+    GOLD: 'text-yellow-400',
+    PLATINUM: 'text-purple-400',
+  }
+
   const stats = [
     {
       icon: Sparkles,
-      label: 'Active Projects',
-      value: '0',
-      change: 'Start accepting projects',
+      label: 'Active Services',
+      value: activeServices.length.toString(),
+      change: activeServices.join(', ') || 'No services',
       color: 'text-amber-400',
     },
     {
       icon: TrendingUp,
-      label: 'Total Earnings',
-      value: '$0',
-      change: 'Complete projects to earn',
-      color: 'text-green-400',
+      label: 'Creator Tier',
+      value: tierName,
+      change: `${creatorProfile.yearsOfExperience} years experience`,
+      color: tierColors[tierName] || 'text-gray-400',
     },
     {
       icon: Clock,
-      label: 'Avg. Turnaround',
-      value: creatorProfile.availability === 'FULL_TIME' ? '2-3 days' : '5-7 days',
-      change: 'Based on availability',
+      label: 'Availability',
+      value: creatorProfile.availability?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'On Demand',
+      change: `${creatorProfile.genders?.length || 0} genres`,
       color: 'text-blue-400',
     },
   ]
@@ -117,7 +133,7 @@ function DashboardStats({ creatorProfile }) {
               <span className="text-gray-400 text-sm font-medium">{stat.label}</span>
               <Icon className={`w-5 h-5 ${stat.color}`} />
             </div>
-            <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
+            <div className={`text-3xl font-bold mb-1 ${stat.color}`}>{stat.value}</div>
             <div className="text-sm text-gray-500">{stat.change}</div>
           </div>
         )
@@ -134,6 +150,9 @@ function NextSteps({ creatorProfile }) {
     return null
   }
 
+  // Verificar si tiene servicios activos
+  const hasServices = !!(creatorProfile.mixing || creatorProfile.masteringEngineerProfile || creatorProfile.instrumentalist)
+
   const steps = {
     PENDING: [
       { icon: Clock, text: 'Wait for admin review (24-48 hours)', completed: false },
@@ -141,9 +160,9 @@ function NextSteps({ creatorProfile }) {
       { icon: Sparkles, text: 'Prepare your portfolio samples', completed: false },
     ],
     APPROVED: [
-      { icon: CheckCircle2, text: 'Profile approved', completed: true },
-      { icon: Sparkles, text: 'Set up your services and pricing', completed: false },
-      { icon: TrendingUp, text: 'Start accepting projects', completed: false },
+      { icon: CheckCircle2, text: 'Profile approved and services configured', completed: true },
+      { icon: Sparkles, text: 'Profile optimized and ready', completed: true },
+      { icon: TrendingUp, text: 'Land your first project', completed: false },
     ],
     REJECTED: [
       { icon: Clock, text: 'Review rejection feedback', completed: false },
