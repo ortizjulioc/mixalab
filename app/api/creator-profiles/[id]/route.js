@@ -184,12 +184,14 @@ export async function PUT(request) {
                 : parseJSON(creatorData.socials).socials || [];
 
 
+
             const updatedCreatorProfile = await tx.creatorProfile.update({
                 where: { id: creatorId },
                 data: {
                     ...creatorData,
                     pluginChains: pluginChains,
                     socials: socials,
+                    status: 'PENDING', // Cambiar a PENDING cuando se edita el perfil
                 },
             });
 
@@ -394,7 +396,7 @@ export async function PUT(request) {
     } catch (error) {
         console.error("Error en la transacción de Prisma durante la actualización:", error);
         if (error.message.includes("Creator Profile not found")) {
-             return NextResponse.json({ message: error.message }, { status: 404 });
+            return NextResponse.json({ message: error.message }, { status: 404 });
         }
         return NextResponse.json({
             message: "Error interno del servidor al actualizar los perfiles.",

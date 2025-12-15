@@ -59,8 +59,34 @@ export async function PATCH(request, { params }) {
                         name: true,
                     },
                 },
+                CreatorTier: {
+                    include: {
+                        tier: true,
+                    },
+                },
             },
         });
+
+        // Si el status es APPROVED y no tiene tier asignado, asignar el tier más bajo
+        if (status === 'APPROVED' && (!updated.CreatorTier || updated.CreatorTier.length === 0)) {
+            // Buscar el tier con el order más bajo (BRONZE)
+            const lowestTier = await prisma.tier.findFirst({
+                orderBy: { order: 'asc' },
+            });
+
+            if (lowestTier) {
+                // Asignar el tier al creator
+                await prisma.creatorTier.create({
+                    data: {
+                        creatorId: id,
+                        tierId: lowestTier.id,
+                        active: true,
+                    },
+                });
+
+                console.log(`✅ Assigned tier ${lowestTier.name} to creator profile ${id}`);
+            }
+        }
 
         // TODO: Enviar notificación por email al creator sobre el cambio de estado
 

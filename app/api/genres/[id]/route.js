@@ -6,6 +6,24 @@
 import prisma from '@/utils/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 
+export async function GET(request, { params }) {
+    try {
+        const { id } = await params;
+
+        const genre = await prisma.genre.findUnique({
+            where: { id },
+        });
+
+        if (!genre) {
+            return NextResponse.json({ error: 'Genre not found' }, { status: 404 });
+        }
+
+        return NextResponse.json(genre);
+    } catch (error) {
+        console.error('Genre GET Error:', error);
+        return NextResponse.json({ error: 'Error fetching genre' }, { status: 500 });
+    }
+}
 
 export async function PUT(
     request,
