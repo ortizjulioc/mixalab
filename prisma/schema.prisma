@@ -14,6 +14,11 @@ datasource db {
 // ---------------------------------------------------------
 // ENUMS EXISTENTES
 // ---------------------------------------------------------
+enum CreatorRequestStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
 
 enum UserRole {
   ARTIST  @map("artist")
@@ -78,11 +83,6 @@ enum ProjectType {
   ALBUM
 }
 
-enum RequestTier {
-  VERIFIED
-  INDUSTRY
-}
-
 enum RequestStatus {
   PENDING
   IN_REVIEW
@@ -117,7 +117,7 @@ model Project {
   projectName String
   artistName  String
   projectType ProjectType
-  tier        RequestTier
+  tier        TierName
   genre       String?
   bpm         Int?
   references  String?
@@ -208,9 +208,10 @@ model CreatorProfile {
   genders                  CreatorGenre[]
   CreatorTier              CreatorTier[]
 
-  deleted   Boolean  @default(false)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  deleted         Boolean          @default(false)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  serviceRequests ServiceRequest[]
 
   @@map("creators_profiles")
 }
@@ -382,8 +383,9 @@ model Genre {
   mastering       MasteringGenre[]
   instrumentalist InstrumentalistGenre[]
 
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  createdAt       DateTime              @default(now()) @map("created_at")
+  updatedAt       DateTime              @updatedAt @map("updated_at")
+  serviceRequests ServiceRequestGenre[]
 
   @@map("genres")
 }
@@ -525,24 +527,36 @@ model MaintainRequirements {
 model ServiceRequest {
   id          String      @id @default(uuid())
   userId      String
+  creatorId   String
   projectName String
   artistName  String
   projectType ProjectType
-  tier        RequestTier
-  genre       String?
-  bpm         Int?
-  references  String?
+  tier        TierName
+  services    ServiceType
 
-  mixing     Boolean @default(false)
-  mastering  Boolean @default(false)
-  production Boolean @default(false)
+  description   String?
+  status        RequestStatus        @default(PENDING)
+  creatorStatus CreatorRequestStatus @default(PENDING)
 
-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  files File[]
+  user    User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  creator CreatorProfile        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  files   File[]
+  genres  ServiceRequestGenre[]
 
-  status    RequestStatus @default(PENDING)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("service_requests")
+}
+
+model ServiceRequestGenre {
+  id               String @id @default(uuid())
+  serviceRequestId String
+  genreId          String
+
+  serviceRequest ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  genre          Genre          @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceRequestId, genreId])
+  @@map("service_request_genres")
 }
