@@ -1,7 +1,10 @@
 // app/api/creator/service/route.js
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { uploadFile } from "@/lib/uploadFile";
+
+import { uploadFile } from "@/utils/upload";
+import prisma from "@/utils/lib/prisma";
+
+
 
 export const dynamic = "force-dynamic";
 
