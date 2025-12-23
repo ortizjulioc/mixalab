@@ -9,7 +9,6 @@ const navItems = [
     { iconKey: 'home', label: 'Dashboard', href: '/admin/home' },
     { iconKey: 'creator-profiles', label: 'Creator Profiles', href: '/admin/creator-profiles' },
     { iconKey: 'genre', label: 'Genres', href: '/admin/genres' },
-    { iconKey: 'service', label: 'Services', href: '/admin/services' },
     { iconKey: 'users', label: 'Users', href: '/admin/users' },
     { iconKey: 'tiers', label: 'Tiers', href: '/admin/tiers' },
     { iconKey: 'upgrade-requirements', label: 'Upgrade Requirements', href: '/admin/upgrade-requirements' },
