@@ -48,3 +48,6 @@ next-env.d.ts
 
 # ignore admin settings
 settings.json
+
+#ingnore package lock files
+package-lock.json
