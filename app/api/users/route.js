@@ -20,6 +20,7 @@ export async function GET(request) {
           ],
         }
       : {};
+      where.deleted = false;
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
@@ -34,6 +35,7 @@ export async function GET(request) {
           role: true,
           status: true,
           createdAt: true,
+          deleted: true,
         },
       }),
       prisma.user.count({ where }),
