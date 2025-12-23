@@ -2,7 +2,7 @@
 const NEXTAUTH_URL = process.env.NEXTAUTH_URL; // Extract first for clarity
 
 // Fix: Use ternary for safe fallback. If NEXTAUTH_URL is undefined or empty, use localhost.
-const API_BASE_URL = process.env.API_BASE_URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL 
 const url = API_BASE_URL;
 
 // Debug log (remove in production)
