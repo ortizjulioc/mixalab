@@ -1,12 +1,27 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-export default function RoleSwitchPage() {
+// 1. We extract the UI into a reusable Loading component
+// so we can use it for both the Suspense fallback and the actual page state.
+function LoadingUI({ text = "Switching role...", subtext = "Please wait a moment" }) {
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
+            <div className="text-center">
+                <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
+                <p className="text-white text-lg">{text}</p>
+                <p className="text-white/60 text-sm mt-2">{subtext}</p>
+            </div>
+        </div>
+    );
+}
+
+// 2. This component holds your original logic involving useSearchParams
+function RoleSwitchContent() {
     const { data: session, status, update } = useSession();
     const router = useRouter();
-    const searchParams = useSearchParams();
+    const searchParams = useSearchParams(); // This is what causes the build error if not suspended
     const targetRole = searchParams.get("role");
     const [attempts, setAttempts] = useState(0);
     const MAX_ATTEMPTS = 5;
@@ -26,17 +41,16 @@ export default function RoleSwitchPage() {
                 attempts
             });
 
-            // Forzar actualización de la sesión
+            // Force session update
             await update();
 
-            // Esperar un momento para que el token se actualice
+            // Wait a moment for token update
             await new Promise(resolve => setTimeout(resolve, 300));
 
-            // Verificar si el rol se actualizó correctamente
+            // Check if role updated
             const currentRole = session?.user?.role;
 
             if (currentRole === targetRole || !targetRole) {
-                // El rol está actualizado, redirigir al dashboard
                 console.log("✅ Role updated successfully, redirecting...");
 
                 if (targetRole === "ARTIST" || currentRole === "ARTIST") {
@@ -47,11 +61,9 @@ export default function RoleSwitchPage() {
                     router.push("/");
                 }
             } else if (attempts < MAX_ATTEMPTS) {
-                // El rol aún no se actualizó, reintentar
                 console.log(`⏳ Role not updated yet, retrying... (${attempts + 1}/${MAX_ATTEMPTS})`);
                 setAttempts(prev => prev + 1);
             } else {
-                // Máximo de intentos alcanzado, forzar redirección de todos modos
                 console.log("⚠️ Max attempts reached, forcing redirect...");
                 if (targetRole === "ARTIST") {
                     router.push("/artists/home");
@@ -66,6 +78,7 @@ export default function RoleSwitchPage() {
         handleRoleSwitch();
     }, [status, session, targetRole, router, update, attempts]);
 
+    // Return your visual UI with the specific attempt counters
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black">
             <div className="text-center">
@@ -77,5 +90,14 @@ export default function RoleSwitchPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+// 3. The Default Export wraps the content in Suspense
+export default function RoleSwitchPage() {
+    return (
+        <Suspense fallback={<LoadingUI />}>
+            <RoleSwitchContent />
+        </Suspense>
     );
 }
