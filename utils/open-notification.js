@@ -9,10 +9,10 @@ const Toast = Swal.mixin({
   width: 350, // Limit toast width to prevent full-side occupation
   customClass: {
     container: 'z-[9999] liquid-glass-container', // Apply custom class for toast
-    popup: 'liquid-glass bg-transparent border border-white/20 rounded-2xl shadow-2xl glow-border max-w-[350px]', // Liquid Glass with max width
+    popup: 'liquid-glass bg-transparent border-2 border-white/30 rounded-2xl shadow-2xl glow-border max-w-[350px]', // Liquid Glass with max width
     title: 'text-white font-semibold', // White text
     content: 'text-gray-200', // Lighter text for content
-    timerProgressBar: 'bg-white/20' // Progress bar style
+    timerProgressBar: 'bg-white/30' // Progress bar style
   },
   didOpen: (toast) => {
     toast.addEventListener('mouseenter', Swal.stopTimer);
@@ -28,11 +28,13 @@ const swalStyles = `
   }
 
   .liquid-glass {
-    background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: linear-gradient(145deg, rgba(31, 41, 55, 0.95), rgba(17, 24, 39, 0.95)) !important;
+    border: 2px solid rgba(255, 255, 255, 0.3) !important;
     box-shadow:
-      0 8px 32px 0 rgba(31, 38, 135, 0.37),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      0 8px 32px 0 rgba(0, 0, 0, 0.5),
+      0 4px 16px 0 rgba(0, 0, 0, 0.3),
+      inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+    backdrop-filter: blur(16px) saturate(180%) !important;
   }
 
   .swal2-popup {
@@ -116,7 +118,7 @@ export const openNotification = (type, message) => {
       allowOutsideClick: false,
       customClass: {
         container: 'z-[9999]',
-        popup: 'liquid-glass rounded-2xl border border-white/20 shadow-2xl glow-border',
+        popup: 'liquid-glass rounded-2xl border-2 border-white/30 shadow-2xl glow-border',
         title: 'text-white font-bold',
         content: 'text-gray-200',
         confirmButton: 'bg-red-600/50 hover:bg-red-700/50 border border-red-500/30 rounded-xl'
@@ -142,7 +144,7 @@ const defaultConfigConfirm = {
   allowOutsideClick: () => !Swal.isLoading(),
   customClass: {
     container: 'z-[9999]',
-    popup: 'liquid-glass rounded-2xl border border-white/20 shadow-2xl glow-border',
+    popup: 'liquid-glass rounded-2xl border-2 border-white/30 shadow-2xl glow-border',
     title: 'text-white font-bold',
     htmlContainer: 'text-gray-200',
     confirmButton: 'bg-red-600/50 hover:bg-red-700/50 border border-red-500/30 rounded-xl',

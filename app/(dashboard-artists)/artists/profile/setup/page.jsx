@@ -1,18 +1,26 @@
+
 'use client'
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import { AlertCircle, CheckCircle2, Loader2, Globe } from 'lucide-react'
 import Swal from 'sweetalert2'
 import SelectGenres from '@/components/SelectGenres'
+import useArtistProfiles from '@/hooks/useArtistProfiles'
 
 export default function ArtistSetup() {
   const router = useRouter()
   const { data: session, status } = useSession()
-  const [loading, setLoading] = useState(false)
+  const {
+    artistProfile,
+    getArtistProfileByUserId,
+    createArtistProfile,
+    updateArtistProfile,
+    loading: hookLoading
+  } = useArtistProfiles()
+
   const [submitLoading, setSubmitLoading] = useState(false)
   const [errors, setErrors] = useState({})
-  const [existingProfile, setExistingProfile] = useState(null)
 
   const [formData, setFormData] = useState({
     stageName: '',
@@ -30,39 +38,27 @@ export default function ArtistSetup() {
   // Fetch existing profile
   useEffect(() => {
     if (session?.user?.id) {
-      fetchExistingProfile(session.user.id)
+      getArtistProfileByUserId(session.user.id)
     }
-  }, [session?.user?.id])
+  }, [session?.user?.id, getArtistProfileByUserId])
 
-  const fetchExistingProfile = async (userId) => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/artist-profiles?userId=${userId}`)
-      if (response.ok) {
-        const data = await response.json()
-        const profile = data.items && data.items.length > 0 ? data.items[0] : null
-        if (profile) {
-          setExistingProfile(profile)
-          setFormData({
-            stageName: profile.stageName || '',
-            bio: profile.bio || '',
-            website: profile.website || '',
-            socials: profile.socials || {
-              instagram: '',
-              spotify: '',
-              youtube: '',
-              soundcloud: '',
-            },
-            genreIds: profile.genres?.map(g => g.genreId) || [],
-          })
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching artist profile:', error)
-    } finally {
-      setLoading(false)
+  // Load existing profile data into form
+  useEffect(() => {
+    if (artistProfile) {
+      setFormData({
+        stageName: artistProfile.stageName || '',
+        bio: artistProfile.bio || '',
+        website: artistProfile.website || '',
+        socials: artistProfile.socials || {
+          instagram: '',
+          spotify: '',
+          youtube: '',
+          soundcloud: '',
+        },
+        genreIds: artistProfile.genres?.map(g => g.genreId) || [],
+      })
     }
-  }
+  }, [artistProfile])
 
   // Validations
   const validateForm = () => {
@@ -76,7 +72,7 @@ export default function ArtistSetup() {
       newErrors.website = 'Invalid URL format'
     }
 
-    if (selectedGenres.length === 0) {
+    if (formData.genreIds.length === 0) {
       newErrors.genres = 'Select at least one genre'
     }
 
@@ -155,29 +151,15 @@ export default function ArtistSetup() {
     try {
       const payload = {
         ...formData,
-        genreIds: selectedGenres.map(g => g.id),
+        ...((!artistProfile) && { userId: session.user.id }),
       }
 
-      const url = existingProfile
-        ? `/api/artist-profiles/${existingProfile.id}`
-        : '/api/artist-profiles'
-
-      const method = existingProfile ? 'PUT' : 'POST'
-
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...(method === 'POST' && { userId: session.user.id }),
-          ...payload,
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error || 'Error saving profile')
+      if (artistProfile) {
+        // Update existing profile
+        await updateArtistProfile(artistProfile.id, payload)
+      } else {
+        // Create new profile
+        await createArtistProfile(payload)
       }
 
       await Swal.fire({
@@ -193,7 +175,7 @@ export default function ArtistSetup() {
       Swal.fire({
         icon: 'error',
         title: 'Error',
-        text: error.message || 'Error saving profile',
+        text: error?.error?.message || error?.message || 'Error saving profile',
         confirmButtonColor: '#f59e0b',
       })
     } finally {
@@ -201,7 +183,7 @@ export default function ArtistSetup() {
     }
   }
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading' || hookLoading) {
     return (
       <div className="px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center justify-center h-96">
@@ -232,7 +214,7 @@ export default function ArtistSetup() {
           Artist Profile Setup
         </h1>
         <p className="text-gray-400">
-          {existingProfile
+          {artistProfile
             ? 'Update your artist profile information'
             : 'Complete your artist profile to activate project assignment'}
         </p>
@@ -251,11 +233,10 @@ export default function ArtistSetup() {
             value={formData.stageName}
             onChange={handleInputChange}
             placeholder="Your artist name"
-            className={`w-full px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 transition focus:outline-none focus:ring-2 ${
-              errors.stageName
+            className={`w-full px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 transition focus:outline-none focus:ring-2 ${errors.stageName
                 ? 'border-red-500 focus:ring-red-500'
                 : 'border-gray-700 focus:ring-amber-500'
-            }`}
+              }`}
           />
           {errors.stageName && (
             <p className="mt-1 text-sm text-red-500 flex items-center space-x-1">
@@ -296,11 +277,10 @@ export default function ArtistSetup() {
               value={formData.website}
               onChange={handleInputChange}
               placeholder="https://example.com"
-              className={`flex-1 px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 transition focus:outline-none focus:ring-2 ${
-                errors.website
+              className={`flex-1 px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 transition focus:outline-none focus:ring-2 ${errors.website
                   ? 'border-red-500 focus:ring-red-500'
                   : 'border-gray-700 focus:ring-amber-500'
-              }`}
+                }`}
             />
           </div>
           {errors.website && (
@@ -404,7 +384,7 @@ export default function ArtistSetup() {
             ) : (
               <>
                 <CheckCircle2 className="w-5 h-5" />
-                <span>{existingProfile ? 'Update Profile' : 'Create Profile'}</span>
+                <span>{artistProfile ? 'Update Profile' : 'Create Profile'}</span>
               </>
             )}
           </button>
