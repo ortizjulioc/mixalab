@@ -11,7 +11,7 @@ export default function useArtistProfiles() {
   const [artistProfiles, setArtistProfiles] = useState([]);
   const [artistProfile, setArtistProfile] = useState(null);
   const searchParams = useSearchParams();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const router = useRouter();
 
@@ -56,35 +56,28 @@ export default function useArtistProfiles() {
     setError(null);
 
     try {
-      const queryParams = new URLSearchParams({
-        page: filters.page.toString(),
-        limit: "10",
-        ...(filters.search && { search: filters.search }),
+      const res = await fetchClient({
+        method: "GET",
+        endpoint: "/artist-profiles",
+        params: {
+          page: filters.page.toString(),
+          limit: "10",
+          ...(filters.search && { search: filters.search }),
+        },
       });
 
-      const response = await fetchClient(
-        `/api/artist-profiles?${queryParams}`,
-        { method: "GET" }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch artist profiles");
-      }
-
-      const data = await response.json();
-      setArtistProfiles(data.items || []);
+      setArtistProfiles(res.items || []);
       setPagination({
-        total: data.pagination.total,
-        currentPage: data.pagination.page,
-        limit: data.pagination.limit,
-        totalPages: data.pagination.pages,
+        total: res.pagination.total,
+        currentPage: res.pagination.page,
+        limit: res.pagination.limit,
+        totalPages: res.pagination.pages,
       });
+      setError(null);
     } catch (err) {
-      setError(err.message);
-      openNotification({
-        type: "error",
-        message: "Error fetching artist profiles",
-      });
+      console.error("Error fetching artist profiles:", err);
+      setError(err?.error?.message || "Error loading artist profiles");
+      openNotification("error", err?.error?.message || "Error fetching artist profiles");
     } finally {
       setLoading(false);
     }
@@ -96,22 +89,18 @@ export default function useArtistProfiles() {
     setError(null);
 
     try {
-      const response = await fetchClient(`/api/artist-profiles/${id}`, {
+      const res = await fetchClient({
         method: "GET",
+        endpoint: `/artist-profiles/${id}`,
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch artist profile");
-      }
-
-      const data = await response.json();
-      setArtistProfile(data);
+      setArtistProfile(res);
+      setError(null);
+      return res;
     } catch (err) {
-      setError(err.message);
-      openNotification({
-        type: "error",
-        message: "Error fetching artist profile",
-      });
+      console.error("Error fetching artist profile:", err);
+      setError(err?.error?.message || "Error loading artist profile");
+      openNotification("error", err?.error?.message || "Error fetching artist profile");
     } finally {
       setLoading(false);
     }
@@ -120,30 +109,17 @@ export default function useArtistProfiles() {
   // Create new artist profile
   const createArtistProfile = useCallback(async (profileData) => {
     try {
-      const response = await fetchClient("/api/artist-profiles", {
+      const res = await fetchClient({
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(profileData),
+        endpoint: "/artist-profiles",
+        data: profileData,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to create artist profile");
-      }
-
-      const newProfile = await response.json();
-      openNotification({
-        type: "success",
-        message: "Artist profile created successfully",
-      });
-      return newProfile;
+      openNotification("success", "Artist profile created successfully");
+      return res;
     } catch (err) {
-      openNotification({
-        type: "error",
-        message: err.message || "Error creating artist profile",
-      });
+      console.error("Error creating artist profile:", err);
+      openNotification("error", err?.error?.message || "Error creating artist profile");
       throw err;
     }
   }, []);
@@ -151,31 +127,18 @@ export default function useArtistProfiles() {
   // Update artist profile
   const updateArtistProfile = useCallback(async (id, profileData) => {
     try {
-      const response = await fetchClient(`/api/artist-profiles/${id}`, {
+      const res = await fetchClient({
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(profileData),
+        endpoint: `/artist-profiles/${id}`,
+        data: profileData,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to update artist profile");
-      }
-
-      const updatedProfile = await response.json();
-      setArtistProfile(updatedProfile);
-      openNotification({
-        type: "success",
-        message: "Artist profile updated successfully",
-      });
-      return updatedProfile;
+      setArtistProfile(res);
+      openNotification("success", "Artist profile updated successfully");
+      return res;
     } catch (err) {
-      openNotification({
-        type: "error",
-        message: err.message || "Error updating artist profile",
-      });
+      console.error("Error updating artist profile:", err);
+      openNotification("error", err?.error?.message || "Error updating artist profile");
       throw err;
     }
   }, []);
@@ -195,28 +158,19 @@ export default function useArtistProfiles() {
     if (!result.isConfirmed) return;
 
     try {
-      const response = await fetchClient(`/api/artist-profiles/${id}`, {
+      await fetchClient({
         method: "DELETE",
+        endpoint: `/artist-profiles/${id}`,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to delete artist profile");
-      }
-
-      openNotification({
-        type: "success",
-        message: "Artist profile deleted successfully",
-      });
+      openNotification("success", "Artist profile deleted successfully");
 
       // Refresh the list
       await fetchArtistProfiles();
       return true;
     } catch (err) {
-      openNotification({
-        type: "error",
-        message: err.message || "Error deleting artist profile",
-      });
+      console.error("Error deleting artist profile:", err);
+      openNotification("error", err?.error?.message || "Error deleting artist profile");
       throw err;
     }
   }, [fetchArtistProfiles]);
@@ -225,25 +179,21 @@ export default function useArtistProfiles() {
   const getArtistProfileByUserId = useCallback(async (userId) => {
     try {
       setLoading(true);
-      const response = await fetchClient(`/api/artist-profiles?userId=${userId}`, {
+      const res = await fetchClient({
         method: "GET",
+        endpoint: "/artist-profiles",
+        params: { userId },
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to fetch artist profile");
-      }
-
-      const data = await response.json();
       // El endpoint retorna { items, pagination }, tomamos el primer item
-      const profile = data.items && data.items.length > 0 ? data.items[0] : null;
+      const profile = res.items && res.items.length > 0 ? res.items[0] : null;
       setArtistProfile(profile);
       setError(null);
       return profile;
     } catch (err) {
       console.log('Error fetching artist profile by userId:', err);
 
-      const errorMessage = err?.message || 'Error loading artist profile';
+      const errorMessage = err?.error?.message || 'Error loading artist profile';
       const isNotFound =
         typeof errorMessage === 'string' &&
         (errorMessage.toLowerCase().includes('not found') ||
@@ -258,10 +208,7 @@ export default function useArtistProfiles() {
         // Actual error - show notification
         console.error('Actual error fetching artist profile:', errorMessage);
         setError(errorMessage);
-        openNotification({
-          type: "error",
-          message: errorMessage,
-        });
+        openNotification("error", errorMessage);
         setArtistProfile(null);
       }
 
@@ -271,10 +218,7 @@ export default function useArtistProfiles() {
     }
   }, []);
 
-  // Initial fetch
-  useEffect(() => {
-    fetchArtistProfiles();
-  }, [filters, fetchArtistProfiles]);
+
 
   return {
     artistProfiles,

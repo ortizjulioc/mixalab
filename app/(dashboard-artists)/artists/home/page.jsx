@@ -41,8 +41,8 @@ export default function Home() {
         </div>
       )}
 
-      {/* Si no hay perfil (y no está cargando), mostramos solo la CTA arriba */}
-      {!isLoading && !artistProfile && session?.user?.role === 'ARTIST' ? null : (
+      {/* Contenido del dashboard - solo mostrar cuando NO está cargando Y tiene perfil */}
+      {!isLoading && artistProfile && (
         <>
           {/* Header del artista */}
           <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-5 flex items-center justify-between">
@@ -61,11 +61,7 @@ export default function Home() {
                   {artistProfile?.stageName || session?.user?.name || session?.user?.email || 'Artist'}
                 </h2>
                 <div className="flex items-center gap-2 text-sm text-gray-300">
-                  {artistProfile ? (
-                    <><BadgeCheck className="w-4 h-4 text-emerald-400" /> Profile Status: Completed</>
-                  ) : (
-                    <><Clock className="w-4 h-4 text-amber-400" /> Profile Status: Pending</>
-                  )}
+                  <><BadgeCheck className="w-4 h-4 text-emerald-400" /> Profile Status: Completed</>
                 </div>
               </div>
             </div>
