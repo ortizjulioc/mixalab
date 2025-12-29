@@ -1,38 +1,22 @@
 'use client'
 import ArtistProfileCTA from '@/components/ArtistProfileCTA'
-import React, { useEffect, useState } from 'react'
+import React, { useEffect } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { User, BadgeCheck, Clock, Sparkles, Edit3, Eye, Inbox, Music } from 'lucide-react'
+import useArtistProfiles from '@/hooks/useArtistProfiles'
 
 export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
-  const [artistProfile, setArtistProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { artistProfile, getArtistProfileByUserId, loading } = useArtistProfiles()
 
   useEffect(() => {
+    // Only fetch if we have a user ID from the session
     if (session?.user?.id) {
-      fetchArtistProfile(session.user.id)
+      getArtistProfileByUserId(session.user.id)
     }
-  }, [session?.user?.id])
-
-  const fetchArtistProfile = async (userId) => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/artist-profiles?userId=${userId}`)
-      if (response.ok) {
-        const data = await response.json()
-        // El endpoint retorna { items, pagination }, tomamos el primer item
-        const profile = data.items && data.items.length > 0 ? data.items[0] : null
-        setArtistProfile(profile)
-      }
-    } catch (error) {
-      console.error('Error fetching artist profile:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  }, [session?.user?.id, getArtistProfileByUserId])
 
   const isLoading = loading || status === 'loading'
 

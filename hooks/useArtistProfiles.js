@@ -208,7 +208,7 @@ export default function useArtistProfiles() {
         type: "success",
         message: "Artist profile deleted successfully",
       });
-      
+
       // Refresh the list
       await fetchArtistProfiles();
       return true;
@@ -220,6 +220,56 @@ export default function useArtistProfiles() {
       throw err;
     }
   }, [fetchArtistProfiles]);
+
+  // Get artist profile by user ID
+  const getArtistProfileByUserId = useCallback(async (userId) => {
+    try {
+      setLoading(true);
+      const response = await fetchClient(`/api/artist-profiles?userId=${userId}`, {
+        method: "GET",
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to fetch artist profile");
+      }
+
+      const data = await response.json();
+      // El endpoint retorna { items, pagination }, tomamos el primer item
+      const profile = data.items && data.items.length > 0 ? data.items[0] : null;
+      setArtistProfile(profile);
+      setError(null);
+      return profile;
+    } catch (err) {
+      console.log('Error fetching artist profile by userId:', err);
+
+      const errorMessage = err?.message || 'Error loading artist profile';
+      const isNotFound =
+        typeof errorMessage === 'string' &&
+        (errorMessage.toLowerCase().includes('not found') ||
+          errorMessage.toLowerCase().includes('404'));
+
+      if (isNotFound) {
+        // User doesn't have a profile yet - this is expected, don't show error
+        console.log('Artist profile not found - user needs to create one');
+        setError(null);
+        setArtistProfile(null);
+      } else {
+        // Actual error - show notification
+        console.error('Actual error fetching artist profile:', errorMessage);
+        setError(errorMessage);
+        openNotification({
+          type: "error",
+          message: errorMessage,
+        });
+        setArtistProfile(null);
+      }
+
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Initial fetch
   useEffect(() => {
@@ -236,6 +286,7 @@ export default function useArtistProfiles() {
     handleChangeFilter,
     fetchArtistProfiles,
     fetchArtistProfileById,
+    getArtistProfileByUserId,
     createArtistProfile,
     updateArtistProfile,
     deleteArtistProfile,
