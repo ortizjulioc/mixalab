@@ -36,58 +36,40 @@ async function main() {
   }
 
   // Crear Tiers por defecto
-  const defaultTiers = settings.tiers || [
-    {
-      name: 'BRONZE',
-      description: '<p>Perfect for getting started with professional mixing and mastering services.</p>',
-      order: 1,
-      price: 199,
-      numberOfRevisions: 2,
-      stems: 10,
-      deliveryDays: 7,
-    },
-    {
-      name: 'SILVER',
-      description: '<p>Enhanced service with more revisions and faster delivery for your projects.</p>',
-      order: 2,
-      price: 299,
-      numberOfRevisions: 3,
-      stems: 20,
-      deliveryDays: 5,
-    },
-    {
-      name: 'GOLD',
-      description: '<p>Premium service with priority support and extended stem count.</p>',
-      order: 3,
-      price: 499,
-      numberOfRevisions: 5,
-      stems: 40,
-      deliveryDays: 3,
-    },
-    {
-      name: 'PLATINUM',
-      description: '<p>Ultimate professional service with unlimited revisions and fastest delivery.</p>',
-      order: 4,
-      price: 799,
-      numberOfRevisions: 10,
-      stems: 100,
-      deliveryDays: 2,
-    },
-  ];
+  const defaultTiers = settings.tiers || [];
 
+  // SIEMPRE eliminar tiers existentes para asegurar estructura correcta
   const existingTiers = await prisma.tier.count();
 
-  if (existingTiers === 0) {
-    console.log('🌱 Creating default tiers...');
+  if (existingTiers > 0) {
+    console.log(`🗑️  Deleting ${existingTiers} existing tiers...`);
+    await prisma.tier.deleteMany({});
+    console.log('✅ Old tiers deleted');
+  }
+
+  if (defaultTiers.length > 0) {
+    console.log('🌱 Creating universal tiers with service-specific descriptions...');
     for (const tierData of defaultTiers) {
-      const tier = await prisma.tier.create({
-        data: tierData,
-      });
-      console.log(`✅ Created tier: ${tier.name} - $${tier.price}`);
+      try {
+        const tier = await prisma.tier.create({
+          data: {
+            name: tierData.name,
+            order: tierData.order,
+            price: tierData.price,
+            numberOfRevisions: tierData.numberOfRevisions,
+            stems: tierData.stems,
+            deliveryDays: tierData.deliveryDays,
+            serviceDescriptions: tierData.serviceDescriptions || null,
+          },
+        });
+        console.log(`✅ Created tier: ${tier.name} (order: ${tier.order}) - $${tier.price}`);
+      } catch (error) {
+        console.error(`❌ Error creating tier ${tierData.name}:`, error.message);
+      }
     }
-    console.log('🎉 Tiers created successfully!');
+    console.log(`🎉 All ${defaultTiers.length} universal tiers created successfully!`);
   } else {
-    console.log(`✔ Tiers already exist (${existingTiers} tiers found)`);
+    console.log('⚠️  No tiers found in settings.json');
   }
 
   // Crear Géneros por defecto

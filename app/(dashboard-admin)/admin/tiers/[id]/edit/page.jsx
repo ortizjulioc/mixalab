@@ -4,19 +4,13 @@ import React, { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { Formik, Form } from 'formik'
 import * as Yup from 'yup'
-import { Home } from 'lucide-react'
-import dynamic from 'next/dynamic'
+import { Home, Plus, Trash2 } from 'lucide-react'
 
 import Button from '@/components/Button'
 import Input from '@/components/Input'
 import Select from '@/components/Select'
 import BreadcrumbsTitle from '@/components/Breadcrumbs'
 import useTiers from '@/hooks/useTiers'
-
-// Import React Quill dynamically to avoid SSR issues
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false })
-import 'react-quill-new/dist/quill.snow.css'
-import '@/app/styles/quill-dark.css'
 
 const TIER_OPTIONS = [
     { value: 'BRONZE', label: 'BRONZE' },
@@ -25,12 +19,14 @@ const TIER_OPTIONS = [
     { value: 'PLATINUM', label: 'PLATINUM' },
 ]
 
+const SERVICE_TYPES = ['MIXING', 'MASTERING', 'RECORDING']
+
 const validationSchema = Yup.object({
     name: Yup.string().required('Name is required'),
     order: Yup.number().integer('Must be integer').min(0, 'Must be >= 0').required('Order is required'),
     price: Yup.number().min(0, 'Price must be >= 0').required('Price is required'),
     numberOfRevisions: Yup.number().integer('Must be integer').min(0, 'Must be >= 0').required('Number of revisions is required'),
-    stems: Yup.number().integer('Must be integer').min(0, 'Must be >= 0').required('Stems count is required'),
+    stems: Yup.number().integer('Must be integer').nullable(),
     deliveryDays: Yup.number().integer('Must be integer').min(1, 'Must be >= 1').required('Delivery days is required'),
 })
 
@@ -40,6 +36,7 @@ export default function EditTierPage({ params }) {
     const { fetchTierById, updateTier } = useTiers()
     const [tier, setTier] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [activeServiceTab, setActiveServiceTab] = useState('MIXING')
 
     useEffect(() => {
         const loadTier = async () => {
@@ -87,12 +84,16 @@ export default function EditTierPage({ params }) {
                     enableReinitialize
                     initialValues={{
                         name: tier?.name || '',
-                        description: tier?.description || '',
                         order: tier?.order ?? 0,
                         price: tier?.price ?? 0,
                         numberOfRevisions: tier?.numberOfRevisions ?? 0,
-                        stems: tier?.stems ?? 0,
+                        stems: tier?.stems,
                         deliveryDays: tier?.deliveryDays ?? 0,
+                        serviceDescriptions: tier?.serviceDescriptions || {
+                            MIXING: { title: '', subtitle: '', description: '', features: [] },
+                            MASTERING: { title: '', subtitle: '', description: '', features: [] },
+                            RECORDING: { title: '', subtitle: '', description: '', features: [] },
+                        }
                     }}
                     validationSchema={validationSchema}
                     onSubmit={async (values, { setSubmitting }) => {
@@ -106,8 +107,9 @@ export default function EditTierPage({ params }) {
                         }
                     }}
                 >
-                    {({ values, handleChange, setFieldValue, touched, errors, isSubmitting }) => (
+                    {({ values, setFieldValue, touched, errors, isSubmitting }) => (
                         <Form className="space-y-6">
+                            {/* Common Fields */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <Select
                                     label="Tier Name"
@@ -152,13 +154,12 @@ export default function EditTierPage({ params }) {
                                 />
 
                                 <Input
-                                    label="Stems"
+                                    label="Stems (leave empty for mastering)"
                                     name="stems"
                                     type="number"
-                                    value={values.stems}
-                                    onChange={(e) => setFieldValue('stems', Number(e.target.value))}
+                                    value={values.stems ?? ''}
+                                    onChange={(e) => setFieldValue('stems', e.target.value === '' ? null : Number(e.target.value))}
                                     error={touched.stems && errors.stems}
-                                    required
                                 />
 
                                 <Input
@@ -172,30 +173,117 @@ export default function EditTierPage({ params }) {
                                 />
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="block text-sm font-medium text-white">
-                                    Description <span className="text-red-500">*</span>
-                                </label>
-                                <div className="rounded-xl overflow-hidden border border-white/10">
-                                    <ReactQuill
-                                        theme="snow"
-                                        value={values.description}
-                                        onChange={(content) => setFieldValue('description', content)}
-                                        placeholder="Enter tier description..."
-                                        modules={{
-                                            toolbar: [
-                                                [{ header: [1, 2, 3, false] }],
-                                                ['bold', 'italic', 'underline', 'strike'],
-                                                [{ list: 'ordered' }, { list: 'bullet' }],
-                                                ['link'],
-                                                ['clean'],
-                                            ],
-                                        }}
-                                    />
+                            {/* Service-Specific Descriptions */}
+                            <div className="pt-6 border-t border-white/10">
+                                <h3 className="text-lg font-bold text-white mb-4">Service-Specific Descriptions</h3>
+
+                                {/* Service Tabs */}
+                                <div className="flex gap-2 mb-6">
+                                    {SERVICE_TYPES.map(service => (
+                                        <button
+                                            key={service}
+                                            type="button"
+                                            onClick={() => setActiveServiceTab(service)}
+                                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeServiceTab === service
+                                                    ? 'bg-amber-500 text-black'
+                                                    : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
+                                                }`}
+                                        >
+                                            {service}
+                                        </button>
+                                    ))}
                                 </div>
-                                {touched.description && errors.description && (
-                                    <p className="text-red-500 text-sm mt-1">{errors.description}</p>
-                                )}
+
+                                {/* Service Description Form */}
+                                <div className="space-y-4 p-6 bg-zinc-900/50 rounded-xl border border-white/5">
+                                    <Input
+                                        label="Title"
+                                        value={values.serviceDescriptions[activeServiceTab]?.title || ''}
+                                        onChange={(e) => setFieldValue(`serviceDescriptions.${activeServiceTab}.title`, e.target.value)}
+                                        placeholder="e.g., The Essential Pro Start"
+                                    />
+
+                                    <Input
+                                        label="Subtitle"
+                                        value={values.serviceDescriptions[activeServiceTab]?.subtitle || ''}
+                                        onChange={(e) => setFieldValue(`serviceDescriptions.${activeServiceTab}.subtitle`, e.target.value)}
+                                        placeholder="e.g., Everything you need to begin at a professional level."
+                                    />
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-white mb-2">Description</label>
+                                        <textarea
+                                            value={values.serviceDescriptions[activeServiceTab]?.description || ''}
+                                            onChange={(e) => setFieldValue(`serviceDescriptions.${activeServiceTab}.description`, e.target.value)}
+                                            className="w-full p-3 rounded-xl bg-zinc-800 border border-white/10 text-white placeholder-gray-400 focus:outline-none focus:border-amber-500"
+                                            rows={3}
+                                            placeholder="Enter description..."
+                                        />
+                                    </div>
+
+                                    {/* Features */}
+                                    <div>
+                                        <div className="flex items-center justify-between mb-3">
+                                            <label className="block text-sm font-medium text-white">Features</label>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                color="blue"
+                                                onClick={() => {
+                                                    const features = values.serviceDescriptions[activeServiceTab]?.features || []
+                                                    setFieldValue(`serviceDescriptions.${activeServiceTab}.features`, [
+                                                        ...features,
+                                                        { icon: '✓', title: '', desc: '' }
+                                                    ])
+                                                }}
+                                            >
+                                                <Plus size={16} /> Add Feature
+                                            </Button>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            {(values.serviceDescriptions[activeServiceTab]?.features || []).map((feature, idx) => (
+                                                <div key={idx} className="p-4 bg-zinc-800/50 rounded-lg border border-white/5 space-y-2">
+                                                    <div className="flex items-start gap-2">
+                                                        <Input
+                                                            label="Icon"
+                                                            value={feature.icon}
+                                                            onChange={(e) => setFieldValue(`serviceDescriptions.${activeServiceTab}.features.${idx}.icon`, e.target.value)}
+                                                            placeholder="✓"
+                                                            className="w-20"
+                                                        />
+                                                        <Input
+                                                            label="Title"
+                                                            value={feature.title}
+                                                            onChange={(e) => setFieldValue(`serviceDescriptions.${activeServiceTab}.features.${idx}.title`, e.target.value)}
+                                                            placeholder="Feature title"
+                                                            className="flex-1"
+                                                        />
+                                                        <Button
+                                                            type="button"
+                                                            size="sm"
+                                                            color="red"
+                                                            className="mt-6"
+                                                            onClick={() => {
+                                                                const features = values.serviceDescriptions[activeServiceTab]?.features || []
+                                                                setFieldValue(`serviceDescriptions.${activeServiceTab}.features`, features.filter((_, i) => i !== idx))
+                                                            }}
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </Button>
+                                                    </div>
+                                                    <textarea
+                                                        value={feature.desc}
+                                                        onChange={(e) => setFieldValue(`serviceDescriptions.${activeServiceTab}.features.${idx}.desc`, e.target.value)}
+                                                        className="w-full p-2 rounded-lg bg-zinc-900 border border-white/5 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-amber-500"
+                                                        rows={2}
+                                                        placeholder="Feature description"
+                                                    />
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div className="flex gap-4 justify-end pt-4">

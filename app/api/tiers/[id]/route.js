@@ -57,8 +57,9 @@ export async function PUT(request, { params }) {
         order: Number(body.order),
         price: body.price !== undefined ? Number(body.price) : existing.price,
         numberOfRevisions: body.numberOfRevisions !== undefined ? Number(body.numberOfRevisions) : existing.numberOfRevisions,
-        stems: body.stems !== undefined ? Number(body.stems) : existing.stems,
+        stems: body.stems !== undefined ? (body.stems === '' || body.stems === null ? null : Number(body.stems)) : existing.stems,
         deliveryDays: body.deliveryDays !== undefined ? Number(body.deliveryDays) : existing.deliveryDays,
+        serviceDescriptions: body.serviceDescriptions !== undefined ? body.serviceDescriptions : existing.serviceDescriptions,
       },
     });
 

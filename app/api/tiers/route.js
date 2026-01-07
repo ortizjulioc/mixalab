@@ -74,8 +74,9 @@ export async function POST(request) {
         order: Number(body.order),
         price: body.price !== undefined ? Number(body.price) : 0,
         numberOfRevisions: body.numberOfRevisions !== undefined ? Number(body.numberOfRevisions) : 0,
-        stems: body.stems !== undefined ? Number(body.stems) : 0,
+        stems: body.stems !== undefined ? (body.stems === '' || body.stems === null ? null : Number(body.stems)) : null,
         deliveryDays: body.deliveryDays !== undefined ? Number(body.deliveryDays) : 0,
+        serviceDescriptions: body.serviceDescriptions || null,
       },
     });
 

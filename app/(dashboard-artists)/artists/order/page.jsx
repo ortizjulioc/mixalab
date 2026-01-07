@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import {
@@ -21,12 +21,18 @@ import {
 } from 'lucide-react';
 import SelectGenres from '@/components/SelectGenres';
 import useServiceRequests from '@/hooks/useServiceRequests';
+import useTiers from '@/hooks/useTiers';
 
-// --- Tier Configuration ---
-const TIER_CONFIG = {
+// --- Tier Icon Mapping ---
+const TIER_ICONS = {
+  BRONZE: Medal,
+  SILVER: Award,
+  GOLD: Trophy,
+  PLATINUM: Crown,
+};
+
+const TIER_STYLES = {
   BRONZE: {
-    name: 'Bronze',
-    icon: Medal,
     color: 'text-orange-600',
     bgColor: 'bg-gradient-to-br from-orange-900/40 to-orange-800/20',
     borderColor: 'border-orange-600/50',
@@ -34,10 +40,9 @@ const TIER_CONFIG = {
     badgeText: 'text-orange-400',
     badgeBorder: 'border-orange-600/30',
     glowColor: 'shadow-orange-600/20',
+    badge: 'Budget Friendly'
   },
   SILVER: {
-    name: 'Silver',
-    icon: Award,
     color: 'text-gray-300',
     bgColor: 'bg-gradient-to-br from-gray-700/40 to-gray-600/20',
     borderColor: 'border-gray-400/50',
@@ -45,10 +50,9 @@ const TIER_CONFIG = {
     badgeText: 'text-gray-300',
     badgeBorder: 'border-gray-400/30',
     glowColor: 'shadow-gray-400/20',
+    badge: 'Recommended'
   },
   GOLD: {
-    name: 'Gold',
-    icon: Trophy,
     color: 'text-yellow-400',
     bgColor: 'bg-gradient-to-br from-yellow-600/40 to-yellow-500/20',
     borderColor: 'border-yellow-500/50',
@@ -56,10 +60,9 @@ const TIER_CONFIG = {
     badgeText: 'text-yellow-400',
     badgeBorder: 'border-yellow-500/30',
     glowColor: 'shadow-yellow-500/20',
+    badge: 'Pro Level'
   },
   PLATINUM: {
-    name: 'Platinum',
-    icon: Crown,
     color: 'text-cyan-300',
     bgColor: 'bg-gradient-to-br from-cyan-600/40 to-purple-600/20',
     borderColor: 'border-cyan-400/50',
@@ -67,8 +70,10 @@ const TIER_CONFIG = {
     badgeText: 'text-cyan-300',
     badgeBorder: 'border-cyan-400/30',
     glowColor: 'shadow-cyan-400/20',
+    badge: 'Elite'
   },
 };
+
 
 // --- UI Components (Dark & Premium Style) ---
 
@@ -247,92 +252,248 @@ const Step1_ProjectInfo = ({ formData, handleChange, setFormData }) => (
   </div>
 );
 
-const Step2_Services = ({ formData, setFormData }) => (
-  <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-    <div className="text-center mb-10">
-      <h2 className="text-3xl font-bold text-white mb-2">Select Service</h2>
-      <p className="text-gray-500">Choose the main service you need for this project.</p>
-    </div>
+const Step2_Services = ({ formData, setFormData }) => {
+  const [allTiers, setAllTiers] = useState([]);
+  const [loadingTiers, setLoadingTiers] = useState(false);
 
-    <div className="grid grid-cols-1 gap-4 mb-8">
-      {[
-        { id: 'MIXING', icon: Sliders, title: 'Professional Mixing', desc: 'Balance, clarity, and depth for your tracks.' },
-        { id: 'MASTERING', icon: Disc, title: 'Mastering', desc: 'The final polish for industry-standard loudness.' },
-        { id: 'RECORDING', icon: Mic2, title: 'Recording / Production', desc: 'Technical or creative assistance.' }
-      ].map((srv) => (
-        <div
-          key={srv.id}
-          onClick={() => setFormData({ ...formData, services: srv.id })}
-          className={`p-5 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 group ${formData.services === srv.id
-            ? 'border-amber-500 bg-zinc-900/80 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
-            : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-600 hover:bg-zinc-900'
-            }`}
-        >
-          <div className="flex items-center space-x-5">
-            <div className={`p-3 rounded-full ${formData.services === srv.id ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-gray-400'}`}>
-              <srv.icon size={20} />
+  useEffect(() => {
+    const loadTiers = async () => {
+      setLoadingTiers(true);
+      try {
+        const response = await fetch(`/api/tiers`);
+        const data = await response.json();
+
+        // Handle both array response and object with data property
+        const tiersArray = Array.isArray(data) ? data : (data.data || data.tiers || []);
+        setAllTiers(tiersArray);
+
+        console.log('Fetched tiers:', tiersArray);
+      } catch (error) {
+        console.error('Error fetching tiers:', error);
+        setAllTiers([]); // Ensure it's always an array
+      } finally {
+        setLoadingTiers(false);
+      }
+    };
+
+    loadTiers();
+  }, []);
+
+  // Extract service-specific data from tier
+  const getTierForService = (tier, serviceType) => {
+    const serviceDesc = tier.serviceDescriptions?.[serviceType];
+    if (!serviceDesc) return null;
+
+    return {
+      ...tier,
+      title: serviceDesc.title,
+      subtitle: serviceDesc.subtitle,
+      description: serviceDesc.description,
+      features: serviceDesc.features || [],
+    };
+  };
+
+  return (
+    <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold text-white mb-2">Select Service</h2>
+        <p className="text-gray-500">Choose the main service you need for this project.</p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 mb-8">
+        {[
+          { id: 'MIXING', icon: Sliders, title: 'Professional Mixing', desc: 'Balance, clarity, and depth for your tracks.' },
+          { id: 'MASTERING', icon: Disc, title: 'Mastering', desc: 'The final polish for industry-standard loudness.' }
+        ].map((srv) => (
+          <div
+            key={srv.id}
+            onClick={() => setFormData({ ...formData, services: srv.id })}
+            className={`p-5 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 group ${formData.services === srv.id
+              ? 'border-amber-500 bg-zinc-900/80 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
+              : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-600 hover:bg-zinc-900'
+              }`}
+          >
+            <div className="flex items-center space-x-5">
+              <div className={`p-3 rounded-full ${formData.services === srv.id ? 'bg-amber-500 text-black' : 'bg-zinc-800 text-gray-400'}`}>
+                <srv.icon size={20} />
+              </div>
+              <div>
+                <h4 className={`font-bold text-lg ${formData.services === srv.id ? 'text-white' : 'text-gray-300'}`}>{srv.title}</h4>
+                <p className="text-sm text-gray-500">{srv.desc}</p>
+              </div>
             </div>
-            <div>
-              <h4 className={`font-bold text-lg ${formData.services === srv.id ? 'text-white' : 'text-gray-300'}`}>{srv.title}</h4>
-              <p className="text-sm text-gray-500">{srv.desc}</p>
+            <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${formData.services === srv.id
+              ? 'bg-amber-500 border-amber-500'
+              : 'border-zinc-700 bg-zinc-800'
+              }`}>
+              {formData.services === srv.id && <CheckCircle2 size={16} className="text-black" />}
             </div>
           </div>
-          <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${formData.services === srv.id
-            ? 'bg-amber-500 border-amber-500'
-            : 'border-zinc-700 bg-zinc-800'
-            }`}>
-            {formData.services === srv.id && <CheckCircle2 size={16} className="text-black" />}
+        ))}
+      </div>
+
+      {/* Mixing Type Selection - Only for MIXING service */}
+      {formData.services === 'MIXING' && (
+        <div className="mt-8 pt-8 border-t border-zinc-800">
+          <Label required>Mixing Type</Label>
+          <p className="text-xs text-gray-500 mb-4">Select the type of mixing service you need.</p>
+
+          <div className="grid grid-cols-1 gap-4">
+            {[
+              {
+                id: 'STUDIO_MIX',
+                title: 'Studio Mix',
+                desc: 'Standard production mix DAW using virtual instruments',
+                icon: Sliders
+              },
+              {
+                id: 'LIVE_MIX',
+                title: 'Live Mix',
+                desc: 'Acoustic/Band; cleanup required',
+                icon: Mic2
+              },
+              {
+                id: 'ESSENTIAL_MIX',
+                title: 'Essential Mix',
+                desc: 'Instrumental is done, just mix vocals with beat',
+                icon: Music
+              }
+            ].map((mixType) => (
+              <div
+                key={mixType.id}
+                onClick={() => setFormData({ ...formData, mixingType: mixType.id })}
+                className={`p-5 rounded-xl border flex items-center justify-between cursor-pointer transition-all duration-200 group ${formData.mixingType === mixType.id
+                  ? 'border-cyan-500 bg-cyan-900/20 shadow-[0_0_15px_rgba(34,211,238,0.1)]'
+                  : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-600 hover:bg-zinc-900'
+                  }`}
+              >
+                <div className="flex items-center space-x-5">
+                  <div className={`p-3 rounded-full ${formData.mixingType === mixType.id ? 'bg-cyan-500 text-black' : 'bg-zinc-800 text-gray-400'
+                    }`}>
+                    <mixType.icon size={20} />
+                  </div>
+                  <div>
+                    <h4 className={`font-bold text-lg ${formData.mixingType === mixType.id ? 'text-white' : 'text-gray-300'
+                      }`}>
+                      {mixType.title}
+                    </h4>
+                    <p className="text-sm text-gray-500">{mixType.desc}</p>
+                  </div>
+                </div>
+                <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${formData.mixingType === mixType.id
+                  ? 'bg-cyan-500 border-cyan-500'
+                  : 'border-zinc-700 bg-zinc-800'
+                  }`}>
+                  {formData.mixingType === mixType.id && <CheckCircle2 size={16} className="text-black" />}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      ))}
-    </div>
+      )}
 
-    <div className="pt-8 border-t border-zinc-800">
-      <Label required>Creator Tier</Label>
-      <p className="text-xs text-gray-500 mb-4">Choose the tier level for your project.</p>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {Object.entries(TIER_CONFIG).map(([tierKey, tierConfig]) => {
-          const TierIcon = tierConfig.icon;
-          const isSelected = formData.tier === tierKey;
+      {formData.services && (formData.services !== 'MIXING' || formData.mixingType) && (
+        <div className="pt-8 border-t border-zinc-800">
+          <Label required>Creator Tier</Label>
+          <p className="text-xs text-gray-500 mb-4">Choose the tier level for your project.</p>
 
-          return (
-            <div
-              key={tierKey}
-              onClick={() => setFormData({ ...formData, tier: tierKey })}
-              className={`cursor-pointer group border-2 rounded-xl p-6 flex flex-col items-center text-center transition-all duration-300 hover:shadow-lg ${isSelected
-                ? `${tierConfig.borderColor} ${tierConfig.bgColor} shadow-lg ${tierConfig.glowColor}`
-                : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-600 hover:bg-zinc-900'
-                }`}
-            >
-              <div className={`p-3 rounded-full mb-4 transition-colors ${isSelected ? `${tierConfig.badgeBg} ${tierConfig.color}` : 'bg-zinc-800 text-gray-400 group-hover:text-white'
-                }`}>
-                <TierIcon size={24} />
-              </div>
-              <h3 className={`font-bold text-lg mb-2 ${isSelected ? tierConfig.color : 'text-gray-300 group-hover:text-white'}`}>
-                {tierConfig.name}
-              </h3>
-              <p className="text-sm text-gray-500 leading-relaxed mb-3">
-                {tierKey === 'BRONZE' && 'Entry level creators'}
-                {tierKey === 'SILVER' && 'Experienced creators'}
-                {tierKey === 'GOLD' && 'Premium quality'}
-                {tierKey === 'PLATINUM' && 'Industry leaders'}
-              </p>
-              <span className={`px-3 py-1 rounded-full text-xs font-bold border ${isSelected
-                ? `${tierConfig.badgeBg} ${tierConfig.badgeText} ${tierConfig.badgeBorder}`
-                : 'bg-zinc-800 text-zinc-500 border-zinc-700'
-                }`}>
-                {tierKey === 'BRONZE' && 'Budget Friendly'}
-                {tierKey === 'SILVER' && 'Recommended'}
-                {tierKey === 'GOLD' && 'Pro Level'}
-                {tierKey === 'PLATINUM' && 'Elite'}
-              </span>
+          {loadingTiers ? (
+            <div className="text-center py-8">
+              <p className="text-gray-400">Loading tiers...</p>
             </div>
-          );
-        })}
-      </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {allTiers.map((tier) => {
+                const serviceTier = getTierForService(tier, formData.services);
+                if (!serviceTier) return null;
+
+                const TierIcon = TIER_ICONS[tier.name] || Medal;
+                const styles = TIER_STYLES[tier.name] || TIER_STYLES.BRONZE;
+                const isSelected = formData.tier === tier.name;
+
+                return (
+                  <div
+                    key={tier.id}
+                    onClick={() => setFormData({ ...formData, tier: tier.name })}
+                    className={`cursor-pointer group border-2 rounded-xl p-6 transition-all duration-300 hover:shadow-lg ${isSelected
+                      ? `${styles.borderColor} ${styles.bgColor} shadow-lg ${styles.glowColor}`
+                      : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-600 hover:bg-zinc-900'
+                      }`}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-4">
+                        <div className={`p-3 rounded-full transition-colors ${isSelected ? `${styles.badgeBg} ${styles.color}` : 'bg-zinc-800 text-gray-400 group-hover:text-white'
+                          }`}>
+                          <TierIcon size={24} />
+                        </div>
+                        <div className="text-left">
+                          <div className="flex items-center gap-3">
+                            <h3 className={`font-bold text-xl ${isSelected ? styles.color : 'text-gray-300 group-hover:text-white'}`}>
+                              {tier.name} — ${tier.price}
+                            </h3>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${isSelected
+                              ? `${styles.badgeBg} ${styles.badgeText} ${styles.badgeBorder}`
+                              : 'bg-zinc-800 text-zinc-500 border-zinc-700'
+                              }`}>
+                              {styles.badge}
+                            </span>
+                          </div>
+                          <p className="text-sm font-bold text-gray-400 mt-1">{serviceTier.title}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{serviceTier.subtitle}</p>
+                        </div>
+                      </div>
+                      <div className={`w-6 h-6 rounded-full border flex items-center justify-center transition-colors ${isSelected
+                        ? 'bg-amber-500 border-amber-500'
+                        : 'border-zinc-700 bg-zinc-800'
+                        }`}>
+                        {isSelected && <CheckCircle2 size={16} className="text-black" />}
+                      </div>
+                    </div>
+
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {tier.stems !== null && (
+                        <div className="bg-black/20 p-2 rounded-lg border border-white/5 text-center">
+                          <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold block mb-1">Stems</span>
+                          <span className="text-gray-200 font-mono text-sm font-bold">{tier.stems}</span>
+                        </div>
+                      )}
+                      <div className={`bg-black/20 p-2 rounded-lg border border-white/5 text-center ${tier.stems === null ? 'col-span-2' : ''}`}>
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold block mb-1">Delivery</span>
+                        <span className="text-gray-200 font-mono text-sm font-bold">{tier.deliveryDays} days</span>
+                      </div>
+                      <div className={`bg-black/20 p-2 rounded-lg border border-white/5 text-center ${tier.stems === null ? 'col-span-1' : ''}`}>
+                        <span className="text-[10px] text-gray-500 uppercase tracking-wider font-bold block mb-1">Revisions</span>
+                        <span className="text-gray-200 font-mono text-sm font-bold">{tier.numberOfRevisions}</span>
+                      </div>
+                    </div>
+
+                    {/* Features List */}
+                    {serviceTier.features && serviceTier.features.length > 0 && (
+                      <div className="space-y-2 pt-4 border-t border-zinc-800/50">
+                        <h4 className="text-xs uppercase tracking-wider text-gray-500 font-bold mb-3">What You Get</h4>
+                        {serviceTier.features.map((feature, idx) => (
+                          <div key={idx} className="flex items-start space-x-2 text-left">
+                            <span className="text-amber-500 text-sm mt-0.5 flex-shrink-0">{feature.icon}</span>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-semibold text-gray-200">{feature.title}</p>
+                              <p className="text-xs text-gray-500 leading-relaxed">{feature.desc}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
     </div>
-  </div>
-);
+  );
+
+};
 
 const Step3_Uploads = ({ formData, handleFileChange }) => (
   <div className="animate-in fade-in slide-in-from-right-8 duration-500">
@@ -362,92 +523,91 @@ const Step3_Uploads = ({ formData, handleFileChange }) => (
   </div>
 );
 
-const Step4_Review = ({ formData }) => (
-  <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-    <div className="text-center mb-10">
-      <h2 className="text-3xl font-bold text-white mb-2">Review Request</h2>
-      <p className="text-gray-500">Double check details before submission.</p>
-    </div>
+const Step4_Review = ({ formData }) => {
+  const TierIcon = TIER_ICONS[formData.tier] || Medal;
+  const tierStyles = TIER_STYLES[formData.tier] || TIER_STYLES.BRONZE;
 
-    <div className="bg-zinc-900 rounded-xl p-8 space-y-6 border border-zinc-800 relative overflow-hidden">
-      {/* Decorative background glow */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+  return (
+    <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold text-white mb-2">Review Request</h2>
+        <p className="text-gray-500">Double check details before submission.</p>
+      </div>
 
-      <div className="flex flex-col md:flex-row justify-between md:items-center pb-6 border-b border-zinc-800">
-        <div>
-          <h3 className="font-bold text-2xl text-white">{formData.projectName || "Untitled Project"}</h3>
-          <div className="flex items-center space-x-2 mt-1">
-            <span className="text-gray-400 text-sm font-medium">{formData.artistName || "Unknown Artist"}</span>
-            <span className="text-zinc-600 text-xs">•</span>
-            <span className="text-amber-500 text-sm font-bold uppercase tracking-wide">{formData.projectType}</span>
+      <div className="bg-zinc-900 rounded-xl p-8 space-y-6 border border-zinc-800 relative overflow-hidden">
+        {/* Decorative background glow */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+
+        <div className="flex flex-col md:flex-row justify-between md:items-center pb-6 border-b border-zinc-800">
+          <div>
+            <h3 className="font-bold text-2xl text-white">{formData.projectName || "Untitled Project"}</h3>
+            <div className="flex items-center space-x-2 mt-1">
+              <span className="text-gray-400 text-sm font-medium">{formData.artistName || "Unknown Artist"}</span>
+              <span className="text-zinc-600 text-xs">•</span>
+              <span className="text-amber-500 text-sm font-bold uppercase tracking-wide">{formData.projectType}</span>
+            </div>
+          </div>
+          <div className="mt-4 md:mt-0">
+            <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border ${tierStyles.badgeBg} ${tierStyles.badgeText} ${tierStyles.badgeBorder}`}>
+              <TierIcon size={14} />
+              {formData.tier} TIER
+            </span>
           </div>
         </div>
-        <div className="mt-4 md:mt-0">
-          {(() => {
-            const tierConfig = TIER_CONFIG[formData.tier];
-            const TierIcon = tierConfig.icon;
-            return (
-              <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-bold border ${tierConfig.badgeBg} ${tierConfig.badgeText} ${tierConfig.badgeBorder}`}>
-                <TierIcon size={14} />
-                {tierConfig.name.toUpperCase()} TIER
-              </span>
-            );
-          })()}
+
+        <div>
+          <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-3 font-semibold">Service Requested</h4>
+          <div className="flex flex-wrap gap-3">
+            <span className="px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm text-gray-300">
+              {formData.services || 'Not selected'}
+            </span>
+          </div>
+        </div>
+
+        {formData.genreIds && formData.genreIds.length > 0 && (
+          <div>
+            <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-3 font-semibold">Genres</h4>
+            <div className="flex flex-wrap gap-2">
+              {formData.genreIds.map((genreId, index) => (
+                <span key={index} className="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded-full text-xs text-gray-300">
+                  Genre #{genreId}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {formData.description && (
+          <div>
+            <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-3 font-semibold">Description</h4>
+            <p className="text-sm text-white bg-zinc-950 border border-zinc-800 rounded-lg p-4">
+              {formData.description}
+            </p>
+          </div>
+        )}
+
+        <div>
+          <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-3 font-semibold">Files</h4>
+          <div className="space-y-2">
+            <div className="flex items-center text-sm">
+              <FileAudio size={14} className={`mr-2 ${formData.demoFile ? 'text-amber-500' : 'text-zinc-700'}`} />
+              {formData.demoFile ? <span className="text-white">{formData.demoFile.name}</span> : <span className="text-zinc-600 italic">No demo</span>}
+            </div>
+            <div className="flex items-center text-sm">
+              <UploadCloud size={14} className={`mr-2 ${formData.stemsFile ? 'text-cyan-500' : 'text-zinc-700'}`} />
+              {formData.stemsFile ? <span className="text-white">{formData.stemsFile.name}</span> : <span className="text-zinc-600 italic">No stems</span>}
+            </div>
+          </div>
         </div>
       </div>
 
-      <div>
-        <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-3 font-semibold">Service Requested</h4>
-        <div className="flex flex-wrap gap-3">
-          <span className="px-4 py-2 bg-zinc-950 border border-zinc-800 rounded-lg text-sm text-gray-300">
-            {formData.services || 'Not selected'}
-          </span>
-        </div>
-      </div>
-
-      {formData.genreIds && formData.genreIds.length > 0 && (
-        <div>
-          <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-3 font-semibold">Genres</h4>
-          <div className="flex flex-wrap gap-2">
-            {formData.genreIds.map((genreId, index) => (
-              <span key={index} className="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded-full text-xs text-gray-300">
-                Genre #{genreId}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {formData.description && (
-        <div>
-          <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-3 font-semibold">Description</h4>
-          <p className="text-sm text-white bg-zinc-950 border border-zinc-800 rounded-lg p-4">
-            {formData.description}
-          </p>
-        </div>
-      )}
-
-      <div>
-        <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-3 font-semibold">Files</h4>
-        <div className="space-y-2">
-          <div className="flex items-center text-sm">
-            <FileAudio size={14} className={`mr-2 ${formData.demoFile ? 'text-amber-500' : 'text-zinc-700'}`} />
-            {formData.demoFile ? <span className="text-white">{formData.demoFile.name}</span> : <span className="text-zinc-600 italic">No demo</span>}
-          </div>
-          <div className="flex items-center text-sm">
-            <UploadCloud size={14} className={`mr-2 ${formData.stemsFile ? 'text-cyan-500' : 'text-zinc-700'}`} />
-            {formData.stemsFile ? <span className="text-white">{formData.stemsFile.name}</span> : <span className="text-zinc-600 italic">No stems</span>}
-          </div>
-        </div>
+      <div className="flex items-start space-x-3 p-4 bg-amber-500/10 border border-amber-500/20 text-amber-200 rounded-lg text-sm mt-6">
+        <div className="mt-0.5"><CheckCircle2 size={16} className="text-amber-500" /></div>
+        <p>By submitting this request, you agree to our terms of service. A creator will review your files and confirm the order within 24 hours.</p>
       </div>
     </div>
-
-    <div className="flex items-start space-x-3 p-4 bg-amber-500/10 border border-amber-500/20 text-amber-200 rounded-lg text-sm mt-6">
-      <div className="mt-0.5"><CheckCircle2 size={16} className="text-amber-500" /></div>
-      <p>By submitting this request, you agree to our terms of service. A creator will review your files and confirm the order within 24 hours.</p>
-    </div>
-  </div>
-);
+  );
+};
 
 // --- Main Wizard Component ---
 
@@ -463,6 +623,7 @@ export default function ServiceRequestWizard() {
     artistName: '',
     projectType: 'SINGLE', // SINGLE, EP, ALBUM
     services: 'MIXING', // MIXING, MASTERING, RECORDING (single selection)
+    mixingType: '', // STUDIO_MIX, LIVE_MIX, ESSENTIAL_MIX (only for MIXING service)
     tier: 'BRONZE', // BRONZE, SILVER, GOLD, PLATINUM
     description: '',
     genreIds: [], // Array of genre IDs
@@ -555,8 +716,8 @@ export default function ServiceRequestWizard() {
   );
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-4 font-sans text-white">
-      <div className="w-full max-w-4xl bg-black/40 backdrop-blur-xl border border-zinc-800/50 rounded-3xl shadow-2xl overflow-hidden">
+    <div className="min-h-screen bg-zinc-950 font-sans text-white">
+      <div className="w-full bg-black/40 backdrop-blur-xl border-b border-zinc-800/50 shadow-2xl">
         {/* Header */}
         <div className="bg-zinc-900/50 border-b border-zinc-800 p-6 flex justify-between items-center">
           <div className="flex items-center space-x-2">
@@ -571,7 +732,7 @@ export default function ServiceRequestWizard() {
         </div>
 
         {/* Body */}
-        <div className="p-8 md:p-12">
+        <div className="p-8 md:p-12 max-w-7xl mx-auto">
           {renderStepIndicator()}
 
           <div className="min-h-[450px]">
@@ -603,7 +764,7 @@ export default function ServiceRequestWizard() {
         </div>
 
         {/* Footer Navigation */}
-        <div className="p-8 border-t border-zinc-800 flex justify-between bg-zinc-900/30">
+        <div className="p-8 border-t border-zinc-800 flex justify-between bg-zinc-900/30 max-w-7xl mx-auto">
           <button
             onClick={prevStep}
             disabled={step === 1}

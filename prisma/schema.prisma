@@ -184,7 +184,6 @@ model User {
   serviceRequests ServiceRequest[]
   projects        Project[]
 
-
   @@map("users")
 }
 
@@ -450,14 +449,19 @@ model File {
 }
 
 model Tier {
-  id                String   @id @default(uuid())
-  name              TierName @unique
-  description       String?  @db.Text // Texto enriquecido (rich text)
-  order             Int      @unique
-  price             Float    @default(0) // Precio del tier
-  numberOfRevisions Int      @default(0) @map("number_of_revisions") // Número de revisiones incluidas
-  stems             Int      @default(0) // Número de stems
-  deliveryDays      Int      @default(0) @map("delivery_days") // Duración aproximada en días
+  id    String   @id @default(uuid())
+  name  TierName @unique
+  order Int      @unique
+  price Float    @default(0)
+
+  // Service-specific descriptions stored as JSON
+  // Structure: { MIXING: { title, subtitle, description, features: [...] }, MASTERING: {...}, RECORDING: {...} }
+  serviceDescriptions Json?
+
+  // Common fields
+  numberOfRevisions Int  @default(0) @map("number_of_revisions")
+  stems             Int? @map("stems") // Null for mastering
+  deliveryDays      Int  @default(0) @map("delivery_days")
 
   CreatorTier          CreatorTier[]
   UpgradeRequirements  UpgradeRequirements?
