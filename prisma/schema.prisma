@@ -594,3 +594,24 @@ model ServiceRequestGenre {
   @@unique([serviceRequestId, genreId])
   @@map("service_request_genres")
 }
+
+// ---------------------------------------------------------
+// ACCEPTANCE CONDITIONS
+// ---------------------------------------------------------
+
+model AcceptanceCondition {
+  id          String      @id @default(uuid())
+  serviceType ServiceType // MIXING, MASTERING, RECORDING
+  fieldName   String // e.g., "stemsReady", "mixReady"
+  label       String // Display text for the checkbox
+  description String?     @db.Text // Additional info/tooltip
+  order       Int         @default(0) // Display order
+  required    Boolean     @default(true)
+  active      Boolean     @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([serviceType, fieldName])
+  @@map("acceptance_conditions")
+}

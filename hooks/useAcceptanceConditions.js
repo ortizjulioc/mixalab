@@ -7,9 +7,9 @@ import Swal from 'sweetalert2';
 import { openNotification } from '../utils/open-notification';
 import { fetchClient } from '../utils/fetchClient';
 
-export default function useAddOns() {
-    const [addOns, setAddOns] = useState([]);
-    const [addOn, setAddOn] = useState(null);
+export default function useAcceptanceConditions() {
+    const [conditions, setConditions] = useState([]);
+    const [condition, setCondition] = useState(null);
     const searchParams = useSearchParams();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -53,20 +53,20 @@ export default function useAddOns() {
                 // Use public endpoint if only filtering by serviceType (for artists)
                 // Use admin endpoint if using search or pagination (for admin)
                 const isPublicRequest = filters.serviceType && !filters.search && filters.page === 1;
-                const endpoint = isPublicRequest ? '/add-ons' : '/admin/add-ons';
+                const endpoint = isPublicRequest ? '/acceptance-conditions' : '/admin/acceptance-conditions';
 
                 const res = await fetchClient({ method: 'GET', endpoint, params: filters });
 
                 // Handle both response formats (public returns array, admin returns object with items)
-                const items = Array.isArray(res) ? res : (res.items || res.addOns || res.data || []);
-                setAddOns(items);
+                const items = Array.isArray(res) ? res : (res.items || res.conditions || res.data || []);
+                setConditions(items);
                 setPagination(res.pagination || {});
                 setError(null);
                 return res;
             } catch (err) {
-                console.error('Error fetching add-ons:', err);
-                setError('Error loading add-ons');
-                openNotification('error', err.message || 'Error loading add-ons');
+                console.error('Error fetching acceptance conditions:', err);
+                setError('Error loading acceptance conditions');
+                openNotification('error', err.message || 'Error loading acceptance conditions');
                 return err;
             } finally {
                 setLoading(false);
@@ -75,38 +75,38 @@ export default function useAddOns() {
     }
     const debouncedFetch = debouncedFetchRef.current;
 
-    const fetchAddOns = useCallback(async () => {
+    const fetchConditions = useCallback(async () => {
         setLoading(true);
         debouncedFetch(filters);
     }, [filters, debouncedFetch]);
 
-    const createAddOn = async (data) => {
+    const createCondition = async (data) => {
         try {
-            await fetchClient({ method: 'POST', endpoint: '/admin/add-ons', data });
-            fetchAddOns();
-            openNotification('success', 'Add-on created successfully');
+            await fetchClient({ method: 'POST', endpoint: '/admin/acceptance-conditions', data });
+            fetchConditions();
+            openNotification('success', 'Acceptance condition created successfully');
             return true;
         } catch (err) {
-            console.error('Error creating add-on:', err);
-            openNotification('error', err.message || 'Error creating add-on');
+            console.error('Error creating acceptance condition:', err);
+            openNotification('error', err.message || 'Error creating acceptance condition');
             return err;
         }
     };
 
-    const updateAddOn = async (id, data) => {
+    const updateCondition = async (id, data) => {
         try {
-            await fetchClient({ method: 'PUT', endpoint: `/admin/add-ons/${id}`, data });
-            fetchAddOns();
-            openNotification('success', 'Add-on updated successfully');
+            await fetchClient({ method: 'PUT', endpoint: `/admin/acceptance-conditions/${id}`, data });
+            fetchConditions();
+            openNotification('success', 'Acceptance condition updated successfully');
             return true;
         } catch (err) {
-            console.error('Error updating add-on:', err);
-            openNotification('error', err.message || 'Error updating add-on');
+            console.error('Error updating acceptance condition:', err);
+            openNotification('error', err.message || 'Error updating acceptance condition');
             return err;
         }
     };
 
-    const deleteAddOn = async (id) => {
+    const deleteCondition = async (id) => {
         const result = await Swal.fire({
             icon: 'warning',
             title: 'Are you sure?',
@@ -121,42 +121,42 @@ export default function useAddOns() {
 
         if (result.isConfirmed) {
             try {
-                await fetchClient({ method: 'DELETE', endpoint: `/admin/add-ons/${id}` });
-                fetchAddOns();
-                openNotification('success', 'Add-on deleted successfully');
+                await fetchClient({ method: 'DELETE', endpoint: `/admin/acceptance-conditions/${id}` });
+                fetchConditions();
+                openNotification('success', 'Acceptance condition deleted successfully');
                 return true;
             } catch (err) {
-                console.error('Error deleting add-on:', err);
-                openNotification('error', err.message || 'Error deleting add-on');
+                console.error('Error deleting acceptance condition:', err);
+                openNotification('error', err.message || 'Error deleting acceptance condition');
                 return err;
             }
         }
     };
 
-    const getAddOnById = useCallback(async (id) => {
+    const getConditionById = useCallback(async (id) => {
         try {
-            const res = await fetchClient({ method: 'GET', endpoint: `/admin/add-ons/${id}` });
-            setAddOn(res);
+            const res = await fetchClient({ method: 'GET', endpoint: `/admin/acceptance-conditions/${id}` });
+            setCondition(res);
             return res;
         } catch (err) {
-            console.error('Error fetching add-on:', err);
-            openNotification('error', err.message || 'Error loading add-on');
+            console.error('Error fetching acceptance condition:', err);
+            openNotification('error', err.message || 'Error loading acceptance condition');
         }
     }, []);
 
     return {
         handleChangeFilter,
         filters,
-        addOns,
+        conditions,
         pagination,
         loading,
         error,
-        addOn,
-        fetchAddOns,
-        createAddOn,
-        updateAddOn,
-        deleteAddOn,
-        getAddOnById,
-        fetchAddOnById: getAddOnById, // Alias for consistency
+        condition,
+        fetchConditions,
+        createCondition,
+        updateCondition,
+        deleteCondition,
+        getConditionById,
+        fetchConditionById: getConditionById, // Alias for consistency
     };
 }

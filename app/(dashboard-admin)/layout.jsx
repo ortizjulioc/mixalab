@@ -12,6 +12,7 @@ const navItems = [
     { iconKey: 'users', label: 'Users', href: '/admin/users' },
     { iconKey: 'tiers', label: 'Tiers', href: '/admin/tiers' },
     { iconKey: 'add-ons', label: 'Add-Ons', href: '/admin/add-ons' },
+    { iconKey: 'acceptance-conditions', label: 'Acceptance Conditions', href: '/admin/acceptance-conditions' },
     { iconKey: 'upgrade-requirements', label: 'Upgrade Requirements', href: '/admin/upgrade-requirements' },
     { iconKey: 'maintain-requirements', label: 'Maintain Requirements', href: '/admin/maintain-requirements ' },
     { iconKey: 'downgrade-triggers', label: 'Downgrade Triggers', href: '/admin/downgrade-triggers' }
