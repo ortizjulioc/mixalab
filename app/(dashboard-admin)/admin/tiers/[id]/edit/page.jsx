@@ -10,6 +10,7 @@ import Button from '@/components/Button'
 import Input from '@/components/Input'
 import Select from '@/components/Select'
 import BreadcrumbsTitle from '@/components/Breadcrumbs'
+import EmojiSelect from '@/components/EmojiSelect'
 import useTiers from '@/hooks/useTiers'
 
 const TIER_OPTIONS = [
@@ -185,8 +186,8 @@ export default function EditTierPage({ params }) {
                                             type="button"
                                             onClick={() => setActiveServiceTab(service)}
                                             className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeServiceTab === service
-                                                    ? 'bg-amber-500 text-black'
-                                                    : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
+                                                ? 'bg-amber-500 text-black'
+                                                : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
                                                 }`}
                                         >
                                             {service}
@@ -243,34 +244,33 @@ export default function EditTierPage({ params }) {
 
                                         <div className="space-y-3">
                                             {(values.serviceDescriptions[activeServiceTab]?.features || []).map((feature, idx) => (
-                                                <div key={idx} className="p-4 bg-zinc-800/50 rounded-lg border border-white/5 space-y-2">
-                                                    <div className="flex items-start gap-2">
-                                                        <Input
+                                                <div key={idx} className="p-4 bg-zinc-800/50 rounded-lg border border-white/5 space-y-3">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                        <EmojiSelect
                                                             label="Icon"
                                                             value={feature.icon}
-                                                            onChange={(e) => setFieldValue(`serviceDescriptions.${activeServiceTab}.features.${idx}.icon`, e.target.value)}
-                                                            placeholder="✓"
-                                                            className="w-20"
+                                                            onChange={(emoji) => setFieldValue(`serviceDescriptions.${activeServiceTab}.features.${idx}.icon`, emoji)}
                                                         />
-                                                        <Input
-                                                            label="Title"
-                                                            value={feature.title}
-                                                            onChange={(e) => setFieldValue(`serviceDescriptions.${activeServiceTab}.features.${idx}.title`, e.target.value)}
-                                                            placeholder="Feature title"
-                                                            className="flex-1"
-                                                        />
-                                                        <Button
-                                                            type="button"
-                                                            size="sm"
-                                                            color="red"
-                                                            className="mt-6"
-                                                            onClick={() => {
-                                                                const features = values.serviceDescriptions[activeServiceTab]?.features || []
-                                                                setFieldValue(`serviceDescriptions.${activeServiceTab}.features`, features.filter((_, i) => i !== idx))
-                                                            }}
-                                                        >
-                                                            <Trash2 size={16} />
-                                                        </Button>
+                                                        <div className="flex items-end gap-2">
+                                                            <Input
+                                                                label="Title"
+                                                                value={feature.title}
+                                                                onChange={(e) => setFieldValue(`serviceDescriptions.${activeServiceTab}.features.${idx}.title`, e.target.value)}
+                                                                placeholder="Feature title"
+                                                                className="flex-1"
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                size="sm"
+                                                                color="red"
+                                                                onClick={() => {
+                                                                    const features = values.serviceDescriptions[activeServiceTab]?.features || []
+                                                                    setFieldValue(`serviceDescriptions.${activeServiceTab}.features`, features.filter((_, i) => i !== idx))
+                                                                }}
+                                                            >
+                                                                <Trash2 size={16} />
+                                                            </Button>
+                                                        </div>
                                                     </div>
                                                     <textarea
                                                         value={feature.desc}

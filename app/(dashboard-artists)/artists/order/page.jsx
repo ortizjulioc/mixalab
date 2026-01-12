@@ -76,156 +76,9 @@ const TIER_STYLES = {
 };
 
 // --- Add-ons Configuration ---
-const MIXING_ADD_ONS = {
-  extraFastDelivery: {
-    id: 'extraFastDelivery',
-    name: 'Extra-fast 1-Day Delivery',
-    price: 49,
-    badge: 'Popular',
-    description: 'Overrides normal delivery time',
-    icon: '⚡'
-  },
-  stemOverageFee: {
-    id: 'stemOverageFee',
-    name: 'Stem Overage Fee',
-    pricePerUnit: 5,
-    description: 'Applies if user exceeds tier stem limit',
-    icon: '📊',
-    isQuantityBased: true
-  },
-  additionalRevision: {
-    id: 'additionalRevision',
-    name: 'Additional Revision',
-    pricePerUnit: 15,
-    description: 'Purchase extra revision rounds',
-    icon: '🔄',
-    isQuantityBased: true
-  },
-  dawProjectFile: {
-    id: 'dawProjectFile',
-    name: 'DAW Project File Included',
-    price: 25,
-    description: 'Full session file (Pro Tools, Logic, Ableton, etc.)',
-    icon: '💾'
-  },
-  stemExport: {
-    id: 'stemExport',
-    name: 'Stem Export',
-    price: 15,
-    description: 'Export of all individual mixed tracks',
-    icon: '🎵'
-  },
-  advancedVocalTuning: {
-    id: 'advancedVocalTuning',
-    name: 'Advanced Vocal Tuning',
-    price: 49,
-    badge: 'Popular',
-    description: 'Manual Pitch Correction and timing vocals for a polished, professional & Natural feel',
-    icon: '🎤'
-  },
-  alternateVersions: {
-    id: 'alternateVersions',
-    name: 'Alternate Version',
-    pricePerUnit: 10,
-    description: 'Clean, Instrumental, Acapella, or Performance',
-    icon: '🎭',
-    isMultiSelect: true,
-    options: ['clean', 'instrumental', 'acapella', 'performance']
-  },
-  dolbyAtmosMix: {
-    id: 'dolbyAtmosMix',
-    name: 'Dolby Atmos Mix (+2 days)',
-    price: 55,
-    description: 'Delivered as an ADM file (Apple Music/Tidal compatible)',
-    icon: '🎧',
-    badge: 'Premium',
-    tierRestriction: ['GOLD', 'PLATINUM'],
-    addsDays: 2
-  }
-};
+// --- Add-ons Configuration (Now Dynamic) ---
+// Removed constants MIXING_ADD_ONS and MASTERING_ADD_ONS
 
-const MASTERING_ADD_ONS = {
-  extraFastDelivery: {
-    id: 'extraFastDelivery',
-    name: 'Extra-Fast 1-Day Delivery',
-    price: 39,
-    description: 'Overrides all tier delivery times',
-    icon: '⚡'
-  },
-  alternateMasters: {
-    id: 'alternateMasters',
-    name: 'Alternate Masters',
-    pricePerUnit: 10,
-    description: 'Clean, Instrumental, Performance, Loud, Dynamic',
-    icon: '🅰️',
-    isMultiSelect: true,
-    options: ['clean', 'instrumental', 'performance', 'loud', 'dynamic']
-  },
-  platformOptimized: {
-    id: 'platformOptimized',
-    name: 'Platform-Optimized Masters (Bundle)',
-    price: 15,
-    description: 'Spotify, Apple Music, YouTube, Tidal, SoundCloud',
-    icon: '📀'
-  },
-  precisionStemMastering: {
-    id: 'precisionStemMastering',
-    name: 'Precision Stem Mastering (≤4 stems)',
-    price: 25,
-    description: 'Individual stem mastering',
-    icon: '🎚️',
-    addsDays: 1
-  },
-  vinylPreMaster: {
-    id: 'vinylPreMaster',
-    name: 'Vinyl Pre-Master',
-    price: 35,
-    description: 'Optimized for vinyl pressing',
-    icon: '📼',
-    badge: 'Premium',
-    tierRestriction: ['GOLD', 'PLATINUM'],
-    addsDays: 2
-  },
-  cassetteMaster: {
-    id: 'cassetteMaster',
-    name: 'Cassette Master',
-    price: 20,
-    description: 'Optimized for cassette format',
-    icon: '📼',
-    badge: 'Premium',
-    tierRestriction: ['GOLD', 'PLATINUM'],
-    addsDays: 1
-  },
-  appleDigitalMasters: {
-    id: 'appleDigitalMasters',
-    name: 'Apple Digital Masters (ADM)',
-    price: 45,
-    description: 'Apple Music certified mastering',
-    icon: '🎧',
-    badge: 'Premium',
-    tierRestriction: ['GOLD', 'PLATINUM'],
-    addsDays: 2
-  },
-  referenceMatch: {
-    id: 'referenceMatch',
-    name: 'Reference Match Mastering',
-    price: 0,
-    description: 'Match your reference track',
-    icon: '🎵',
-    badge: 'Premium',
-    tierRestriction: ['GOLD', 'PLATINUM']
-  },
-  dolbyAtmosMaster: {
-    id: 'dolbyAtmosMaster',
-    name: 'Dolby Atmos Master',
-    price: 55,
-    description: 'Immersive audio mastering',
-    icon: '🌌',
-    badge: 'Premium',
-    tierRestriction: ['GOLD', 'PLATINUM'],
-    addsDays: 2
-  }
-};
 
 
 // --- UI Components (Dark & Premium Style) ---
@@ -677,7 +530,28 @@ const Step3_Uploads = ({ formData, handleFileChange }) => (
 );
 
 const Step4_AddOns = ({ formData, setFormData }) => {
-  const addOnsConfig = formData.services === 'MIXING' ? MIXING_ADD_ONS : MASTERING_ADD_ONS;
+  const [addOnsList, setAddOnsList] = useState([]);
+  const [loadingAddOns, setLoadingAddOns] = useState(false);
+
+  useEffect(() => {
+    const fetchAddOns = async () => {
+      if (!formData.services) return;
+      setLoadingAddOns(true);
+      try {
+        const res = await fetch(`/api/add-ons?serviceType=${formData.services}`);
+        if (res.ok) {
+          const data = await res.json();
+          setAddOnsList(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoadingAddOns(false);
+      }
+    };
+    fetchAddOns();
+  }, [formData.services]);
+
 
   const handleToggleAddOn = (key) => {
     setFormData(prev => ({
@@ -714,16 +588,16 @@ const Step4_AddOns = ({ formData, setFormData }) => {
 
   const calculateAddOnsTotal = () => {
     let total = 0;
-    Object.keys(addOnsConfig).forEach(key => {
-      const addon = addOnsConfig[key];
+    addOnsList.forEach(addon => {
+      const key = addon.id;
       const value = formData.addOns[key];
 
       if (addon.isQuantityBased && value?.quantity) {
-        total += addon.pricePerUnit * value.quantity;
+        total += (addon.pricePerUnit || 0) * value.quantity;
       } else if (addon.isMultiSelect && value) {
         const selectedCount = Object.values(value).filter(Boolean).length;
-        total += addon.pricePerUnit * selectedCount;
-      } else if (value === true && addon.price) {
+        total += (addon.pricePerUnit || 0) * selectedCount;
+      } else if (value === true && (addon.price !== null && addon.price !== undefined)) { // Boolean check for simple checkbox
         total += addon.price;
       }
     });
@@ -742,93 +616,97 @@ const Step4_AddOns = ({ formData, setFormData }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        {Object.keys(addOnsConfig).map(key => {
-          const addon = addOnsConfig[key];
-          const isDisabled = isAddonDisabled(addon);
-          const isSelected = addon.isQuantityBased
-            ? formData.addOns[key]?.quantity > 0
-            : addon.isMultiSelect
-              ? Object.values(formData.addOns[key] || {}).some(Boolean)
-              : formData.addOns[key];
+        {loadingAddOns ? (
+          <div className="text-center col-span-2 py-10 text-gray-500">Loading add-ons...</div>
+        ) : (
+          addOnsList.map(addon => {
+            const key = addon.id;
 
-          return (
-            <div
-              key={key}
-              className={`p-5 rounded-xl border transition-all duration-200 ${isDisabled
-                ? 'border-zinc-800 bg-zinc-900/20 opacity-50 cursor-not-allowed'
-                : isSelected
-                  ? 'border-amber-500 bg-amber-900/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
-                  : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-600 hover:bg-zinc-900'
-                }`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center space-x-3 flex-1">
-                  <span className="text-2xl">{addon.icon}</span>
-                  <div className="flex-1">
-                    <h4 className="font-bold text-white text-sm">{addon.name}</h4>
-                    <p className="text-xs text-gray-500 mt-0.5">{addon.description}</p>
+            const isDisabled = isAddonDisabled(addon);
+            const isSelected = addon.isQuantityBased
+              ? formData.addOns[key]?.quantity > 0
+              : addon.isMultiSelect
+                ? Object.values(formData.addOns[key] || {}).some(Boolean)
+                : formData.addOns[key];
+
+            return (
+              <div
+                key={key}
+                className={`p-5 rounded-xl border transition-all duration-200 ${isDisabled
+                  ? 'border-zinc-800 bg-zinc-900/20 opacity-50 cursor-not-allowed'
+                  : isSelected
+                    ? 'border-amber-500 bg-amber-900/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
+                    : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-600 hover:bg-zinc-900'
+                  }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <span className="text-2xl">{addon.icon}</span>
+                    <div className="flex-1">
+                      <h4 className="font-bold text-white text-sm">{addon.name}</h4>
+                      <p className="text-xs text-gray-500 mt-0.5">{addon.description}</p>
+                    </div>
                   </div>
-                </div>
-                {addon.badge && (
-                  <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 text-[10px] font-bold rounded-full">
-                    {addon.badge}
-                  </span>
-                )}
-              </div>
-
-              {isDisabled && (
-                <div className="text-xs text-red-400 mb-2">
-                  Only available for {addon.tierRestriction.join(' & ')} tiers
-                </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <div className="text-amber-500 font-bold text-lg">
-                  {addon.price !== undefined ? `$${addon.price}` : `$${addon.pricePerUnit} each`}
-                  {addon.addsDays && <span className="text-xs text-gray-500 ml-2">+{addon.addsDays}d</span>}
+                  {addon.badge && (
+                    <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 text-[10px] font-bold rounded-full">
+                      {addon.badge}
+                    </span>
+                  )}
                 </div>
 
-                {addon.isQuantityBased ? (
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.addOns[key]?.quantity || 0}
-                    onChange={(e) => handleQuantityChange(key, e.target.value)}
-                    disabled={isDisabled}
-                    className="w-20 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-center disabled:opacity-50"
-                  />
-                ) : addon.isMultiSelect ? (
-                  <div className="flex flex-wrap gap-2">
-                    {addon.options.map(option => (
-                      <button
-                        key={option}
-                        onClick={() => !isDisabled && handleMultiSelectToggle(key, option)}
-                        disabled={isDisabled}
-                        className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${formData.addOns[key]?.[option]
-                          ? 'bg-amber-500 text-black'
-                          : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
-                          } disabled:opacity-50`}
-                      >
-                        {option}
-                      </button>
-                    ))}
+                {isDisabled && (
+                  <div className="text-xs text-red-400 mb-2">
+                    Only available for {addon.tierRestriction.join(' & ')} tiers
                   </div>
-                ) : (
-                  <button
-                    onClick={() => !isDisabled && handleToggleAddOn(key)}
-                    disabled={isDisabled}
-                    className={`px-6 py-2 rounded-lg font-bold transition-all ${formData.addOns[key]
-                      ? 'bg-amber-500 text-black'
-                      : 'bg-zinc-800 text-white hover:bg-zinc-700'
-                      } disabled:opacity-50`}
-                  >
-                    {formData.addOns[key] ? 'Added' : 'Add'}
-                  </button>
                 )}
+
+                <div className="flex items-center justify-between">
+                  <div className="text-amber-500 font-bold text-lg">
+                    {addon.price !== undefined && addon.price !== null ? `$${addon.price}` : `$${addon.pricePerUnit} each`}
+                    {addon.addsDays && <span className="text-xs text-gray-500 ml-2">+{addon.addsDays}d</span>}
+                  </div>
+
+                  {addon.isQuantityBased ? (
+                    <input
+                      type="number"
+                      min="0"
+                      value={formData.addOns[key]?.quantity || 0}
+                      onChange={(e) => handleQuantityChange(key, e.target.value)}
+                      disabled={isDisabled}
+                      className="w-20 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-center disabled:opacity-50"
+                    />
+                  ) : addon.isMultiSelect ? (
+                    <div className="flex flex-wrap gap-2">
+                      {addon.options.map(option => (
+                        <button
+                          key={option}
+                          onClick={() => !isDisabled && handleMultiSelectToggle(key, option)}
+                          disabled={isDisabled}
+                          className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${formData.addOns[key]?.[option]
+                            ? 'bg-amber-500 text-black'
+                            : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
+                            } disabled:opacity-50`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => !isDisabled && handleToggleAddOn(key)}
+                      disabled={isDisabled}
+                      className={`px-6 py-2 rounded-lg font-bold transition-all ${formData.addOns[key]
+                        ? 'bg-amber-500 text-black'
+                        : 'bg-zinc-800 text-white hover:bg-zinc-700'
+                        } disabled:opacity-50`}
+                    >
+                      {formData.addOns[key] ? 'Added' : 'Add'}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          }))}
       </div>
 
       <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
@@ -1223,22 +1101,9 @@ export default function ServiceRequestWizard() {
   });
 
   // Initialize add-ons based on service type
+  // Reset add-ons when service type changes
   useEffect(() => {
-    const addOnsConfig = formData.services === 'MIXING' ? MIXING_ADD_ONS : MASTERING_ADD_ONS;
-    const initialAddOns = {};
-
-    Object.keys(addOnsConfig).forEach(key => {
-      const addon = addOnsConfig[key];
-      if (addon.isQuantityBased) {
-        initialAddOns[key] = { quantity: 0 };
-      } else if (addon.isMultiSelect) {
-        initialAddOns[key] = Object.fromEntries(addon.options.map(opt => [opt, false]));
-      } else {
-        initialAddOns[key] = false;
-      }
-    });
-
-    setFormData(prev => ({ ...prev, addOns: initialAddOns }));
+    setFormData(prev => ({ ...prev, addOns: {} }));
   }, [formData.services]);
 
   const handleChange = (e) => {

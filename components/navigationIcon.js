@@ -11,7 +11,7 @@ import {
   HiOutlineArrowDown,
   HiOutlineStar,
 } from 'react-icons/hi'
-import { MdLibraryMusic } from "react-icons/md";  // food icon
+import { MdLibraryMusic, MdExtension } from "react-icons/md";  // food icon
 
 const navigationIcon = {
   home: <HiOutlineHome size={32} />,
@@ -19,6 +19,7 @@ const navigationIcon = {
   customer: <HiOutlineUserGroup size={32} />,
   maintenance: <HiOutlineCog size={32} />,
   genre: <MdLibraryMusic size={32} />,
+  "add-ons": <MdExtension size={32} />,
   service: <FaArchive size={32} />,
   users: <HiOutlineUserGroup size={32} />,
   tiers: <HiOutlineStar size={32} />,                     // Niveles / Tiers

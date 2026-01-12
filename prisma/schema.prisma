@@ -110,6 +110,30 @@ enum ProjectFileType {
 // MODELOS NUEVOS PARA PROJECT MODULE
 // ---------------------------------------------------------
 
+model ServiceAddOn {
+  id           String      @id @default(uuid())
+  serviceType  ServiceType @map("service_type")
+  name         String
+  description  String?
+  price        Float? // Precio fijo
+  pricePerUnit Float?      @map("price_per_unit") // Precio por unidad
+
+  isQuantityBased Boolean @default(false) @map("is_quantity_based")
+  isMultiSelect   Boolean @default(false) @map("is_multi_select")
+  options         Json? // Opciones para multiselect
+
+  icon            String?
+  badge           String? // 'Popular', 'Premium', etc.
+  tierRestriction Json?   @map("tier_restriction") // Array de tiers permitidos
+  addsDays        Int?    @map("adds_days")
+
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("service_add_ons")
+}
+
 model Project {
   id     String @id @default(uuid())
   userId String
