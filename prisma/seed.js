@@ -93,6 +93,61 @@ async function main() {
   } else {
     console.log(`✔ Genres already exist (${existingGenres} genres found)`);
   }
+
+  // Crear Add-Ons por defecto
+  const defaultAddOns = settings['add-ons'] || [];
+
+  if (defaultAddOns.length > 0) {
+    console.log('🔧 Creating service add-ons...');
+    for (const addOnData of defaultAddOns) {
+      try {
+        await prisma.serviceAddOn.upsert({
+          where: {
+            // Usar combinación única de serviceType y name
+            serviceType_name: {
+              serviceType: addOnData.serviceType,
+              name: addOnData.name
+            }
+          },
+          update: addOnData,
+          create: addOnData
+        });
+        console.log(`✅ Created/Updated add-on: ${addOnData.serviceType} - ${addOnData.name}`);
+      } catch (error) {
+        console.error(`❌ Error creating add-on ${addOnData.name}:`, error.message);
+      }
+    }
+    console.log(`🎉 All ${defaultAddOns.length} add-ons processed successfully!`);
+  } else {
+    console.log('⚠️  No add-ons found in settings.json');
+  }
+
+  // Crear Acceptance Conditions por defecto
+  const defaultConditions = settings['acceptance-conditions'] || [];
+
+  if (defaultConditions.length > 0) {
+    console.log('📋 Creating acceptance conditions...');
+    for (const conditionData of defaultConditions) {
+      try {
+        await prisma.acceptanceCondition.upsert({
+          where: {
+            serviceType_fieldName: {
+              serviceType: conditionData.serviceType,
+              fieldName: conditionData.fieldName
+            }
+          },
+          update: conditionData,
+          create: conditionData
+        });
+        console.log(`✅ Created/Updated condition: ${conditionData.serviceType} - ${conditionData.fieldName}`);
+      } catch (error) {
+        console.error(`❌ Error creating condition ${conditionData.fieldName}:`, error.message);
+      }
+    }
+    console.log(`🎉 All ${defaultConditions.length} acceptance conditions processed successfully!`);
+  } else {
+    console.log('⚠️  No acceptance conditions found in settings.json');
+  }
 }
 
 main()
