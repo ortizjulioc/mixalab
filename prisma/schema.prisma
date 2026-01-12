@@ -474,10 +474,11 @@ model File {
 }
 
 model Tier {
-  id    String   @id @default(uuid())
-  name  TierName @unique
-  order Int      @unique
-  price Float    @default(0)
+  id     String   @id @default(uuid())
+  name   TierName @unique
+  order  Int      @unique
+  price  Float    @default(0) // Default/fallback price
+  prices Json? // Structure: { "MIXING": 199, "MASTERING": 99, "RECORDING": 50 }
 
   // Service-specific descriptions stored as JSON
   // Structure: { MIXING: { title, subtitle, description, features: [...] }, MASTERING: {...}, RECORDING: {...} }

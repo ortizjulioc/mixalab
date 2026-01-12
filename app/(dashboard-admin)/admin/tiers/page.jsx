@@ -29,21 +29,27 @@ export default function TiersPage() {
 
   const columns = [
     { key: 'name', label: 'Name' },
-    {
-      key: 'description',
-      label: 'Description',
-      render: (value) => {
-        if (!value) return '-'
-        // Strip HTML tags for table display
-        const stripped = value.replace(/<[^>]*>/g, '')
-        return stripped.length > 50 ? stripped.substring(0, 50) + '...' : stripped
-      }
-    },
     { key: 'order', label: 'Order' },
     {
       key: 'price',
       label: 'Price',
-      render: (value) => `$${value?.toFixed(2) || '0.00'}`
+      render: (value, row) => {
+        if (row.prices && typeof row.prices === 'object') {
+          return (
+            <div className="text-xs space-y-1 min-w-[120px]">
+              {Object.entries(row.prices).map(([service, price]) => (
+                <div key={service} className="flex justify-between gap-3">
+                  <span className="font-medium text-gray-400">{service.charAt(0) + service.slice(1).toLowerCase()}:</span>
+                  <span className="font-semibold text-white">${Number(price).toFixed(0)}</span>
+                </div>
+              ))}
+              {/* Fallback si el objeto está vacío */}
+              {Object.keys(row.prices).length === 0 && <span>${value?.toFixed(2) || '0.00'}</span>}
+            </div>
+          )
+        }
+        return `$${value?.toFixed(2) || '0.00'}`
+      }
     },
     {
       key: 'numberOfRevisions',

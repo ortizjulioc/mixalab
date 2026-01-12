@@ -25,7 +25,11 @@ const SERVICE_TYPES = ['MIXING', 'MASTERING', 'RECORDING']
 const validationSchema = Yup.object({
     name: Yup.string().required('Name is required'),
     order: Yup.number().integer('Must be integer').min(0, 'Must be >= 0').required('Order is required'),
-    price: Yup.number().min(0, 'Price must be >= 0').required('Price is required'),
+    prices: Yup.object().shape({
+        MIXING: Yup.number().min(0, 'Price must be >= 0'),
+        MASTERING: Yup.number().min(0, 'Price must be >= 0'),
+        RECORDING: Yup.number().min(0, 'Price must be >= 0'),
+    }),
     numberOfRevisions: Yup.number().integer('Must be integer').min(0, 'Must be >= 0').required('Number of revisions is required'),
     stems: Yup.number().integer('Must be integer').nullable(),
     deliveryDays: Yup.number().integer('Must be integer').min(1, 'Must be >= 1').required('Delivery days is required'),
@@ -52,7 +56,7 @@ export default function CreateTierPage() {
                     initialValues={{
                         name: '',
                         order: 0,
-                        price: 0,
+                        prices: { MIXING: 0, MASTERING: 0, RECORDING: 0 },
                         numberOfRevisions: 0,
                         stems: null,
                         deliveryDays: 0,
@@ -100,17 +104,6 @@ export default function CreateTierPage() {
                                 />
 
                                 <Input
-                                    label="Price ($)"
-                                    name="price"
-                                    type="number"
-                                    step="0.01"
-                                    value={values.price}
-                                    onChange={(e) => setFieldValue('price', Number(e.target.value))}
-                                    error={touched.price && errors.price}
-                                    required
-                                />
-
-                                <Input
                                     label="Number of Revisions"
                                     name="numberOfRevisions"
                                     type="number"
@@ -142,7 +135,7 @@ export default function CreateTierPage() {
 
                             {/* Service-Specific Descriptions */}
                             <div className="pt-6 border-t border-white/10">
-                                <h3 className="text-lg font-bold text-white mb-4">Service-Specific Descriptions</h3>
+                                <h3 className="text-lg font-bold text-white mb-4">Service Details & Pricing</h3>
 
                                 {/* Service Tabs */}
                                 <div className="flex gap-2 mb-6">
@@ -163,6 +156,19 @@ export default function CreateTierPage() {
 
                                 {/* Service Description Form */}
                                 <div className="space-y-4 p-6 bg-zinc-900/50 rounded-xl border border-white/5">
+                                    <div className="bg-zinc-800/30 p-4 rounded-lg border border-white/5 mb-4">
+                                        <h4 className="text-sm font-semibold text-gray-400 mb-3">{activeServiceTab} Settings</h4>
+                                        <Input
+                                            label={`${activeServiceTab} Base Price ($)`}
+                                            type="number"
+                                            step="0.01"
+                                            value={values.prices[activeServiceTab] || 0}
+                                            onChange={(e) => setFieldValue(`prices.${activeServiceTab}`, Number(e.target.value))}
+                                            placeholder="0.00"
+                                            required
+                                        />
+                                    </div>
+
                                     <Input
                                         label="Title"
                                         value={values.serviceDescriptions[activeServiceTab]?.title || ''}

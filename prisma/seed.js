@@ -56,6 +56,7 @@ async function main() {
             name: tierData.name,
             order: tierData.order,
             price: tierData.price,
+            prices: tierData.prices, // Nuevo campo de precios por servicio
             numberOfRevisions: tierData.numberOfRevisions,
             stems: tierData.stems,
             deliveryDays: tierData.deliveryDays,

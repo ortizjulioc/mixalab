@@ -13,7 +13,6 @@ export async function GET(request) {
       ? {
         OR: [
           { name: { contains: search } },
-          { description: { contains: search } },
         ],
       }
       : {};
@@ -43,10 +42,6 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid name' } }, { status: 400 });
     }
 
-    if (body.description && typeof body.description !== 'string') {
-      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid description' } }, { status: 400 });
-    }
-
     if (body.order === undefined || isNaN(Number(body.order))) {
       return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid order' } }, { status: 400 });
     }
@@ -70,9 +65,9 @@ export async function POST(request) {
     const tier = await prisma.tier.create({
       data: {
         name: body.name.toUpperCase(),
-        description: body.description || null,
         order: Number(body.order),
         price: body.price !== undefined ? Number(body.price) : 0,
+        prices: body.prices || null, // Guardar precios por servicio
         numberOfRevisions: body.numberOfRevisions !== undefined ? Number(body.numberOfRevisions) : 0,
         stems: body.stems !== undefined ? (body.stems === '' || body.stems === null ? null : Number(body.stems)) : null,
         deliveryDays: body.deliveryDays !== undefined ? Number(body.deliveryDays) : 0,

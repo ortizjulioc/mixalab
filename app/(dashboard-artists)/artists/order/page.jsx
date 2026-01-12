@@ -23,6 +23,7 @@ import SelectGenres from '@/components/SelectGenres';
 import useServiceRequests from '@/hooks/useServiceRequests';
 import useTiers from '@/hooks/useTiers';
 import useGenres from '@/hooks/useGenres';
+import { openNotification } from '@/utils/open-notification';
 
 // --- Tier Icon Mapping ---
 const TIER_ICONS = {
@@ -435,7 +436,7 @@ const Step2_Services = ({ formData, setFormData }) => {
                         <div className="text-left">
                           <div className="flex items-center gap-3">
                             <h3 className={`font-bold text-xl ${isSelected ? styles.color : 'text-gray-300 group-hover:text-white'}`}>
-                              {tier.name} — ${tier.price}
+                              {tier.name} — ${tier.prices?.[formData.services] ?? tier.price ?? 0}
                             </h3>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold border ${isSelected
                               ? `${styles.badgeBg} ${styles.badgeText} ${styles.badgeBorder}`
@@ -834,7 +835,27 @@ const Step5_Review = ({ formData }) => {
 };
 
 const Step6_FinalAcceptance = ({ formData, setFormData }) => {
-  const isMixing = formData.services === 'MIXING';
+  const [conditions, setConditions] = useState([]);
+  const [loadingConditions, setLoadingConditions] = useState(false);
+
+  useEffect(() => {
+    const fetchConditions = async () => {
+      if (!formData.services) return;
+      setLoadingConditions(true);
+      try {
+        const res = await fetch(`/api/acceptance-conditions?serviceType=${formData.services}`);
+        if (res.ok) {
+          const data = await res.json();
+          setConditions(data);
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoadingConditions(false);
+      }
+    };
+    fetchConditions();
+  }, [formData.services]);
 
   const handleCheckboxChange = (field) => {
     setFormData(prev => ({
@@ -842,6 +863,20 @@ const Step6_FinalAcceptance = ({ formData, setFormData }) => {
       acceptance: {
         ...prev.acceptance,
         [field]: !prev.acceptance[field]
+      }
+    }));
+  };
+
+  const handleAcceptAll = () => {
+    const allAcceptance = {};
+    conditions.forEach(condition => {
+      allAcceptance[condition.fieldName] = true;
+    });
+    setFormData(prev => ({
+      ...prev,
+      acceptance: {
+        ...prev.acceptance,
+        ...allAcceptance
       }
     }));
   };
@@ -856,19 +891,9 @@ const Step6_FinalAcceptance = ({ formData, setFormData }) => {
     }));
   };
 
-  const allChecked = isMixing
-    ? formData.acceptance.stemsReady &&
-    formData.acceptance.agreeSchedule &&
-    formData.acceptance.understandStemLimit &&
-    formData.acceptance.stemsConsolidated &&
-    formData.acceptance.marketingConsent &&
-    formData.acceptance.understandQuality &&
-    formData.acceptance.declineFixes
-    : formData.acceptance.mixReady &&
-    formData.acceptance.agreeSchedule &&
-    formData.acceptance.agreeRoyaltySplit &&
-    formData.acceptance.understandMixQuality &&
-    formData.acceptance.declineImprovements;
+  // Check if all required conditions are checked
+  const requiredConditions = conditions.filter(c => c.required);
+  const allChecked = requiredConditions.every(c => formData.acceptance[c.fieldName] === true);
 
   return (
     <div className="animate-in fade-in slide-in-from-right-8 duration-500">
@@ -879,156 +904,40 @@ const Step6_FinalAcceptance = ({ formData, setFormData }) => {
 
       <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 space-y-6">
         <div className="space-y-4">
-          <h3 className="text-lg font-bold text-white mb-4">Required Confirmations</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-white">Required Confirmations</h3>
+            <button
+              onClick={handleAcceptAll}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-black font-semibold rounded-lg transition-all duration-200 text-sm flex items-center gap-2"
+            >
+              <CheckCircle2 size={16} />
+              Accept All
+            </button>
+          </div>
 
-          {isMixing ? (
-            <>
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.stemsReady}
-                  onChange={() => handleCheckboxChange('stemsReady')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  My stems are final and ready for mixing
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.agreeSchedule}
-                  onChange={() => handleCheckboxChange('agreeSchedule')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  I agree to the delivery schedule based on my tier and add-ons
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.understandStemLimit}
-                  onChange={() => handleCheckboxChange('understandStemLimit')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  I understand my selected tier has a stem limit and agree to pay $5 per extra stem if exceeded
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.stemsConsolidated}
-                  onChange={() => handleCheckboxChange('stemsConsolidated')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  Uploaded stems are consolidated (all tracks start at 0:00) and clearly labeled
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.marketingConsent}
-                  onChange={() => handleCheckboxChange('marketingConsent')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  You'll give us access to use your song as part of our marketing as a before and after
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.understandQuality}
-                  onChange={() => handleCheckboxChange('understandQuality')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  Final results depend on recording quality; engineers may request fixes before mixing
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.declineFixes}
-                  onChange={() => handleCheckboxChange('declineFixes')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  If I decline fixes: I understand the current state of my track may limit the final quality. I choose to proceed as-is
-                </span>
-              </label>
-            </>
+          {loadingConditions ? (
+            <div className="text-center py-10 text-gray-500">Loading conditions...</div>
           ) : (
-            <>
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.mixReady}
-                  onChange={() => handleCheckboxChange('mixReady')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  My final mix is approved and ready for mastering
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.agreeSchedule}
-                  onChange={() => handleCheckboxChange('agreeSchedule')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  I agree to the delivery schedule based on my tier and add-ons
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.agreeRoyaltySplit}
-                  onChange={() => handleCheckboxChange('agreeRoyaltySplit')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  I agree to the 35% royalty split (per ToS)
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.understandMixQuality}
-                  onChange={() => handleCheckboxChange('understandMixQuality')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  Final results depend on the quality of my mix; engineers may request fixes
-                </span>
-              </label>
-
-              <label className="flex items-start space-x-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={formData.acceptance.declineImprovements}
-                  onChange={() => handleCheckboxChange('declineImprovements')}
-                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
-                />
-                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
-                  If I decline improvements, I understand quality may be limited and I choose to proceed
-                </span>
-              </label>
-            </>
+            <div className="space-y-4">
+              {conditions.map((condition) => (
+                <label key={condition.id} className="flex items-start space-x-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={formData.acceptance[condition.fieldName] || false}
+                    onChange={() => handleCheckboxChange(condition.fieldName)}
+                    className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                  />
+                  <div className="flex-1">
+                    <span className={`text-sm group-hover:text-white transition-colors ${condition.required ? 'text-gray-300' : 'text-gray-400'}`}>
+                      {condition.label} {!condition.required && <span className="text-xs text-gray-600">(optional)</span>}
+                    </span>
+                    {condition.description && (
+                      <p className="text-xs text-gray-600 mt-1">{condition.description}</p>
+                    )}
+                  </div>
+                </label>
+              ))}
+            </div>
           )}
         </div>
 
@@ -1127,14 +1036,14 @@ export default function ServiceRequestWizard() {
   const handleSubmit = async () => {
     // Validate user is authenticated
     if (!session?.user?.id) {
-      alert('Please log in to submit a service request');
+      openNotification('error', 'Please log in to submit a service request');
       router.push('/login');
       return;
     }
 
     // Validate required fields
     if (!formData.projectName || !formData.artistName || formData.genreIds.length === 0) {
-      alert('Please fill in all required fields');
+      openNotification('error', 'Please fill in all required fields');
       return;
     }
 
@@ -1155,7 +1064,7 @@ export default function ServiceRequestWizard() {
       formData.acceptance.declineImprovements;
 
     if (!allChecked || !formData.acceptance.legalName || formData.acceptance.legalName.trim().length < 3) {
-      alert('Please complete all acceptance requirements and provide your legal name');
+      openNotification('error', 'Please complete all acceptance requirements and provide your legal name');
       return;
     }
 
