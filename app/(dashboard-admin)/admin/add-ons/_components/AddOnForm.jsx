@@ -4,14 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import BreadcrumbsTitle from '@/components/Breadcrumbs';
 import { Save, Info, Plus, X, Home } from 'lucide-react';
-import { openNotification } from '@/utils/open-notification';
 
 import Input from '@/components/Input';
 import Select from '@/components/Select';
 import EmojiSelect from '@/components/EmojiSelect';
+import useAddOns from '@/hooks/useAddOns';
 
 const AddOnForm = ({ initialData = {}, isEditing = false }) => {
     const router = useRouter();
+    const { createAddOn, updateAddOn } = useAddOns();
     const [loading, setLoading] = useState(false);
 
     // Default form state
@@ -93,29 +94,19 @@ const AddOnForm = ({ initialData = {}, isEditing = false }) => {
         if (payload.tierRestriction && payload.tierRestriction.length === 0) payload.tierRestriction = undefined;
 
         try {
-            const url = isEditing
-                ? `/api/admin/add-ons/${initialData.id}`
-                : '/api/admin/add-ons';
+            let result;
+            if (isEditing) {
+                result = await updateAddOn(initialData.id, payload);
+            } else {
+                result = await createAddOn(payload);
+            }
 
-            const method = isEditing ? 'PUT' : 'POST';
-
-            const res = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            if (res.ok) {
-                openNotification('success', isEditing ? 'Extra actualizado' : 'Extra creado exitosamente');
+            if (result === true) {
                 router.push('/admin/add-ons');
                 router.refresh();
-            } else {
-                const err = await res.text();
-                openNotification('error', `Error: ${err}`);
             }
         } catch (error) {
             console.error(error);
-            openNotification('error', 'Error de conexión');
         } finally {
             setLoading(false);
         }
