@@ -22,6 +22,7 @@ import {
 import SelectGenres from '@/components/SelectGenres';
 import useServiceRequests from '@/hooks/useServiceRequests';
 import useTiers from '@/hooks/useTiers';
+import useGenres from '@/hooks/useGenres';
 
 // --- Tier Icon Mapping ---
 const TIER_ICONS = {
@@ -50,7 +51,7 @@ const TIER_STYLES = {
     badgeText: 'text-gray-300',
     badgeBorder: 'border-gray-400/30',
     glowColor: 'shadow-gray-400/20',
-    badge: 'Recommended'
+    badge: 'Popular'
   },
   GOLD: {
     color: 'text-yellow-400',
@@ -60,7 +61,7 @@ const TIER_STYLES = {
     badgeText: 'text-yellow-400',
     badgeBorder: 'border-yellow-500/30',
     glowColor: 'shadow-yellow-500/20',
-    badge: 'Pro Level'
+    badge: 'Recommended'
   },
   PLATINUM: {
     color: 'text-cyan-300',
@@ -72,6 +73,158 @@ const TIER_STYLES = {
     glowColor: 'shadow-cyan-400/20',
     badge: 'Elite'
   },
+};
+
+// --- Add-ons Configuration ---
+const MIXING_ADD_ONS = {
+  extraFastDelivery: {
+    id: 'extraFastDelivery',
+    name: 'Extra-fast 1-Day Delivery',
+    price: 49,
+    badge: 'Popular',
+    description: 'Overrides normal delivery time',
+    icon: '⚡'
+  },
+  stemOverageFee: {
+    id: 'stemOverageFee',
+    name: 'Stem Overage Fee',
+    pricePerUnit: 5,
+    description: 'Applies if user exceeds tier stem limit',
+    icon: '📊',
+    isQuantityBased: true
+  },
+  additionalRevision: {
+    id: 'additionalRevision',
+    name: 'Additional Revision',
+    pricePerUnit: 15,
+    description: 'Purchase extra revision rounds',
+    icon: '🔄',
+    isQuantityBased: true
+  },
+  dawProjectFile: {
+    id: 'dawProjectFile',
+    name: 'DAW Project File Included',
+    price: 25,
+    description: 'Full session file (Pro Tools, Logic, Ableton, etc.)',
+    icon: '💾'
+  },
+  stemExport: {
+    id: 'stemExport',
+    name: 'Stem Export',
+    price: 15,
+    description: 'Export of all individual mixed tracks',
+    icon: '🎵'
+  },
+  advancedVocalTuning: {
+    id: 'advancedVocalTuning',
+    name: 'Advanced Vocal Tuning',
+    price: 49,
+    badge: 'Popular',
+    description: 'Manual Pitch Correction and timing vocals for a polished, professional & Natural feel',
+    icon: '🎤'
+  },
+  alternateVersions: {
+    id: 'alternateVersions',
+    name: 'Alternate Version',
+    pricePerUnit: 10,
+    description: 'Clean, Instrumental, Acapella, or Performance',
+    icon: '🎭',
+    isMultiSelect: true,
+    options: ['clean', 'instrumental', 'acapella', 'performance']
+  },
+  dolbyAtmosMix: {
+    id: 'dolbyAtmosMix',
+    name: 'Dolby Atmos Mix (+2 days)',
+    price: 55,
+    description: 'Delivered as an ADM file (Apple Music/Tidal compatible)',
+    icon: '🎧',
+    badge: 'Premium',
+    tierRestriction: ['GOLD', 'PLATINUM'],
+    addsDays: 2
+  }
+};
+
+const MASTERING_ADD_ONS = {
+  extraFastDelivery: {
+    id: 'extraFastDelivery',
+    name: 'Extra-Fast 1-Day Delivery',
+    price: 39,
+    description: 'Overrides all tier delivery times',
+    icon: '⚡'
+  },
+  alternateMasters: {
+    id: 'alternateMasters',
+    name: 'Alternate Masters',
+    pricePerUnit: 10,
+    description: 'Clean, Instrumental, Performance, Loud, Dynamic',
+    icon: '🅰️',
+    isMultiSelect: true,
+    options: ['clean', 'instrumental', 'performance', 'loud', 'dynamic']
+  },
+  platformOptimized: {
+    id: 'platformOptimized',
+    name: 'Platform-Optimized Masters (Bundle)',
+    price: 15,
+    description: 'Spotify, Apple Music, YouTube, Tidal, SoundCloud',
+    icon: '📀'
+  },
+  precisionStemMastering: {
+    id: 'precisionStemMastering',
+    name: 'Precision Stem Mastering (≤4 stems)',
+    price: 25,
+    description: 'Individual stem mastering',
+    icon: '🎚️',
+    addsDays: 1
+  },
+  vinylPreMaster: {
+    id: 'vinylPreMaster',
+    name: 'Vinyl Pre-Master',
+    price: 35,
+    description: 'Optimized for vinyl pressing',
+    icon: '📼',
+    badge: 'Premium',
+    tierRestriction: ['GOLD', 'PLATINUM'],
+    addsDays: 2
+  },
+  cassetteMaster: {
+    id: 'cassetteMaster',
+    name: 'Cassette Master',
+    price: 20,
+    description: 'Optimized for cassette format',
+    icon: '📼',
+    badge: 'Premium',
+    tierRestriction: ['GOLD', 'PLATINUM'],
+    addsDays: 1
+  },
+  appleDigitalMasters: {
+    id: 'appleDigitalMasters',
+    name: 'Apple Digital Masters (ADM)',
+    price: 45,
+    description: 'Apple Music certified mastering',
+    icon: '🎧',
+    badge: 'Premium',
+    tierRestriction: ['GOLD', 'PLATINUM'],
+    addsDays: 2
+  },
+  referenceMatch: {
+    id: 'referenceMatch',
+    name: 'Reference Match Mastering',
+    price: 0,
+    description: 'Match your reference track',
+    icon: '🎵',
+    badge: 'Premium',
+    tierRestriction: ['GOLD', 'PLATINUM']
+  },
+  dolbyAtmosMaster: {
+    id: 'dolbyAtmosMaster',
+    name: 'Dolby Atmos Master',
+    price: 55,
+    description: 'Immersive audio mastering',
+    icon: '🌌',
+    badge: 'Premium',
+    tierRestriction: ['GOLD', 'PLATINUM'],
+    addsDays: 2
+  }
 };
 
 
@@ -523,9 +676,202 @@ const Step3_Uploads = ({ formData, handleFileChange }) => (
   </div>
 );
 
-const Step4_Review = ({ formData }) => {
+const Step4_AddOns = ({ formData, setFormData }) => {
+  const addOnsConfig = formData.services === 'MIXING' ? MIXING_ADD_ONS : MASTERING_ADD_ONS;
+
+  const handleToggleAddOn = (key) => {
+    setFormData(prev => ({
+      ...prev,
+      addOns: {
+        ...prev.addOns,
+        [key]: !prev.addOns[key]
+      }
+    }));
+  };
+
+  const handleQuantityChange = (key, quantity) => {
+    setFormData(prev => ({
+      ...prev,
+      addOns: {
+        ...prev.addOns,
+        [key]: { quantity: Math.max(0, parseInt(quantity) || 0) }
+      }
+    }));
+  };
+
+  const handleMultiSelectToggle = (key, option) => {
+    setFormData(prev => ({
+      ...prev,
+      addOns: {
+        ...prev.addOns,
+        [key]: {
+          ...prev.addOns[key],
+          [option]: !prev.addOns[key]?.[option]
+        }
+      }
+    }));
+  };
+
+  const calculateAddOnsTotal = () => {
+    let total = 0;
+    Object.keys(addOnsConfig).forEach(key => {
+      const addon = addOnsConfig[key];
+      const value = formData.addOns[key];
+
+      if (addon.isQuantityBased && value?.quantity) {
+        total += addon.pricePerUnit * value.quantity;
+      } else if (addon.isMultiSelect && value) {
+        const selectedCount = Object.values(value).filter(Boolean).length;
+        total += addon.pricePerUnit * selectedCount;
+      } else if (value === true && addon.price) {
+        total += addon.price;
+      }
+    });
+    return total;
+  };
+
+  const isAddonDisabled = (addon) => {
+    return addon.tierRestriction && !addon.tierRestriction.includes(formData.tier);
+  };
+
+  return (
+    <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold text-white mb-2">Add-On Extras</h2>
+        <p className="text-gray-500">Enhance your {formData.services.toLowerCase()} with premium add-ons</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        {Object.keys(addOnsConfig).map(key => {
+          const addon = addOnsConfig[key];
+          const isDisabled = isAddonDisabled(addon);
+          const isSelected = addon.isQuantityBased
+            ? formData.addOns[key]?.quantity > 0
+            : addon.isMultiSelect
+              ? Object.values(formData.addOns[key] || {}).some(Boolean)
+              : formData.addOns[key];
+
+          return (
+            <div
+              key={key}
+              className={`p-5 rounded-xl border transition-all duration-200 ${isDisabled
+                ? 'border-zinc-800 bg-zinc-900/20 opacity-50 cursor-not-allowed'
+                : isSelected
+                  ? 'border-amber-500 bg-amber-900/20 shadow-[0_0_15px_rgba(245,158,11,0.1)]'
+                  : 'border-zinc-800 bg-zinc-900/30 hover:border-zinc-600 hover:bg-zinc-900'
+                }`}
+            >
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex items-center space-x-3 flex-1">
+                  <span className="text-2xl">{addon.icon}</span>
+                  <div className="flex-1">
+                    <h4 className="font-bold text-white text-sm">{addon.name}</h4>
+                    <p className="text-xs text-gray-500 mt-0.5">{addon.description}</p>
+                  </div>
+                </div>
+                {addon.badge && (
+                  <span className="px-2 py-1 bg-cyan-500/20 text-cyan-400 text-[10px] font-bold rounded-full">
+                    {addon.badge}
+                  </span>
+                )}
+              </div>
+
+              {isDisabled && (
+                <div className="text-xs text-red-400 mb-2">
+                  Only available for {addon.tierRestriction.join(' & ')} tiers
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <div className="text-amber-500 font-bold text-lg">
+                  {addon.price !== undefined ? `$${addon.price}` : `$${addon.pricePerUnit} each`}
+                  {addon.addsDays && <span className="text-xs text-gray-500 ml-2">+{addon.addsDays}d</span>}
+                </div>
+
+                {addon.isQuantityBased ? (
+                  <input
+                    type="number"
+                    min="0"
+                    value={formData.addOns[key]?.quantity || 0}
+                    onChange={(e) => handleQuantityChange(key, e.target.value)}
+                    disabled={isDisabled}
+                    className="w-20 px-3 py-2 rounded-lg bg-zinc-800 border border-zinc-700 text-white text-center disabled:opacity-50"
+                  />
+                ) : addon.isMultiSelect ? (
+                  <div className="flex flex-wrap gap-2">
+                    {addon.options.map(option => (
+                      <button
+                        key={option}
+                        onClick={() => !isDisabled && handleMultiSelectToggle(key, option)}
+                        disabled={isDisabled}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${formData.addOns[key]?.[option]
+                          ? 'bg-amber-500 text-black'
+                          : 'bg-zinc-800 text-gray-400 hover:bg-zinc-700'
+                          } disabled:opacity-50`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => !isDisabled && handleToggleAddOn(key)}
+                    disabled={isDisabled}
+                    className={`px-6 py-2 rounded-lg font-bold transition-all ${formData.addOns[key]
+                      ? 'bg-amber-500 text-black'
+                      : 'bg-zinc-800 text-white hover:bg-zinc-700'
+                      } disabled:opacity-50`}
+                  >
+                    {formData.addOns[key] ? 'Added' : 'Add'}
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="bg-zinc-900 rounded-xl p-6 border border-zinc-800">
+        <div className="flex items-center justify-between">
+          <span className="text-gray-400 font-semibold">Add-ons Total:</span>
+          <span className="text-amber-500 font-bold text-2xl">${calculateAddOnsTotal()}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Step5_Review = ({ formData }) => {
   const TierIcon = TIER_ICONS[formData.tier] || Medal;
   const tierStyles = TIER_STYLES[formData.tier] || TIER_STYLES.BRONZE;
+  const { getGenreById } = useGenres();
+  const [genreNames, setGenreNames] = useState({});
+
+  useEffect(() => {
+    const loadGenres = async () => {
+      const names = {};
+      if (formData.genreIds && formData.genreIds.length > 0) {
+        // Create promises for parallel fetching
+        const promises = formData.genreIds.map(async (id) => {
+          try {
+            const genre = await getGenreById(id);
+            return { id, name: genre ? genre.name : 'Unknown Genre' };
+          } catch (e) {
+            return { id, name: 'Unknown Genre' };
+          }
+        });
+
+        const results = await Promise.all(promises);
+        results.forEach(item => {
+          names[item.id] = item.name;
+        });
+
+        setGenreNames(names);
+      }
+    };
+
+    loadGenres();
+  }, [formData.genreIds, getGenreById]);
 
   return (
     <div className="animate-in fade-in slide-in-from-right-8 duration-500">
@@ -570,7 +916,7 @@ const Step4_Review = ({ formData }) => {
             <div className="flex flex-wrap gap-2">
               {formData.genreIds.map((genreId, index) => (
                 <span key={index} className="px-3 py-1 bg-zinc-950 border border-zinc-800 rounded-full text-xs text-gray-300">
-                  Genre #{genreId}
+                  {genreNames[genreId] || 'Loading...'}
                 </span>
               ))}
             </div>
@@ -609,6 +955,232 @@ const Step4_Review = ({ formData }) => {
   );
 };
 
+const Step6_FinalAcceptance = ({ formData, setFormData }) => {
+  const isMixing = formData.services === 'MIXING';
+
+  const handleCheckboxChange = (field) => {
+    setFormData(prev => ({
+      ...prev,
+      acceptance: {
+        ...prev.acceptance,
+        [field]: !prev.acceptance[field]
+      }
+    }));
+  };
+
+  const handleLegalNameChange = (e) => {
+    setFormData(prev => ({
+      ...prev,
+      acceptance: {
+        ...prev.acceptance,
+        legalName: e.target.value
+      }
+    }));
+  };
+
+  const allChecked = isMixing
+    ? formData.acceptance.stemsReady &&
+    formData.acceptance.agreeSchedule &&
+    formData.acceptance.understandStemLimit &&
+    formData.acceptance.stemsConsolidated &&
+    formData.acceptance.marketingConsent &&
+    formData.acceptance.understandQuality &&
+    formData.acceptance.declineFixes
+    : formData.acceptance.mixReady &&
+    formData.acceptance.agreeSchedule &&
+    formData.acceptance.agreeRoyaltySplit &&
+    formData.acceptance.understandMixQuality &&
+    formData.acceptance.declineImprovements;
+
+  return (
+    <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold text-white mb-2">Final Acceptance</h2>
+        <p className="text-gray-500">Please review and accept the terms before submitting</p>
+      </div>
+
+      <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 space-y-6">
+        <div className="space-y-4">
+          <h3 className="text-lg font-bold text-white mb-4">Required Confirmations</h3>
+
+          {isMixing ? (
+            <>
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.stemsReady}
+                  onChange={() => handleCheckboxChange('stemsReady')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  My stems are final and ready for mixing
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.agreeSchedule}
+                  onChange={() => handleCheckboxChange('agreeSchedule')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  I agree to the delivery schedule based on my tier and add-ons
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.understandStemLimit}
+                  onChange={() => handleCheckboxChange('understandStemLimit')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  I understand my selected tier has a stem limit and agree to pay $5 per extra stem if exceeded
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.stemsConsolidated}
+                  onChange={() => handleCheckboxChange('stemsConsolidated')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  Uploaded stems are consolidated (all tracks start at 0:00) and clearly labeled
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.marketingConsent}
+                  onChange={() => handleCheckboxChange('marketingConsent')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  You'll give us access to use your song as part of our marketing as a before and after
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.understandQuality}
+                  onChange={() => handleCheckboxChange('understandQuality')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  Final results depend on recording quality; engineers may request fixes before mixing
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.declineFixes}
+                  onChange={() => handleCheckboxChange('declineFixes')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  If I decline fixes: I understand the current state of my track may limit the final quality. I choose to proceed as-is
+                </span>
+              </label>
+            </>
+          ) : (
+            <>
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.mixReady}
+                  onChange={() => handleCheckboxChange('mixReady')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  My final mix is approved and ready for mastering
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.agreeSchedule}
+                  onChange={() => handleCheckboxChange('agreeSchedule')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  I agree to the delivery schedule based on my tier and add-ons
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.agreeRoyaltySplit}
+                  onChange={() => handleCheckboxChange('agreeRoyaltySplit')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  I agree to the 35% royalty split (per ToS)
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.understandMixQuality}
+                  onChange={() => handleCheckboxChange('understandMixQuality')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  Final results depend on the quality of my mix; engineers may request fixes
+                </span>
+              </label>
+
+              <label className="flex items-start space-x-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={formData.acceptance.declineImprovements}
+                  onChange={() => handleCheckboxChange('declineImprovements')}
+                  className="mt-1 w-5 h-5 rounded border-zinc-700 bg-zinc-800 text-amber-500 focus:ring-2 focus:ring-amber-500"
+                />
+                <span className="text-sm text-gray-300 group-hover:text-white transition-colors">
+                  If I decline improvements, I understand quality may be limited and I choose to proceed
+                </span>
+              </label>
+            </>
+          )}
+        </div>
+
+        <div className="pt-6 border-t border-zinc-800">
+          <Label required>Legal Name (Signature)</Label>
+          <input
+            type="text"
+            value={formData.acceptance.legalName}
+            onChange={handleLegalNameChange}
+            placeholder="Type your full legal name"
+            className="w-full px-4 py-3 rounded-lg bg-zinc-800 border border-zinc-700 text-white placeholder-zinc-600 focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all outline-none"
+          />
+          <p className="text-xs text-gray-500 mt-2">
+            By checking the boxes above and typing my legal name, I attest that I am the rights holder for this composition and agree to the terms listed.
+          </p>
+        </div>
+
+        {(!allChecked || !formData.acceptance.legalName) && (
+          <div className="bg-red-900/20 border border-red-600/50 rounded-lg p-4 flex items-start space-x-3">
+            <Info className="text-red-400 shrink-0 mt-0.5" size={18} />
+            <p className="text-sm text-red-200">
+              Please check all required boxes and provide your legal name to proceed.
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 // --- Main Wizard Component ---
 
 export default function ServiceRequestWizard() {
@@ -616,7 +1188,7 @@ export default function ServiceRequestWizard() {
   const router = useRouter();
   const { createServiceRequest } = useServiceRequests();
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 6;
 
   const [formData, setFormData] = useState({
     projectName: '',
@@ -629,8 +1201,45 @@ export default function ServiceRequestWizard() {
     genreIds: [], // Array of genre IDs
     demoFile: null,
     stemsFile: null,
-    // creatorId will be assigned automatically by backend based on tier/service/availability
+    addOns: {}, // Populated dynamically based on service type
+    acceptance: {
+      // Common fields
+      legalName: '',
+      // MIXING fields
+      stemsReady: false,
+      understandStemLimit: false,
+      stemsConsolidated: false,
+      marketingConsent: false,
+      understandQuality: false,
+      declineFixes: false,
+      // MASTERING fields
+      mixReady: false,
+      agreeRoyaltySplit: false,
+      understandMixQuality: false,
+      declineImprovements: false,
+      // Shared
+      agreeSchedule: false
+    }
   });
+
+  // Initialize add-ons based on service type
+  useEffect(() => {
+    const addOnsConfig = formData.services === 'MIXING' ? MIXING_ADD_ONS : MASTERING_ADD_ONS;
+    const initialAddOns = {};
+
+    Object.keys(addOnsConfig).forEach(key => {
+      const addon = addOnsConfig[key];
+      if (addon.isQuantityBased) {
+        initialAddOns[key] = { quantity: 0 };
+      } else if (addon.isMultiSelect) {
+        initialAddOns[key] = Object.fromEntries(addon.options.map(opt => [opt, false]));
+      } else {
+        initialAddOns[key] = false;
+      }
+    });
+
+    setFormData(prev => ({ ...prev, addOns: initialAddOns }));
+  }, [formData.services]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -641,8 +1250,14 @@ export default function ServiceRequestWizard() {
     setFormData(prev => ({ ...prev, [field]: file }));
   };
 
-  const nextStep = () => setStep(prev => Math.min(prev + 1, totalSteps));
-  const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
+  const nextStep = () => {
+    setStep(prev => Math.min(prev + 1, totalSteps));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+  const prevStep = () => {
+    setStep(prev => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const handleSubmit = async () => {
     // Validate user is authenticated
@@ -658,6 +1273,27 @@ export default function ServiceRequestWizard() {
       return;
     }
 
+    // Validate acceptance
+    const isMixing = formData.services === 'MIXING';
+    const allChecked = isMixing
+      ? formData.acceptance.stemsReady &&
+      formData.acceptance.agreeSchedule &&
+      formData.acceptance.understandStemLimit &&
+      formData.acceptance.stemsConsolidated &&
+      formData.acceptance.marketingConsent &&
+      formData.acceptance.understandQuality &&
+      formData.acceptance.declineFixes
+      : formData.acceptance.mixReady &&
+      formData.acceptance.agreeSchedule &&
+      formData.acceptance.agreeRoyaltySplit &&
+      formData.acceptance.understandMixQuality &&
+      formData.acceptance.declineImprovements;
+
+    if (!allChecked || !formData.acceptance.legalName || formData.acceptance.legalName.trim().length < 3) {
+      alert('Please complete all acceptance requirements and provide your legal name');
+      return;
+    }
+
     try {
       // Prepare payload matching ServiceRequest schema
       const payload = {
@@ -669,8 +1305,8 @@ export default function ServiceRequestWizard() {
         tier: formData.tier,
         description: formData.description || null,
         genreIds: formData.genreIds,
-        // creatorId will be assigned by backend
-        // files will be uploaded separately and linked
+        addOns: formData.addOns,
+        acceptance: formData.acceptance
       };
 
       console.log('Service Request Payload:', payload);
@@ -697,7 +1333,7 @@ export default function ServiceRequestWizard() {
 
   const renderStepIndicator = () => (
     <div className="flex items-center justify-center mb-12 space-x-2">
-      {[1, 2, 3, 4].map((s) => (
+      {[1, 2, 3, 4, 5, 6].map((s) => (
         <React.Fragment key={s}>
           <div
             className={`flex items-center justify-center w-8 h-8 rounded-full font-bold text-xs border transition-all duration-300 ${step >= s
@@ -707,7 +1343,7 @@ export default function ServiceRequestWizard() {
           >
             {step > s ? <CheckCircle2 size={14} /> : s}
           </div>
-          {s < 4 && (
+          {s < 6 && (
             <div className={`w-16 h-[2px] rounded-full transition-colors duration-300 ${step > s ? 'bg-amber-500/50' : 'bg-zinc-800'}`} />
           )}
         </React.Fragment>
@@ -756,8 +1392,20 @@ export default function ServiceRequestWizard() {
               />
             )}
             {step === 4 && (
-              <Step4_Review
+              <Step4_AddOns
                 formData={formData}
+                setFormData={setFormData}
+              />
+            )}
+            {step === 5 && (
+              <Step5_Review
+                formData={formData}
+              />
+            )}
+            {step === 6 && (
+              <Step6_FinalAcceptance
+                formData={formData}
+                setFormData={setFormData}
               />
             )}
           </div>

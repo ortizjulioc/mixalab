@@ -543,6 +543,11 @@ model ServiceRequest {
   status        RequestStatus        @default(PENDING)
   creatorStatus CreatorRequestStatus @default(PENDING)
 
+  // Add-ons selected by user (service-specific)
+  addOns     Json?
+  // User acceptance and signature
+  acceptance Json?
+
   user    User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   creator CreatorProfile        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   files   File[]

@@ -80,6 +80,10 @@ export async function POST(request) {
             return NextResponse.json({ error: 'Invalid or missing stageName' }, { status: 400 });
         }
 
+        if (bio && bio.length > 500) {
+            return NextResponse.json({ error: 'Bio must be 500 characters or less' }, { status: 400 });
+        }
+
         // Check if user exists
         const userExists = await prisma.user.findUnique({
             where: { id: userId },
@@ -160,8 +164,17 @@ export async function POST(request) {
         return NextResponse.json(artistProfile, { status: 201 });
     } catch (error) {
         console.error('POST ArtistProfile Error:', error);
+
+        // Handle Prisma-specific errors
+        if (error.code === 'P2000') {
+            return NextResponse.json(
+                { error: { message: 'One or more fields exceed the maximum allowed length', code: error.code } },
+                { status: 400 }
+            );
+        }
+
         return NextResponse.json(
-            { error: 'Error creating artist profile' },
+            { error: { message: 'Error creating artist profile', code: 'INTERNAL_ERROR' } },
             { status: 500 }
         );
     }

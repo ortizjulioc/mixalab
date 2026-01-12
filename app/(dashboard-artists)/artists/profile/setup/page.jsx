@@ -68,6 +68,10 @@ export default function ArtistSetup() {
       newErrors.stageName = 'Stage Name is required'
     }
 
+    if (formData.bio && formData.bio.length > 500) {
+      newErrors.bio = 'Bio must be 500 characters or less'
+    }
+
     if (formData.website && !isValidUrl(formData.website)) {
       newErrors.website = 'Invalid URL format'
     }
@@ -234,8 +238,8 @@ export default function ArtistSetup() {
             onChange={handleInputChange}
             placeholder="Your artist name"
             className={`w-full px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 transition focus:outline-none focus:ring-2 ${errors.stageName
-                ? 'border-red-500 focus:ring-red-500'
-                : 'border-gray-700 focus:ring-amber-500'
+              ? 'border-red-500 focus:ring-red-500'
+              : 'border-gray-700 focus:ring-amber-500'
               }`}
           />
           {errors.stageName && (
@@ -257,11 +261,21 @@ export default function ArtistSetup() {
             onChange={handleInputChange}
             placeholder="Tell us about yourself..."
             rows={4}
-            className="w-full px-4 py-3 bg-gray-800/50 border border-gray-700 rounded-lg text-white placeholder-gray-500 transition focus:outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+            maxLength={500}
+            className={`w-full px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 transition focus:outline-none focus:ring-2 resize-none ${errors.bio
+              ? 'border-red-500 focus:ring-red-500'
+              : 'border-gray-700 focus:ring-amber-500'
+              }`}
           />
           <p className="mt-1 text-xs text-gray-500">
             {formData.bio.length}/500
           </p>
+          {errors.bio && (
+            <p className="mt-1 text-sm text-red-500 flex items-center space-x-1">
+              <AlertCircle className="w-4 h-4" />
+              <span>{errors.bio}</span>
+            </p>
+          )}
         </div>
 
         {/* Website */}
@@ -278,8 +292,8 @@ export default function ArtistSetup() {
               onChange={handleInputChange}
               placeholder="https://example.com"
               className={`flex-1 px-4 py-3 bg-gray-800/50 border rounded-lg text-white placeholder-gray-500 transition focus:outline-none focus:ring-2 ${errors.website
-                  ? 'border-red-500 focus:ring-red-500'
-                  : 'border-gray-700 focus:ring-amber-500'
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-gray-700 focus:ring-amber-500'
                 }`}
             />
           </div>
