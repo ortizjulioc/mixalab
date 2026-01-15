@@ -1185,10 +1185,15 @@ export default function ServiceRequestWizard() {
       });
 
       // Create service request using the hook with files
-      await createServiceRequest(payload, files);
+      const result = await createServiceRequest(payload, files);
 
-      // Redirect to home page after successful creation
-      router.push('/artists/home');
+      // Redirect to matching page with the service request ID
+      if (result?.data?.id) {
+        router.push(`/artists/matching/${result.data.id}`);
+      } else {
+        // Fallback to home if no ID returned
+        router.push('/artists/home');
+      }
     } catch (error) {
       console.error('Error submitting service request:', error);
       // Error notification is already handled by the hook
