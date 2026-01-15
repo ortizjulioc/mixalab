@@ -25,19 +25,21 @@ export async function POST(request) {
     const formData = await request.formData();
 
     // Extract service request data
-    const creatorId = formData.get('creatorId');
     const projectName = formData.get('projectName');
     const artistName = formData.get('artistName');
     const projectType = formData.get('projectType');
     const tier = formData.get('tier');
     const services = formData.get('services');
     const description = formData.get('description');
-    const genresJson = formData.get('genres'); // JSON string of genre IDs
+    const mixingType = formData.get('mixingType');
+    const genreIdsJson = formData.get('genreIds'); // JSON string
+    const addOnsJson = formData.get('addOns'); // JSON string
+    const acceptanceJson = formData.get('acceptance'); // JSON string
 
     // Validate required fields
-    if (!creatorId || !projectName || !artistName || !projectType || !tier || !services) {
+    if (!projectName || !artistName || !projectType || !tier || !services) {
       return NextResponse.json(
-        { error: 'Missing required fields: creatorId, projectName, artistName, projectType, tier, services' },
+        { error: 'Missing required fields: projectName, artistName, projectType, tier, services' },
         { status: 400 }
       );
     }
@@ -68,28 +70,34 @@ export async function POST(request) {
       );
     }
 
-    // Verify creator exists
-    const creator = await prisma.creatorProfile.findUnique({
-      where: { id: creatorId }
-    });
-
-    if (!creator) {
-      return NextResponse.json(
-        { error: 'Creator not found' },
-        { status: 404 }
-      );
-    }
-
-    // Parse genres
-    let genres = [];
-    if (genresJson) {
+    // Parse JSON fields
+    let genreIds = [];
+    if (genreIdsJson) {
       try {
-        genres = JSON.parse(genresJson);
-        if (!Array.isArray(genres)) {
-          genres = [];
+        genreIds = JSON.parse(genreIdsJson);
+        if (!Array.isArray(genreIds)) {
+          genreIds = [];
         }
       } catch (e) {
-        console.error('Error parsing genres:', e);
+        console.error('Error parsing genreIds:', e);
+      }
+    }
+
+    let addOns = {};
+    if (addOnsJson) {
+      try {
+        addOns = JSON.parse(addOnsJson);
+      } catch (e) {
+        console.error('Error parsing addOns:', e);
+      }
+    }
+
+    let acceptance = {};
+    if (acceptanceJson) {
+      try {
+        acceptance = JSON.parse(acceptanceJson);
+      } catch (e) {
+        console.error('Error parsing acceptance:', e);
       }
     }
 
@@ -141,16 +149,19 @@ export async function POST(request) {
       // Create service request
       const serviceRequest = await tx.serviceRequest.create({
         data: {
-          userId,
-          creatorId,
+          user: {
+            connect: { id: userId }
+          },
           projectName,
           artistName,
           projectType,
           tier,
           services,
+          mixingType: mixingType || null,
           description: description || null,
+          addOns: addOns,
+          acceptance: acceptance,
           status: 'PENDING',
-          creatorStatus: 'PENDING',
           files: {
             connect: fileRecords.map(f => ({ id: f.id }))
           }
@@ -160,33 +171,27 @@ export async function POST(request) {
             select: {
               id: true,
               name: true,
-              email: true
+              email: true,
+              image: true
             }
           },
-          creator: {
-            select: {
-              id: true,
-              brandName: true,
-              user: {
-                select: {
-                  id: true,
-                  name: true,
-                  email: true
-                }
-              }
+          files: true,
+          genres: {
+            include: {
+              genre: true
             }
-          },
-          files: true
+          }
         }
       });
 
       // Create genre relations if provided
-      if (genres.length > 0) {
+      if (genreIds.length > 0) {
         await tx.serviceRequestGenre.createMany({
-          data: genres.map(genreId => ({
+          data: genreIds.map(genreId => ({
             serviceRequestId: serviceRequest.id,
             genreId
-          }))
+          })),
+          skipDuplicates: true
         });
       }
 

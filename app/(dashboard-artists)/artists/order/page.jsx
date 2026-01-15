@@ -211,8 +211,8 @@ const Step1_ProjectInfo = ({ formData, handleChange, setFormData }) => {
             placeholder="Ex: My New Hit"
             required
             className={`w-full px-4 py-3 rounded-lg bg-zinc-900 border ${showError('projectName', formData.projectName)
-                ? 'border-red-500 focus:ring-red-500'
-                : 'border-zinc-800 focus:ring-amber-500'
+              ? 'border-red-500 focus:ring-red-500'
+              : 'border-zinc-800 focus:ring-amber-500'
               } text-white placeholder-zinc-600 focus:ring-2 focus:border-transparent transition-all outline-none`}
           />
           {showError('projectName', formData.projectName) && (
@@ -231,8 +231,8 @@ const Step1_ProjectInfo = ({ formData, handleChange, setFormData }) => {
             placeholder="Ex: The Weeknd"
             required
             className={`w-full px-4 py-3 rounded-lg bg-zinc-900 border ${showError('artistName', formData.artistName)
-                ? 'border-red-500 focus:ring-red-500'
-                : 'border-zinc-800 focus:ring-amber-500'
+              ? 'border-red-500 focus:ring-red-500'
+              : 'border-zinc-800 focus:ring-amber-500'
               } text-white placeholder-zinc-600 focus:ring-2 focus:border-transparent transition-all outline-none`}
           />
           {showError('artistName', formData.artistName) && (
@@ -1164,11 +1164,18 @@ export default function ServiceRequestWizard() {
         artistName: formData.artistName,
         projectType: formData.projectType,
         services: formData.services,
+        mixingType: formData.mixingType || null,
         tier: formData.tier,
         description: formData.description || null,
         genreIds: formData.genreIds,
         addOns: formData.addOns,
         acceptance: formData.acceptance
+      };
+
+      // Prepare files object
+      const files = {
+        demoFile: formData.demoFile,
+        stemsFile: formData.stemsFile
       };
 
       console.log('Service Request Payload:', payload);
@@ -1177,15 +1184,10 @@ export default function ServiceRequestWizard() {
         stems: formData.stemsFile?.name
       });
 
-      // Create service request using the hook
-      await createServiceRequest(payload);
+      // Create service request using the hook with files
+      await createServiceRequest(payload, files);
 
-      // TODO: Upload files if present
-      // if (formData.demoFile || formData.stemsFile) {
-      //   await uploadFiles(serviceRequestId, formData.demoFile, formData.stemsFile);
-      // }
-
-      // Redirect to requests page after successful creation
+      // Redirect to home page after successful creation
       router.push('/artists/home');
     } catch (error) {
       console.error('Error submitting service request:', error);

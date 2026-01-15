@@ -558,16 +558,16 @@ model MaintainRequirements {
 model ServiceRequest {
   id          String      @id @default(uuid())
   userId      String
-  creatorId   String
+  creatorId   String? // Made optional - will be assigned when creator accepts
   projectName String
   artistName  String
   projectType ProjectType
   tier        TierName
   services    ServiceType
+  mixingType  String? // STUDIO_MIX, LIVE_MIX, ESSENTIAL_MIX
 
-  description   String?
-  status        RequestStatus        @default(PENDING)
-  creatorStatus CreatorRequestStatus @default(PENDING)
+  description String?
+  status      RequestStatus @default(PENDING)
 
   // Add-ons selected by user (service-specific)
   addOns     Json?
@@ -575,7 +575,7 @@ model ServiceRequest {
   acceptance Json?
 
   user    User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  creator CreatorProfile        @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  creator CreatorProfile?       @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   files   File[]
   genres  ServiceRequestGenre[]
 

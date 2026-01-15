@@ -152,19 +152,67 @@ export default function useServiceRequests() {
     }, []);
 
     // Create new service request
-    const createServiceRequest = useCallback(async (requestData) => {
+    const createServiceRequest = useCallback(async (requestData, files = {}) => {
         try {
-            const res = await fetchClient({
-                method: "POST",
-                endpoint: "/service-requests",
-                data: requestData,
+            // Create FormData for multipart/form-data
+            const formData = new FormData();
+
+            // Add all basic fields
+            formData.append('projectName', requestData.projectName);
+            formData.append('artistName', requestData.artistName);
+            formData.append('projectType', requestData.projectType);
+            formData.append('tier', requestData.tier);
+            formData.append('services', requestData.services);
+
+            // Add optional fields
+            if (requestData.description) {
+                formData.append('description', requestData.description);
+            }
+
+            if (requestData.mixingType) {
+                formData.append('mixingType', requestData.mixingType);
+            }
+
+            // Add arrays and objects as JSON strings
+            if (requestData.genreIds && requestData.genreIds.length > 0) {
+                formData.append('genreIds', JSON.stringify(requestData.genreIds));
+            }
+
+            if (requestData.addOns) {
+                formData.append('addOns', JSON.stringify(requestData.addOns));
+            }
+
+            if (requestData.acceptance) {
+                formData.append('acceptance', JSON.stringify(requestData.acceptance));
+            }
+
+            // Add files if provided
+            if (files.demoFile) {
+                formData.append('demoFile', files.demoFile);
+            }
+
+            if (files.stemsFile) {
+                formData.append('stemsFile', files.stemsFile);
+            }
+
+            // Use fetch directly for FormData (fetchClient may add JSON headers)
+            const response = await fetch('/api/service-requests', {
+                method: 'POST',
+                body: formData,
+                // Don't set Content-Type header - browser will set it with boundary
             });
 
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Error creating service request');
+            }
+
+            const res = await response.json();
             openNotification("success", "Service request created successfully");
             return res;
         } catch (err) {
             console.error("Error creating service request:", err);
-            openNotification("error", err?.error?.message || "Error creating service request");
+            openNotification("error", err.message || "Error creating service request");
             throw err;
         }
     }, []);
