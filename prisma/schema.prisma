@@ -84,11 +84,13 @@ enum ProjectType {
 }
 
 enum RequestStatus {
-  PENDING
-  IN_REVIEW
-  IN_PROGRESS
-  DELIVERED
-  CANCELLED
+  PENDING // Artist created request, waiting for creator match
+  IN_REVIEW // Creator is reviewing the request
+  AWAITING_PAYMENT // Creator accepted, waiting for artist payment
+  PAID // Payment completed, ready to convert to Project
+  IN_PROGRESS // Project in progress (legacy, will be replaced by Project entity)
+  DELIVERED // Project completed and delivered (legacy)
+  CANCELLED // Request cancelled
 }
 
 // ---------------------------------------------------------

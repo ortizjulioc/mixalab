@@ -115,7 +115,8 @@ export default function MixaMatchingPage() {
         );
     }
 
-    if (!matchedCreator) {
+    // No match available state
+    if (!matching && !matchedCreator) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950 flex items-center justify-center p-6">
                 <div className="max-w-3xl w-full">
@@ -209,13 +210,17 @@ export default function MixaMatchingPage() {
                         <CheckCircle2 className="w-16 h-16 text-emerald-400" />
                     </div>
                     <h1 className="text-4xl font-bold text-white mb-3 animate-in fade-in slide-in-from-bottom-4">
-                        🎉 You're Matched!
+                        🎯 Engineer Matched!
                     </h1>
-                    <p className="text-lg text-gray-400">We found the perfect engineer for your project</p>
+                    <p className="text-lg text-gray-400">We've assigned a compatible engineer to your project</p>
+                    <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/30 rounded-full">
+                        <Clock className="w-4 h-4 text-blue-400" />
+                        <span className="text-sm text-blue-300 font-semibold">Waiting for engineer's response</span>
+                    </div>
                 </div>
 
                 {/* Creator Card */}
-                <div className="bg-gradient-to-br from-zinc-800/60 to-zinc-900/60 border border-zinc-700/50 rounded-2xl p-8 backdrop-blur-sm relative overflow-hidden animate-in fade-in slide-in-from-bottom-8" style={{ animationDelay: '200ms' }}>
+                <div className="bg-gradient-to-br from-zinc-800/60 to-zinc-900/60 border border-zinc-700/50 rounded-2xl p-8 backdrop-blur-sm relative overflow-hidden animate-in fade-in slide-in-from-bottom-8 mb-6" style={{ animationDelay: '200ms' }}>
                     {/* Decorative glow */}
                     <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/10 rounded-full blur-3xl"></div>
 
@@ -274,16 +279,31 @@ export default function MixaMatchingPage() {
                         {/* Stats */}
                         <div className="grid grid-cols-3 gap-4 p-4 bg-zinc-900/50 rounded-xl border border-zinc-700/30 mb-6">
                             <div className="text-center">
-                                <p className="text-2xl font-bold text-white">{matchedCreator.projectsCompleted || '150+'}</p>
+                                <p className="text-2xl font-bold text-white">{matchedCreator.projectsCompleted || '0'}</p>
                                 <p className="text-xs text-gray-500">Projects</p>
                             </div>
                             <div className="text-center border-l border-r border-zinc-700/30">
-                                <p className="text-2xl font-bold text-white">{matchedCreator.yearsOfExperience || '8'} yrs</p>
+                                <p className="text-2xl font-bold text-white">{matchedCreator.yearsOfExperience || '0'} yrs</p>
                                 <p className="text-xs text-gray-500">Experience</p>
                             </div>
                             <div className="text-center">
-                                <p className="text-2xl font-bold text-white">98%</p>
+                                <p className="text-2xl font-bold text-white">{matchedCreator.onTimePercentage || '0'}%</p>
                                 <p className="text-xs text-gray-500">On-Time</p>
+                            </div>
+                        </div>
+
+                        {/* Important Notice */}
+                        <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6">
+                            <div className="flex items-start gap-3">
+                                <Clock className="w-5 h-5 text-blue-400 mt-0.5" />
+                                <div>
+                                    <h4 className="font-bold text-blue-300 mb-1">What happens next?</h4>
+                                    <p className="text-sm text-gray-300 leading-relaxed">
+                                        The engineer has been notified about your project and will review it shortly.
+                                        <span className="font-semibold text-blue-200"> This may take a few hours.</span>
+                                        {' '}You'll receive a notification once they accept. You can track the status in your dashboard.
+                                    </p>
+                                </div>
                             </div>
                         </div>
 
@@ -293,7 +313,7 @@ export default function MixaMatchingPage() {
                             className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold py-4 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 hover:scale-[1.02] flex items-center justify-center gap-2"
                         >
                             <CheckCircle2 className="w-5 h-5" />
-                            Continue to Dashboard
+                            Go to Dashboard
                         </button>
                     </div>
                 </div>

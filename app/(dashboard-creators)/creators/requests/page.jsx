@@ -14,9 +14,11 @@ import {
     Search,
     Sparkles,
     Calendar,
-    DollarSign
+    DollarSign,
+    AlertCircle
 } from 'lucide-react';
 import { openNotification } from '@/utils/open-notification';
+import CreatorRequestCard from '@/components/CreatorRequestCard';
 
 const TIER_STYLES = {
     BRONZE: {
@@ -45,7 +47,7 @@ export default function CreatorRequestsPage() {
     const { data: session } = useSession();
     const [requests, setRequests] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState('AVAILABLE'); // AVAILABLE, ACCEPTED, ALL
+    const [filter, setFilter] = useState('ACCEPTED'); // Show My Projects by default
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
 
@@ -115,36 +117,57 @@ export default function CreatorRequestsPage() {
     return (
         <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
             {/* Header */}
-            <div className="mb-8">
+            <div className="mb-6">
                 <h1 className="text-3xl font-bold text-white mb-2">Available Projects</h1>
                 <p className="text-gray-400">Review and accept projects that match your expertise</p>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-col sm:flex-row gap-4 mb-6">
-                <div className="flex gap-2">
-                    {['AVAILABLE', 'ACCEPTED', 'ALL'].map((f) => (
-                        <button
-                            key={f}
-                            onClick={() => setFilter(f)}
-                            className={`px-4 py-2 rounded-lg font-semibold transition-all ${filter === f
-                                    ? 'bg-amber-500 text-black'
-                                    : 'bg-zinc-800/60 text-gray-400 hover:bg-zinc-700/60'
-                                }`}
-                        >
-                            {f === 'AVAILABLE' ? 'Available' : f === 'ACCEPTED' ? 'My Projects' : 'All'}
-                        </button>
-                    ))}
+            {/* Alert for Pending Matches */}
+            {!loading && requests.filter(r => r.status === 'IN_REVIEW' && r.creatorId).length > 0 && (
+                <div className="mb-6 bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/20 border-2 border-amber-400/50 rounded-xl p-6 shadow-lg shadow-amber-500/10">
+                    <div className="flex items-start gap-4">
+                        <div className="p-3 bg-amber-500/30 rounded-full animate-pulse">
+                            <AlertCircle className="w-7 h-7 text-amber-300" />
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="text-xl font-bold text-amber-200 mb-2">
+                                🎯 You have {requests.filter(r => r.status === 'IN_REVIEW' && r.creatorId).length} project(s) waiting for your response!
+                            </h3>
+                            <p className="text-gray-200 mb-4 text-base">
+                                A project has been matched to you. Please review and accept or decline to help the artist move forward.
+                            </p>
+                            <button
+                                onClick={() => setFilter('ACCEPTED')}
+                                className="bg-amber-500 hover:bg-amber-400 text-black font-bold py-3 px-6 rounded-lg transition-all shadow-lg hover:shadow-xl hover:scale-105 inline-flex items-center gap-2"
+                            >
+                                <Eye className="w-5 h-5" />
+                                View Pending Projects
+                            </button>
+                        </div>
+                    </div>
                 </div>
+            )}
 
-                <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
-                    <input
-                        type="text"
-                        placeholder="Search projects..."
-                        className="w-full pl-10 pr-4 py-2 bg-zinc-800/60 border border-zinc-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-                    />
-                </div>
+            {/* Simplified Filters */}
+            <div className="flex gap-3 mb-6">
+                <button
+                    onClick={() => setFilter('ACCEPTED')}
+                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${filter === 'ACCEPTED'
+                        ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+                        : 'bg-zinc-800/60 text-gray-400 hover:bg-zinc-700/60'
+                        }`}
+                >
+                    My Projects
+                </button>
+                <button
+                    onClick={() => setFilter('AVAILABLE')}
+                    className={`px-6 py-3 rounded-lg font-semibold transition-all ${filter === 'AVAILABLE'
+                        ? 'bg-amber-500 text-black shadow-lg shadow-amber-500/20'
+                        : 'bg-zinc-800/60 text-gray-400 hover:bg-zinc-700/60'
+                        }`}
+                >
+                    Available
+                </button>
             </div>
 
             {/* Requests Grid */}
@@ -169,7 +192,7 @@ export default function CreatorRequestsPage() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {requests.map((request) => (
-                        <RequestCard
+                        <CreatorRequestCard
                             key={request.id}
                             request={request}
                             onView={() => openRequestDetails(request)}

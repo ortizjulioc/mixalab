@@ -129,11 +129,45 @@ export async function GET(request, { params }) {
             });
         }
 
-        // Select the best match (for now, just pick the first one)
-        // TODO: Implement more sophisticated matching algorithm
-        const selectedCreator = matchingCreators[0];
+        // Filter out creators who are currently busy with other projects
+        const availableCreators = [];
 
-        // Update the service request with the matched creator
+        for (const creator of matchingCreators) {
+            // Check if creator has any active projects (IN_REVIEW, AWAITING_PAYMENT, or IN_PROGRESS)
+            // EXCLUDING the current request being matched
+            const activeProjects = await prisma.serviceRequest.count({
+                where: {
+                    creatorId: creator.id,
+                    status: {
+                        in: ['IN_REVIEW', 'AWAITING_PAYMENT', 'IN_PROGRESS']
+                    },
+                    // Exclude the current request
+                    id: {
+                        not: id
+                    }
+                }
+            });
+
+            // If creator has no OTHER active projects, they're available
+            if (activeProjects === 0) {
+                availableCreators.push(creator);
+            }
+        }
+
+        if (availableCreators.length === 0) {
+            return NextResponse.json({
+                matched: false,
+                creator: null,
+                message: 'All matching creators are currently busy. Please try again later.'
+            });
+        }
+
+        // Select the best available creator (for now, just pick the first one)
+        // TODO: Implement more sophisticated matching algorithm (rating, completion rate, etc.)
+        const selectedCreator = availableCreators[0];
+
+        // Assign the creator to the request with IN_REVIEW status
+        // Creator will need to accept/decline from their dashboard
         await prisma.serviceRequest.update({
             where: { id },
             data: {
@@ -144,7 +178,7 @@ export async function GET(request, { params }) {
             }
         });
 
-        // Return the matched creator
+        // Return the matched creator with real data
         return NextResponse.json({
             matched: true,
             creator: {
@@ -153,10 +187,19 @@ export async function GET(request, { params }) {
                 country: selectedCreator.country,
                 yearsOfExperience: selectedCreator.yearsOfExperience,
                 availability: selectedCreator.availability,
+                bio: selectedCreator.bio,
                 tier: selectedCreator.CreatorTier[0]?.tier?.name,
-                rating: 4.9, // TODO: Calculate from actual reviews
-                projectsCompleted: 150, // TODO: Get from actual data
-                specialization: 'Hybrid Analog', // TODO: Get from profile
+                // Get specialization from mixing/mastering/instrumentalist profiles
+                specialization: selectedCreator.mixing?.specialization ||
+                    selectedCreator.masteringEngineerProfile?.specialization ||
+                    selectedCreator.instrumentalist?.specialization ||
+                    'Audio Engineer',
+                // TODO: Calculate from actual reviews when review system is implemented
+                rating: 4.9,
+                // TODO: Get from actual completed projects
+                projectsCompleted: 150,
+                // TODO: Calculate from actual project data
+                onTimePercentage: 98,
                 user: selectedCreator.user
             }
         });

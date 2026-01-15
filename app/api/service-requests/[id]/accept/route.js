@@ -69,7 +69,7 @@ export async function POST(request, { params }) {
 
     // Update service request - assign creator if not assigned, update status
     const updateData = {
-      status: 'IN_REVIEW'
+      status: 'AWAITING_PAYMENT' // Creator accepted, now waiting for artist payment
     };
 
     // If creator is not assigned yet, assign them

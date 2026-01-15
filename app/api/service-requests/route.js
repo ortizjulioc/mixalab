@@ -211,3 +211,101 @@ export async function POST(request) {
     );
   }
 }
+
+/**
+ * GET /api/service-requests
+ * Get service requests with optional filtering
+ */
+export async function GET(request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const status = searchParams.get('status');
+    const search = searchParams.get('search');
+
+    // Build where clause
+    const where = {};
+
+    // Filter by userId if provided
+    if (userId) {
+      where.userId = userId;
+    }
+
+    // Filter by status if provided
+    if (status) {
+      where.status = status;
+    }
+
+    // Search by project name or artist name
+    if (search) {
+      where.OR = [
+        { projectName: { contains: search } },
+        { artistName: { contains: search } }
+      ];
+    }
+
+    // Get total count
+    const total = await prisma.serviceRequest.count({ where });
+
+    // Get paginated requests
+    const requests = await prisma.serviceRequest.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            image: true
+          }
+        },
+        creator: {
+          select: {
+            id: true,
+            brandName: true,
+            country: true
+          }
+        },
+        genres: {
+          include: {
+            genre: true
+          }
+        },
+        files: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      skip: (page - 1) * limit,
+      take: limit
+    });
+
+    return NextResponse.json({
+      items: requests,
+      pagination: {
+        total,
+        page,
+        limit,
+        pages: Math.ceil(total / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching service requests:', error);
+    return NextResponse.json(
+      { error: 'Internal server error: ' + error.message },
+      { status: 500 }
+    );
+  }
+}
+

@@ -1,22 +1,26 @@
 'use client'
 import ArtistProfileCTA from '@/components/ArtistProfileCTA'
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { User, BadgeCheck, Sparkles, Edit3, Eye, Inbox, Music, TrendingUp, Award, Zap, Calendar, Star } from 'lucide-react'
+import { User, BadgeCheck, Sparkles, Edit3, Eye, Inbox, Music, TrendingUp, Award, Zap, Calendar, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight } from 'lucide-react'
 import useArtistProfiles from '@/hooks/useArtistProfiles'
+import useServiceRequests from '@/hooks/useServiceRequests'
+import MyProjectsSection from '@/components/MyProjectsSection'
 
 export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const { artistProfile, getArtistProfileByUserId, loading } = useArtistProfiles()
+  const { serviceRequests, getServiceRequestsByUserId, loading: requestsLoading } = useServiceRequests()
 
   useEffect(() => {
     // Only fetch if we have a user ID from the session
     if (session?.user?.id) {
       getArtistProfileByUserId(session.user.id)
+      getServiceRequestsByUserId(session.user.id)
     }
-  }, [session?.user?.id, getArtistProfileByUserId])
+  }, [session?.user?.id, getArtistProfileByUserId, getServiceRequestsByUserId])
 
   const isLoading = loading || status === 'loading'
 
@@ -160,6 +164,9 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* My Projects Section */}
+          <MyProjectsSection serviceRequests={serviceRequests} loading={requestsLoading} />
 
           {/* Content Cards - colores más elegantes */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
