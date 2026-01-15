@@ -181,83 +181,125 @@ const FileUploadZone = ({ label, onFileSelect, fileName, required }) => (
 
 // --- Step Views ---
 
-const Step1_ProjectInfo = ({ formData, handleChange, setFormData }) => (
-  <div className="animate-in fade-in slide-in-from-right-8 duration-500">
-    <div className="text-center mb-10">
-      <h2 className="text-3xl font-bold text-white mb-2">Start Your Project</h2>
-      <p className="text-gray-500">Define the core details of your request.</p>
-    </div>
+const Step1_ProjectInfo = ({ formData, handleChange, setFormData }) => {
+  const [touched, setTouched] = React.useState({});
 
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <Input
-        label="Project / Song Name"
-        name="projectName"
-        value={formData.projectName}
-        onChange={handleChange}
-        placeholder="Ex: My New Hit"
-        required
-      />
-      <Input
-        label="Artist / Stage Name"
-        name="artistName"
-        value={formData.artistName}
-        onChange={handleChange}
-        placeholder="Ex: The Weeknd"
-        required
-      />
-    </div>
+  const handleBlur = (fieldName) => {
+    setTouched(prev => ({ ...prev, [fieldName]: true }));
+  };
 
-    <div className="mt-4">
-      <Label required>Project Type</Label>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
-        <SelectionCard
-          icon={Disc}
-          title="Single"
-          description="1 Track"
-          selected={formData.projectType === 'SINGLE'}
-          onClick={() => setFormData({ ...formData, projectType: 'SINGLE' })}
+  const showError = (fieldName, value) => {
+    return touched[fieldName] && (!value || (Array.isArray(value) && value.length === 0) || (typeof value === 'string' && value.trim() === ''));
+  };
+
+  return (
+    <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+      <div className="text-center mb-10">
+        <h2 className="text-3xl font-bold text-white mb-2">Start Your Project</h2>
+        <p className="text-gray-500">Define the core details of your request.</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="mb-5">
+          <Label required>Project / Song Name</Label>
+          <input
+            type="text"
+            name="projectName"
+            value={formData.projectName}
+            onChange={handleChange}
+            onBlur={() => handleBlur('projectName')}
+            placeholder="Ex: My New Hit"
+            required
+            className={`w-full px-4 py-3 rounded-lg bg-zinc-900 border ${showError('projectName', formData.projectName)
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-zinc-800 focus:ring-amber-500'
+              } text-white placeholder-zinc-600 focus:ring-2 focus:border-transparent transition-all outline-none`}
+          />
+          {showError('projectName', formData.projectName) && (
+            <p className="text-red-400 text-xs mt-1">Project name is required</p>
+          )}
+        </div>
+
+        <div className="mb-5">
+          <Label required>Artist / Stage Name</Label>
+          <input
+            type="text"
+            name="artistName"
+            value={formData.artistName}
+            onChange={handleChange}
+            onBlur={() => handleBlur('artistName')}
+            placeholder="Ex: The Weeknd"
+            required
+            className={`w-full px-4 py-3 rounded-lg bg-zinc-900 border ${showError('artistName', formData.artistName)
+                ? 'border-red-500 focus:ring-red-500'
+                : 'border-zinc-800 focus:ring-amber-500'
+              } text-white placeholder-zinc-600 focus:ring-2 focus:border-transparent transition-all outline-none`}
+          />
+          {showError('artistName', formData.artistName) && (
+            <p className="text-red-400 text-xs mt-1">Artist name is required</p>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Label required>Project Type</Label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+          <SelectionCard
+            icon={Disc}
+            title="Single"
+            description="1 Track"
+            selected={formData.projectType === 'SINGLE'}
+            onClick={() => setFormData({ ...formData, projectType: 'SINGLE' })}
+          />
+          <SelectionCard
+            icon={Layers}
+            title="EP"
+            description="2-5 Tracks"
+            selected={formData.projectType === 'EP'}
+            onClick={() => setFormData({ ...formData, projectType: 'EP' })}
+          />
+          <SelectionCard
+            icon={Music}
+            title="Album"
+            description="6+ Tracks"
+            selected={formData.projectType === 'ALBUM'}
+            onClick={() => setFormData({ ...formData, projectType: 'ALBUM' })}
+          />
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <SelectGenres
+          value={formData.genreIds}
+          label="Genres"
+          name="genreIds"
+          required
+          placeholder="Search and select genres..."
+          onChange={(e) => {
+            setFormData({ ...formData, genreIds: e.target.value });
+            setTouched(prev => ({ ...prev, genreIds: true }));
+          }}
+          isMulti={true}
         />
-        <SelectionCard
-          icon={Layers}
-          title="EP"
-          description="2-5 Tracks"
-          selected={formData.projectType === 'EP'}
-          onClick={() => setFormData({ ...formData, projectType: 'EP' })}
+        {touched.genreIds && (!formData.genreIds || formData.genreIds.length === 0) && (
+          <p className="text-red-400 text-xs mt-1">At least one genre is required</p>
+        )}
+      </div>
+
+      <div className="mt-6">
+        <TextArea
+          label="Project Description"
+          name="description"
+          value={formData.description}
+          onChange={handleChange}
+          placeholder="Tell us about your project, your vision, and any specific requirements..."
+          rows={4}
         />
-        <SelectionCard
-          icon={Music}
-          title="Album"
-          description="6+ Tracks"
-          selected={formData.projectType === 'ALBUM'}
-          onClick={() => setFormData({ ...formData, projectType: 'ALBUM' })}
-        />
+        <p className="text-xs text-gray-500 mt-1">Optional - but helps creators understand your vision better</p>
       </div>
     </div>
-
-    <div className="mt-6">
-      <SelectGenres
-        value={formData.genreIds}
-        label="Genres"
-        name="genreIds"
-        required
-        placeholder="Search and select genres..."
-        onChange={(e) => setFormData({ ...formData, genreIds: e.target.value })}
-        isMulti={true}
-      />
-    </div>
-
-    <div className="mt-6">
-      <TextArea
-        label="Project Description"
-        name="description"
-        value={formData.description}
-        onChange={handleChange}
-        placeholder="Tell us about your project, your vision, and any specific requirements..."
-        rows={4}
-      />
-    </div>
-  </div>
-);
+  );
+};
 
 const Step2_Services = ({ formData, setFormData }) => {
   const [allTiers, setAllTiers] = useState([]);
@@ -1041,30 +1083,76 @@ export default function ServiceRequestWizard() {
       return;
     }
 
-    // Validate required fields
-    if (!formData.projectName || !formData.artistName || formData.genreIds.length === 0) {
-      openNotification('error', 'Please fill in all required fields');
+    // Detailed validation with specific error messages
+    const missingFields = [];
+
+    // Step 1 validation
+    if (!formData.projectName || formData.projectName.trim() === '') {
+      missingFields.push('Project/Song Name (Step 1)');
+    }
+    if (!formData.artistName || formData.artistName.trim() === '') {
+      missingFields.push('Artist/Stage Name (Step 1)');
+    }
+    if (!formData.projectType) {
+      missingFields.push('Project Type (Step 1)');
+    }
+    if (!formData.genreIds || formData.genreIds.length === 0) {
+      missingFields.push('Genres (Step 1)');
+    }
+
+    // Step 2 validation
+    if (!formData.services) {
+      missingFields.push('Service Type (Step 2)');
+    }
+    if (formData.services === 'MIXING' && !formData.mixingType) {
+      missingFields.push('Mixing Type (Step 2)');
+    }
+    if (!formData.tier) {
+      missingFields.push('Creator Tier (Step 2)');
+    }
+
+    // Show specific missing fields
+    if (missingFields.length > 0) {
+      const errorMessage = `Please fill in the following required fields:\n• ${missingFields.join('\n• ')}`;
+      openNotification('error', errorMessage);
+
+      // Navigate to first step with missing fields
+      if (missingFields.some(f => f.includes('Step 1'))) {
+        setStep(1);
+      } else if (missingFields.some(f => f.includes('Step 2'))) {
+        setStep(2);
+      }
       return;
     }
 
-    // Validate acceptance
+    // Validate acceptance (Step 6)
     const isMixing = formData.services === 'MIXING';
-    const allChecked = isMixing
-      ? formData.acceptance.stemsReady &&
-      formData.acceptance.agreeSchedule &&
-      formData.acceptance.understandStemLimit &&
-      formData.acceptance.stemsConsolidated &&
-      formData.acceptance.marketingConsent &&
-      formData.acceptance.understandQuality &&
-      formData.acceptance.declineFixes
-      : formData.acceptance.mixReady &&
-      formData.acceptance.agreeSchedule &&
-      formData.acceptance.agreeRoyaltySplit &&
-      formData.acceptance.understandMixQuality &&
-      formData.acceptance.declineImprovements;
+    const requiredAcceptanceFields = [];
 
-    if (!allChecked || !formData.acceptance.legalName || formData.acceptance.legalName.trim().length < 3) {
-      openNotification('error', 'Please complete all acceptance requirements and provide your legal name');
+    if (isMixing) {
+      if (!formData.acceptance.stemsReady) requiredAcceptanceFields.push('Stems are ready');
+      if (!formData.acceptance.agreeSchedule) requiredAcceptanceFields.push('Agree to schedule');
+      if (!formData.acceptance.understandStemLimit) requiredAcceptanceFields.push('Understand stem limit');
+      if (!formData.acceptance.stemsConsolidated) requiredAcceptanceFields.push('Stems consolidated');
+      if (!formData.acceptance.marketingConsent) requiredAcceptanceFields.push('Marketing consent');
+      if (!formData.acceptance.understandQuality) requiredAcceptanceFields.push('Understand quality requirements');
+      if (!formData.acceptance.declineFixes) requiredAcceptanceFields.push('Decline fixes acknowledgment');
+    } else {
+      if (!formData.acceptance.mixReady) requiredAcceptanceFields.push('Mix is ready');
+      if (!formData.acceptance.agreeSchedule) requiredAcceptanceFields.push('Agree to schedule');
+      if (!formData.acceptance.agreeRoyaltySplit) requiredAcceptanceFields.push('Agree to royalty split');
+      if (!formData.acceptance.understandMixQuality) requiredAcceptanceFields.push('Understand mix quality');
+      if (!formData.acceptance.declineImprovements) requiredAcceptanceFields.push('Decline improvements acknowledgment');
+    }
+
+    if (!formData.acceptance.legalName || formData.acceptance.legalName.trim().length < 3) {
+      requiredAcceptanceFields.push('Legal Name (minimum 3 characters)');
+    }
+
+    if (requiredAcceptanceFields.length > 0) {
+      const errorMessage = `Please complete the following in Step 6 (Final Acceptance):\n• ${requiredAcceptanceFields.join('\n• ')}`;
+      openNotification('error', errorMessage);
+      setStep(6);
       return;
     }
 
