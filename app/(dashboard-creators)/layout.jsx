@@ -8,7 +8,8 @@ import DashboardLayout from '../../components/DashboardLayout';
 const navItems = [
     { iconKey: 'home', label: 'Dashboard', href: '/creators/home' },
     { iconKey: 'customer', label: 'Profile', href: '/creators/profile' },
-    { iconKey: 'product', label: 'Security Pass', href: '/creators/securitypass' },
+    { iconKey: 'product', label: 'Requests', href: '/creators/requests' },
+    { iconKey: 'settings', label: 'Security Pass', href: '/creators/securitypass' },
 
 
 ];

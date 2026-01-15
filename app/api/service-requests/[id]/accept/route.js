@@ -4,10 +4,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../auth/[...nextauth]/route';
 
 /**
- * PATCH /api/service-requests/:id/accept
+ * POST /api/service-requests/:id/accept
  * Accept a service request (creator only)
  */
-export async function PATCH(request, { params }) {
+export async function POST(request, { params }) {
   try {
     // Get authenticated user
     const session = await getServerSession(authOptions);
@@ -48,36 +48,40 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    // Verify the creator is the one assigned to this request
-    if (serviceRequest.creatorId !== creatorProfile.id) {
+    // Two scenarios:
+    // 1. Request has no creator assigned yet (creator is accepting from available list)
+    // 2. Request is already assigned to this creator (creator is confirming acceptance)
+
+    if (serviceRequest.creatorId && serviceRequest.creatorId !== creatorProfile.id) {
       return NextResponse.json(
-        { error: 'Forbidden - This service request is not assigned to you' },
+        { error: 'This request has already been accepted by another creator' },
         { status: 403 }
       );
     }
 
-    // Check if already accepted or rejected
-    if (serviceRequest.creatorStatus === 'ACCEPTED') {
+    // If already accepted by this creator
+    if (serviceRequest.creatorId === creatorProfile.id && serviceRequest.status === 'IN_REVIEW') {
       return NextResponse.json(
-        { error: 'Service request already accepted' },
-        { status: 400 }
+        { message: 'Request already accepted', data: serviceRequest },
+        { status: 200 }
       );
     }
 
-    if (serviceRequest.creatorStatus === 'REJECTED') {
-      return NextResponse.json(
-        { error: 'Cannot accept a rejected service request' },
-        { status: 400 }
-      );
+    // Update service request - assign creator if not assigned, update status
+    const updateData = {
+      status: 'IN_REVIEW'
+    };
+
+    // If creator is not assigned yet, assign them
+    if (!serviceRequest.creatorId) {
+      updateData.creator = {
+        connect: { id: creatorProfile.id }
+      };
     }
 
-    // Update service request
     const updatedRequest = await prisma.serviceRequest.update({
       where: { id },
-      data: {
-        creatorStatus: 'ACCEPTED',
-        status: 'IN_REVIEW' // Update main status to IN_REVIEW when accepted
-      },
+      data: updateData,
       include: {
         user: {
           select: {
