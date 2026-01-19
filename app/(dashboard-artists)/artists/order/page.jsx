@@ -767,6 +767,62 @@ const Step5_Review = ({ formData }) => {
   const tierStyles = TIER_STYLES[formData.tier] || TIER_STYLES.BRONZE;
   const { getGenreById } = useGenres();
   const [genreNames, setGenreNames] = useState({});
+  const [allAddOns, setAllAddOns] = useState([]);
+  const [tierPrice, setTierPrice] = useState(0);
+
+  // Fetch tier price based on service type
+  useEffect(() => {
+    const fetchTierPrice = async () => {
+      if (!formData.tier || !formData.services) return;
+
+      try {
+        const response = await fetch(`/api/tiers?name=${formData.tier}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.items && data.items.length > 0) {
+            const tier = data.items[0];
+            // Get price for the specific service
+            const serviceKey = formData.services.toLowerCase(); // 'mixing', 'mastering', 'recording'
+            const price = tier.prices?.[serviceKey] || 0;
+            console.log(`💰 Tier ${formData.tier} price for ${formData.services}:`, price);
+            setTierPrice(price);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching tier price:', error);
+      }
+    };
+
+    fetchTierPrice();
+  }, [formData.tier, formData.services]);
+
+  // Fetch add-ons if they exist in formData
+  useEffect(() => {
+    const fetchAddOns = async () => {
+      console.log('🔍 Step5_Review - formData.addOns:', formData.addOns);
+      console.log('🔍 Step5_Review - formData.services:', formData.services);
+
+      if (!formData.services) {
+        console.log('❌ No service selected');
+        return;
+      }
+
+      try {
+        const response = await fetch(`/api/add-ons?serviceType=${formData.services}`);
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Fetched add-ons from API:', data);
+          setAllAddOns(data || []); // API returns array directly, not { addOns: [...] }
+        } else {
+          console.log('❌ Failed to fetch add-ons:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching add-ons:', error);
+      }
+    };
+
+    fetchAddOns();
+  }, [formData.services]); // Only depend on services, not addOns (to avoid infinite loop)
 
   useEffect(() => {
     const loadGenres = async () => {
@@ -863,6 +919,101 @@ const Step5_Review = ({ formData }) => {
             <div className="flex items-center text-sm">
               <UploadCloud size={14} className={`mr-2 ${formData.stemsFile ? 'text-cyan-500' : 'text-zinc-700'}`} />
               {formData.stemsFile ? <span className="text-white">{formData.stemsFile.name}</span> : <span className="text-zinc-600 italic">No stems</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Pricing Breakdown */}
+      <div className="bg-zinc-900 rounded-xl p-8 border border-zinc-800 mt-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl -mr-12 -mt-12 pointer-events-none"></div>
+
+        <h4 className="text-lg font-bold text-white mb-6">Price Summary</h4>
+
+        <div className="space-y-4">
+          {/* Base Tier Price */}
+          <div className="flex justify-between items-center text-gray-300">
+            <span className="text-sm">{formData.tier} Tier Service</span>
+            <span className="font-semibold">${tierPrice}</span>
+          </div>
+
+          {/* Add-ons */}
+          {formData.addOns && Object.keys(formData.addOns).length > 0 && (
+            <>
+              <div className="pt-3 border-t border-zinc-800">
+                <p className="text-xs uppercase tracking-wider text-gray-500 mb-3">Add-ons</p>
+              </div>
+              {Object.entries(formData.addOns).map(([addOnId, config]) => {
+                console.log('🔍 Mapping add-on:', { addOnId, config, allAddOnsLength: allAddOns?.length });
+                // Find add-on details from allAddOns state
+                const addOn = allAddOns?.find(a => a.id === addOnId);
+                console.log('🔍 Found add-on:', addOn);
+                if (!addOn) {
+                  console.log('❌ Add-on not found for ID:', addOnId);
+                  return null;
+                }
+
+                const quantity = config.quantity || 1;
+                // Use price or pricePerUnit depending on the add-on type
+                const unitPrice = addOn.price || addOn.pricePerUnit || 0;
+                const total = unitPrice * quantity;
+
+                return (
+                  <div key={addOnId} className="flex justify-between items-center text-gray-300 text-sm">
+                    <span className="flex items-center gap-2">
+                      {addOn.name}
+                      {quantity > 1 && (
+                        <span className="text-xs text-gray-500">×{quantity}</span>
+                      )}
+                    </span>
+                    <span className="font-semibold">${total}</span>
+                  </div>
+                );
+              })}
+            </>
+          )}
+
+          {/* Subtotal */}
+          <div className="pt-4 border-t-2 border-zinc-800">
+            <div className="flex justify-between items-center text-gray-200">
+              <span className="font-semibold">Subtotal</span>
+              <span className="font-bold text-lg">${tierPrice + (() => {
+
+                let addOnsTotal = 0;
+                if (formData.addOns && allAddOns) {
+                  Object.entries(formData.addOns).forEach(([addOnId, config]) => {
+                    const addOn = allAddOns.find(a => a.id === addOnId);
+                    if (addOn) {
+                      const quantity = config.quantity || 1;
+                      addOnsTotal += ((addOn.price || addOn.pricePerUnit || 0) * quantity);
+                    }
+                  });
+                }
+
+                return addOnsTotal;
+              })()}</span>
+            </div>
+          </div>
+
+          {/* Total */}
+          <div className="pt-4 border-t-2 border-amber-500/30">
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-bold text-white">Total</span>
+              <span className="text-2xl font-bold text-amber-400">${tierPrice + (() => {
+
+                let addOnsTotal = 0;
+                if (formData.addOns && allAddOns) {
+                  Object.entries(formData.addOns).forEach(([addOnId, config]) => {
+                    const addOn = allAddOns.find(a => a.id === addOnId);
+                    if (addOn) {
+                      const quantity = config.quantity || 1;
+                      addOnsTotal += ((addOn.price || addOn.pricePerUnit || 0) * quantity);
+                    }
+                  });
+                }
+
+                return addOnsTotal;
+              })()}</span>
             </div>
           </div>
         </div>

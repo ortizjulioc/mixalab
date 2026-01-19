@@ -59,15 +59,15 @@ export async function POST(request, { params }) {
       );
     }
 
-    // If already accepted by this creator
-    if (serviceRequest.creatorId === creatorProfile.id && serviceRequest.status === 'IN_REVIEW') {
+    // If already in AWAITING_PAYMENT or later status, it's already been accepted
+    if (serviceRequest.status === 'AWAITING_PAYMENT' || serviceRequest.status === 'PAID' || serviceRequest.status === 'IN_PROGRESS') {
       return NextResponse.json(
         { message: 'Request already accepted', data: serviceRequest },
         { status: 200 }
       );
     }
 
-    // Update service request - assign creator if not assigned, update status
+    // Update service request - assign creator if not assigned, update status to AWAITING_PAYMENT
     const updateData = {
       status: 'AWAITING_PAYMENT' // Creator accepted, now waiting for artist payment
     };
