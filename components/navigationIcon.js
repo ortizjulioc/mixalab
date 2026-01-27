@@ -11,6 +11,7 @@ import {
   HiOutlineArrowDown,
   HiOutlineStar,
   HiOutlineClipboardCheck,
+  HiOutlineCreditCard,
 } from 'react-icons/hi'
 import { MdLibraryMusic, MdExtension } from "react-icons/md";  // food icon
 
@@ -22,6 +23,7 @@ const navigationIcon = {
   genre: <MdLibraryMusic size={32} />,
   "add-ons": <MdExtension size={32} />,
   "acceptance-conditions": <HiOutlineClipboardCheck size={32} />,
+  "payment-providers": <HiOutlineCreditCard size={32} />,
   service: <FaArchive size={32} />,
   users: <HiOutlineUserGroup size={32} />,
   tiers: <HiOutlineStar size={32} />,                     // Niveles / Tiers

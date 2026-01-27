@@ -60,6 +60,7 @@ async function main() {
             numberOfRevisions: tierData.numberOfRevisions,
             stems: tierData.stems,
             deliveryDays: tierData.deliveryDays,
+            commissionPercentage: tierData.commissionPercentage || 10, // Comisión de la plataforma
             serviceDescriptions: tierData.serviceDescriptions || null,
           },
         });
@@ -148,6 +149,47 @@ async function main() {
     console.log(`🎉 All ${defaultConditions.length} acceptance conditions processed successfully!`);
   } else {
     console.log('⚠️  No acceptance conditions found in settings.json');
+  }
+
+  // Crear Payment Providers por defecto
+  const defaultProviders = settings['payment-providers'] || [];
+
+  if (defaultProviders.length > 0) {
+    console.log('💳 Creating payment providers...');
+    for (const providerData of defaultProviders) {
+      try {
+        await prisma.paymentProviderFee.upsert({
+          where: {
+            provider: providerData.provider
+          },
+          update: {
+            name: providerData.name,
+            percentageFee: providerData.percentageFee,
+            fixedFee: providerData.fixedFee,
+            internationalPercentageFee: providerData.internationalPercentageFee || null,
+            internationalFixedFee: providerData.internationalFixedFee || null,
+            description: providerData.description || null,
+            active: providerData.active !== undefined ? providerData.active : true,
+          },
+          create: {
+            provider: providerData.provider,
+            name: providerData.name,
+            percentageFee: providerData.percentageFee,
+            fixedFee: providerData.fixedFee,
+            internationalPercentageFee: providerData.internationalPercentageFee || null,
+            internationalFixedFee: providerData.internationalFixedFee || null,
+            description: providerData.description || null,
+            active: providerData.active !== undefined ? providerData.active : true,
+          }
+        });
+        console.log(`✅ Created/Updated payment provider: ${providerData.name}`);
+      } catch (error) {
+        console.error(`❌ Error creating payment provider ${providerData.name}:`, error.message);
+      }
+    }
+    console.log(`🎉 All ${defaultProviders.length} payment providers processed successfully!`);
+  } else {
+    console.log('⚠️  No payment providers found in settings.json');
   }
 }
 

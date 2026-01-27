@@ -47,6 +47,13 @@ enum ServiceType {
   RECORDING
 }
 
+enum PaymentProvider {
+  STRIPE
+  PAYPAL
+  MERCADOPAGO
+  OTHER
+}
+
 enum CreatorExampleTag {
   BEFORE_MIX    @map("before_mix")
   AFTER_MIX     @map("after_mix")
@@ -620,4 +627,31 @@ model AcceptanceCondition {
 
   @@unique([serviceType, fieldName])
   @@map("acceptance_conditions")
+}
+
+// ---------------------------------------------------------
+// PAYMENT PROVIDER FEES
+// ---------------------------------------------------------
+
+model PaymentProviderFee {
+  id       String          @id @default(uuid())
+  provider PaymentProvider @unique // STRIPE, PAYPAL, etc.
+  name     String // Display name: "Stripe", "PayPal"
+
+  // Fee structure
+  percentageFee Float @map("percentage_fee") // e.g., 2.9 for 2.9%
+  fixedFee      Float @map("fixed_fee") // e.g., 0.30 for $0.30 per transaction
+
+  // Optional: Different fees for international transactions
+  internationalPercentageFee Float? @map("international_percentage_fee")
+  internationalFixedFee      Float? @map("international_fixed_fee")
+
+  // Configuration
+  active      Boolean @default(true)
+  description String? @db.Text
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("payment_provider_fees")
 }
