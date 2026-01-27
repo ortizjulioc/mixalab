@@ -92,6 +92,7 @@ export default function Home() {
   const router = useRouter()
   const { creatorProfile, getCreatorProfileByUserId, loading } = useCreatorProfile()
   const [requestStats, setRequestStats] = useState({ available: 0, active: 0 })
+  const [activeProjects, setActiveProjects] = useState([]);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -113,8 +114,11 @@ export default function Home() {
         // This logic is slightly approximate without full profile loaded in this scope, 
         // but 'creatorId' being null usually means available (if it matched tier).
         const available = data.requests.filter(r => !r.creatorId && r.status === 'PENDING').length;
-        const active = data.requests.filter(r => r.creatorId).length; // If it's in the list and has creatorId, it's mine (because API filters by my ID or matching tier)
+        const activeList = data.requests.filter(r => r.creatorId);
+        const active = activeList.length;
+
         setRequestStats({ available, active });
+        setActiveProjects(activeList);
       }
     } catch (e) {
       console.error("Error fetching stats:", e);
@@ -179,18 +183,40 @@ export default function Home() {
                   </button>
                 </div>
 
-                {/* Placeholder for projects list */}
-                <div className="text-center py-12 bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
-                  <Music className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                  {requestStats.active > 0 ? (
-                    <p className="text-gray-400">Checking your active projects...</p>
-                  ) : (
-                    <>
-                      <p className="text-gray-300 font-medium">No active projects yet</p>
-                      <p className="text-gray-500 text-sm mt-1">Start by finding a request that matches your skills.</p>
-                    </>
-                  )}
-                </div>
+                {activeProjects.length > 0 ? (
+                  <div className="space-y-4">
+                    {activeProjects.map((project) => (
+                      <div
+                        key={project.id}
+                        onClick={() => router.push(`/creators/projects/${project.id}`)}
+                        className="bg-gray-800/60 border border-gray-700 hover:border-indigo-500/50 rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all group"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="p-3 bg-gray-700/50 rounded-lg group-hover:bg-indigo-500/10 transition-colors">
+                            <Music className="w-6 h-6 text-gray-400 group-hover:text-indigo-400" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-white group-hover:text-indigo-300 transition-colors">{project.projectName}</h4>
+                            <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
+                              <span className={`px-2 py-0.5 rounded-full bg-gray-700 ${project.status === 'ACCEPTED' || project.status === 'AWAITING_PAYMENT' ? 'text-amber-400' : 'text-emerald-400'}`}>
+                                {project.status.replace('_', ' ')}
+                              </span>
+                              <span>• {project.tier}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <ArrowRight className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" />
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Placeholder for empty projects list */
+                  <div className="text-center py-12 bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
+                    <Music className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-300 font-medium">No active projects yet</p>
+                    <p className="text-gray-500 text-sm mt-1">Start by finding a request that matches your skills.</p>
+                  </div>
+                )}
               </div>
             </div>
 

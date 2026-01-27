@@ -388,22 +388,48 @@ function RequestDetailsModal({ request, onClose, onAccept, onDecline }) {
 
                 {/* Actions */}
                 <div className="sticky bottom-0 bg-zinc-900/95 backdrop-blur-sm border-t border-zinc-700 p-6">
-                    <div className="flex gap-3">
-                        <button
-                            onClick={onDecline}
-                            className="flex-1 bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
-                        >
-                            <XCircle className="w-5 h-5" />
-                            Decline
-                        </button>
-                        <button
-                            onClick={onAccept}
-                            className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 flex items-center justify-center gap-2"
-                        >
-                            <CheckCircle2 className="w-5 h-5" />
-                            Accept Project
-                        </button>
-                    </div>
+                    {request.status === 'PENDING' ? (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={onDecline}
+                                className="flex-1 bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
+                            >
+                                <XCircle className="w-5 h-5" />
+                                Decline
+                            </button>
+                            <button
+                                onClick={onAccept}
+                                className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 flex items-center justify-center gap-2"
+                            >
+                                <CheckCircle2 className="w-5 h-5" />
+                                Accept Project
+                            </button>
+                        </div>
+                    ) : ['ACCEPTED', 'AWAITING_PAYMENT'].includes(request.status) ? (
+                        <div className="flex items-center justify-between w-full gap-4">
+                            <div className="flex items-center gap-2 text-amber-500 font-medium px-4 py-3 bg-amber-500/10 rounded-xl border border-amber-500/20 flex-1">
+                                <Clock className="w-5 h-5" />
+                                Waiting for Artist Payment
+                            </div>
+                            <button
+                                onClick={onDecline}
+                                className="px-6 py-3 rounded-xl border border-zinc-700 hover:border-red-500/50 hover:bg-red-500/10 text-gray-400 hover:text-red-400 font-medium transition-all flex items-center gap-2"
+                            >
+                                <XCircle className="w-5 h-5" />
+                                Cancel Request
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="flex justify-end">
+                            <a
+                                href={`/creators/projects/${request.id}`}
+                                className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 flex items-center justify-center gap-2"
+                            >
+                                <Sparkles className="w-5 h-5" />
+                                Manage Project
+                            </a>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

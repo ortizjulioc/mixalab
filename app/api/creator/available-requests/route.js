@@ -45,18 +45,13 @@ export async function GET(request) {
         // Check if creator has tiers assigned
         const creatorTiers = creatorProfile.CreatorTier.map(ct => ct.tier.name);
 
-        if (creatorTiers.length === 0) {
-            return NextResponse.json({
-                requests: [],
-                total: 0,
-                message: 'No tiers assigned to creator'
-            });
-        }
-
-        // Build query based on filter
         let whereClause = {};
 
         if (filter === 'AVAILABLE') {
+            if (creatorTiers.length === 0) {
+                return NextResponse.json({ requests: [], total: 0 });
+            }
+
             // Show requests that match creator's tier and don't have a creator assigned
             whereClause = {
                 creatorId: null,
@@ -72,17 +67,21 @@ export async function GET(request) {
             };
         } else if (filter === 'ALL') {
             // Show all requests matching tier (both available and accepted by this creator)
+            const orConditions = [
+                { creatorId: creatorProfile.id }
+            ];
+
+            // Only add available requests if creator has tiers
+            if (creatorTiers.length > 0) {
+                orConditions.push({
+                    creatorId: null,
+                    status: 'PENDING',
+                    tier: { in: creatorTiers }
+                });
+            }
+
             whereClause = {
-                OR: [
-                    {
-                        creatorId: null,
-                        status: 'PENDING',
-                        tier: { in: creatorTiers }
-                    },
-                    {
-                        creatorId: creatorProfile.id
-                    }
-                ]
+                OR: orConditions
             };
         }
 
