@@ -121,16 +121,19 @@ export default function PaymentProvidersPage() {
                         <p className="text-xs text-gray-500 uppercase mb-1">Example Transaction</p>
                         <p className="text-2xl font-bold text-white">$100.00</p>
                     </div>
-                    {providers.filter(p => p.active).slice(0, 2).map(provider => {
-                        const example = calculateExample(provider);
-                        return (
-                            <div key={provider.id} className="text-center border-l border-white/10 pl-4">
-                                <p className="text-xs text-gray-500 uppercase mb-1">{provider.name}</p>
-                                <p className="text-lg font-bold text-red-400">-${example.totalFee.toFixed(2)}</p>
-                                <p className="text-xs text-gray-400">Net: ${example.netAmount.toFixed(2)}</p>
-                            </div>
-                        );
-                    })}
+                    {providers
+                        .filter(p => p.active && (p.provider === 'STRIPE' || p.provider === 'PAYPAL'))
+                        .slice(0, 2)
+                        .map(provider => {
+                            const example = calculateExample(provider);
+                            return (
+                                <div key={provider.id} className="text-center border-l border-white/10 pl-4">
+                                    <p className="text-xs text-gray-500 uppercase mb-1">{provider.name}</p>
+                                    <p className="text-lg font-bold text-red-400">-${example.totalFee.toFixed(2)}</p>
+                                    <p className="text-xs text-gray-400">Net: ${example.netAmount.toFixed(2)}</p>
+                                </div>
+                            );
+                        })}
                 </div>
             </div>
 

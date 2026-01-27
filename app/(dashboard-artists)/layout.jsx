@@ -6,7 +6,8 @@ import DashboardLayout from '../../components/DashboardLayout';
 
 const navItems = [
     { iconKey: 'home', label: 'Dashboard', href: '/artists/home' },
-    { iconKey: 'product', label: 'Order', href: '/artists/order' },
+    { iconKey: 'product', label: 'New Request', href: '/artists/order' },
+    { iconKey: 'service', label: 'My Requests', href: '/artists/my-requests' },
     { iconKey: 'customer', label: 'Profile', href: '/artists/profile' },
 
 ];
