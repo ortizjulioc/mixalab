@@ -6,13 +6,15 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 // GET: Get specific add-on
 export async function GET(req, { params }) {
     try {
-        if (!params.id) {
+        const { id } = await params;
+
+        if (!id) {
             return new NextResponse("Add-on ID required", { status: 400 });
         }
 
         const addon = await prisma.serviceAddOn.findUnique({
             where: {
-                id: params.id
+                id: id
             }
         });
 
@@ -32,7 +34,9 @@ export async function PUT(req, { params }) {
             return new NextResponse('Unauthorized', { status: 401 });
         }
 
-        if (!params.id) {
+        const { id } = await params;
+
+        if (!id) {
             return new NextResponse("Add-on ID required", { status: 400 });
         }
 
@@ -56,7 +60,7 @@ export async function PUT(req, { params }) {
 
         const addOn = await prisma.serviceAddOn.update({
             where: {
-                id: params.id
+                id: id
             },
             data: {
                 serviceType,
@@ -92,13 +96,15 @@ export async function DELETE(req, { params }) {
             return new NextResponse('Unauthorized', { status: 401 });
         }
 
-        if (!params.id) {
+        const { id } = await params;
+
+        if (!id) {
             return new NextResponse("Add-on ID required", { status: 400 });
         }
 
         const addOn = await prisma.serviceAddOn.delete({
             where: {
-                id: params.id
+                id: id
             }
         });
 

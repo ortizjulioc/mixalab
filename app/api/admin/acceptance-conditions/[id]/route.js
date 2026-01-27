@@ -6,8 +6,9 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 // GET: Get single acceptance condition by ID
 export async function GET(req, { params }) {
     try {
+        const { id } = await params;
         const condition = await prisma.acceptanceCondition.findUnique({
-            where: { id: params.id }
+            where: { id }
         });
 
         if (!condition) {
@@ -30,6 +31,7 @@ export async function PUT(req, { params }) {
             return new NextResponse('Unauthorized', { status: 401 });
         }
 
+        const { id } = await params;
         const body = await req.json();
         const {
             serviceType,
@@ -42,7 +44,7 @@ export async function PUT(req, { params }) {
         } = body;
 
         const condition = await prisma.acceptanceCondition.update({
-            where: { id: params.id },
+            where: { id },
             data: {
                 serviceType,
                 fieldName,
@@ -70,8 +72,9 @@ export async function DELETE(req, { params }) {
             return new NextResponse('Unauthorized', { status: 401 });
         }
 
+        const { id } = await params;
         await prisma.acceptanceCondition.delete({
-            where: { id: params.id }
+            where: { id }
         });
 
         return new NextResponse(null, { status: 204 });

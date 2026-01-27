@@ -5,11 +5,12 @@ import { NextResponse } from "next/server";
 // 🧠 PUT: Update user info
 export async function PUT(request, { params }) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { name, email, role, status } = body;
 
     const user = await prisma.user.update({
-      where: { id: params.id },
+      where: { id },
       data: { name, email, role, status },
       select: {
         id: true,
