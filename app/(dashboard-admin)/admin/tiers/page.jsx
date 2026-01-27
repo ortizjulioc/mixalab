@@ -67,6 +67,15 @@ export default function TiersPage() {
       render: (value) => `${value ?? 0} days`
     },
     {
+      key: 'commissionPercentage',
+      label: 'Commission',
+      render: (value) => (
+        <div className="flex items-center gap-1">
+          <span className="font-semibold text-amber-400">{value ?? 10}%</span>
+        </div>
+      )
+    },
+    {
       key: 'createdAt',
       label: 'Created At',
       render: (value) => (value ? new Date(value).toLocaleDateString() : ''),

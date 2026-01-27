@@ -124,10 +124,11 @@ model ServiceAddOn {
   isMultiSelect   Boolean @default(false) @map("is_multi_select")
   options         Json? // Opciones para multiselect
 
-  icon            String?
-  badge           String? // 'Popular', 'Premium', etc.
-  tierRestriction Json?   @map("tier_restriction") // Array de tiers permitidos
-  addsDays        Int?    @map("adds_days")
+  icon                 String?
+  badge                String? // 'Popular', 'Premium', etc.
+  tierRestriction      Json?   @map("tier_restriction") // Array de tiers permitidos
+  addsDays             Int?    @map("adds_days")
+  commissionPercentage Float   @default(10) @map("commission_percentage") // Platform commission percentage
 
   active    Boolean  @default(true)
   createdAt DateTime @default(now()) @map("created_at")
@@ -487,9 +488,10 @@ model Tier {
   serviceDescriptions Json?
 
   // Common fields
-  numberOfRevisions Int  @default(0) @map("number_of_revisions")
-  stems             Int? @map("stems") // Null for mastering
-  deliveryDays      Int  @default(0) @map("delivery_days")
+  numberOfRevisions    Int   @default(0) @map("number_of_revisions")
+  stems                Int?  @map("stems") // Null for mastering
+  deliveryDays         Int   @default(0) @map("delivery_days")
+  commissionPercentage Float @default(10) @map("commission_percentage") // Platform commission percentage
 
   CreatorTier          CreatorTier[]
   UpgradeRequirements  UpgradeRequirements?

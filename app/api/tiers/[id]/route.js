@@ -46,6 +46,10 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid delivery days' } }, { status: 400 });
     }
 
+    if (body.commissionPercentage !== undefined && (isNaN(Number(body.commissionPercentage)) || Number(body.commissionPercentage) < 0 || Number(body.commissionPercentage) > 100)) {
+      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid commission percentage (must be between 0 and 100)' } }, { status: 400 });
+    }
+
     const existing = await prisma.tier.findUnique({ where: { id } });
     if (!existing) return NextResponse.json({ success: false, error: { code: 'NOT_FOUND', message: 'Tier not found' } }, { status: 404 });
 
@@ -56,9 +60,11 @@ export async function PUT(request, { params }) {
         description: body.description !== undefined ? body.description || null : existing.description,
         order: Number(body.order),
         price: body.price !== undefined ? Number(body.price) : existing.price,
+        prices: body.prices !== undefined ? body.prices : existing.prices,
         numberOfRevisions: body.numberOfRevisions !== undefined ? Number(body.numberOfRevisions) : existing.numberOfRevisions,
         stems: body.stems !== undefined ? (body.stems === '' || body.stems === null ? null : Number(body.stems)) : existing.stems,
         deliveryDays: body.deliveryDays !== undefined ? Number(body.deliveryDays) : existing.deliveryDays,
+        commissionPercentage: body.commissionPercentage !== undefined ? Number(body.commissionPercentage) : existing.commissionPercentage,
         serviceDescriptions: body.serviceDescriptions !== undefined ? body.serviceDescriptions : existing.serviceDescriptions,
       },
     });

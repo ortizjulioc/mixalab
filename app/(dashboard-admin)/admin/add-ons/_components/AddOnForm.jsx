@@ -29,6 +29,7 @@ const AddOnForm = ({ initialData = {}, isEditing = false }) => {
         badge: '',
         tierRestriction: [],
         addsDays: '',
+        commissionPercentage: 10,
         active: true,
         ...initialData
     });
@@ -207,6 +208,18 @@ const AddOnForm = ({ initialData = {}, isEditing = false }) => {
                                 placeholder="0.00"
                             />
                         </div>
+
+                        <Input
+                            label="Commission Percentage (%)"
+                            name="commissionPercentage"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            value={formData.commissionPercentage || ''}
+                            onChange={handleChange}
+                            placeholder="10"
+                        />
 
                         <div className="flex flex-col gap-4 mt-4">
                             <label className="flex items-center space-x-3 cursor-pointer p-3 rounded-lg hover:bg-zinc-800 transition-colors">

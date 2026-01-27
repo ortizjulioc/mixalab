@@ -62,6 +62,10 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid delivery days' } }, { status: 400 });
     }
 
+    if (body.commissionPercentage !== undefined && (isNaN(Number(body.commissionPercentage)) || Number(body.commissionPercentage) < 0 || Number(body.commissionPercentage) > 100)) {
+      return NextResponse.json({ success: false, error: { code: 'VALIDATION_ERROR', message: 'Invalid commission percentage (must be between 0 and 100)' } }, { status: 400 });
+    }
+
     const tier = await prisma.tier.create({
       data: {
         name: body.name.toUpperCase(),
@@ -71,6 +75,7 @@ export async function POST(request) {
         numberOfRevisions: body.numberOfRevisions !== undefined ? Number(body.numberOfRevisions) : 0,
         stems: body.stems !== undefined ? (body.stems === '' || body.stems === null ? null : Number(body.stems)) : null,
         deliveryDays: body.deliveryDays !== undefined ? Number(body.deliveryDays) : 0,
+        commissionPercentage: body.commissionPercentage !== undefined ? Number(body.commissionPercentage) : 10,
         serviceDescriptions: body.serviceDescriptions || null,
       },
     });

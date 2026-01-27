@@ -33,6 +33,7 @@ const validationSchema = Yup.object({
     numberOfRevisions: Yup.number().integer('Must be integer').min(0, 'Must be >= 0').required('Number of revisions is required'),
     stems: Yup.number().integer('Must be integer').nullable(),
     deliveryDays: Yup.number().integer('Must be integer').min(1, 'Must be >= 1').required('Delivery days is required'),
+    commissionPercentage: Yup.number().min(0, 'Must be >= 0').max(100, 'Must be <= 100').required('Commission percentage is required'),
 })
 
 export default function CreateTierPage() {
@@ -60,6 +61,7 @@ export default function CreateTierPage() {
                         numberOfRevisions: 0,
                         stems: null,
                         deliveryDays: 0,
+                        commissionPercentage: 10,
                         serviceDescriptions: {
                             MIXING: { title: '', subtitle: '', description: '', features: [] },
                             MASTERING: { title: '', subtitle: '', description: '', features: [] },
@@ -129,6 +131,18 @@ export default function CreateTierPage() {
                                     value={values.deliveryDays}
                                     onChange={(e) => setFieldValue('deliveryDays', Number(e.target.value))}
                                     error={touched.deliveryDays && errors.deliveryDays}
+                                    required
+                                />
+
+                                <Input
+                                    label="Commission Percentage (%)"
+                                    name="commissionPercentage"
+                                    type="number"
+                                    step="0.01"
+                                    value={values.commissionPercentage}
+                                    onChange={(e) => setFieldValue('commissionPercentage', Number(e.target.value))}
+                                    error={touched.commissionPercentage && errors.commissionPercentage}
+                                    placeholder="10"
                                     required
                                 />
                             </div>

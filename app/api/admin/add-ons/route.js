@@ -77,7 +77,8 @@ export async function POST(req) {
             icon,
             badge,
             tierRestriction,
-            addsDays
+            addsDays,
+            commissionPercentage
         } = body;
 
         if (!serviceType || !name) {
@@ -98,6 +99,7 @@ export async function POST(req) {
                 badge,
                 tierRestriction: tierRestriction || undefined,
                 addsDays: addsDays ? parseInt(addsDays) : null,
+                commissionPercentage: commissionPercentage !== undefined ? parseFloat(commissionPercentage) : 10,
                 active: true
             }
         });

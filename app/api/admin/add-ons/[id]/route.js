@@ -50,6 +50,7 @@ export async function PUT(req, { params }) {
             badge,
             tierRestriction,
             addsDays,
+            commissionPercentage,
             active
         } = body;
 
@@ -70,6 +71,7 @@ export async function PUT(req, { params }) {
                 badge,
                 tierRestriction: tierRestriction || undefined,
                 addsDays: addsDays ? parseInt(addsDays) : null,
+                commissionPercentage: commissionPercentage !== undefined ? parseFloat(commissionPercentage) : undefined,
                 active
             }
         });

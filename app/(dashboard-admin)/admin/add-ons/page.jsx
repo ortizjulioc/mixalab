@@ -50,6 +50,15 @@ export default function AdminAddOnsPage() {
             )
         },
         {
+            key: 'commissionPercentage',
+            label: 'Commission',
+            render: (value) => (
+                <div className="flex items-center gap-1">
+                    <span className="font-semibold text-amber-400">{value ?? 10}%</span>
+                </div>
+            )
+        },
+        {
             key: 'description', label: 'Description', render: (val) => (
                 <span className="text-gray-400 text-sm truncate max-w-[200px] block" title={val}>
                     {val}
