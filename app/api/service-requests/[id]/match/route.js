@@ -55,35 +55,7 @@ export async function GET(request, { params }) {
 
         const genreIds = serviceRequest.genres.map(g => g.genreId);
 
-        console.log('----- MATCHING PROCESS START -----');
-        console.log('Request ID:', id);
-        console.log('Required Tier:', serviceRequest.tier);
-        console.log('Service Type:', serviceRequest.services);
-        console.log('Genre IDs:', genreIds);
-
         // Build the query to find matching creators
-
-        // --- DEBUG START: Log ALL creators to see why they don't match ---
-        const debugCreators = await prisma.creatorProfile.findMany({
-            where: { status: 'APPROVED', deleted: false },
-            include: {
-                genders: { include: { genre: true } },
-                CreatorTier: { include: { tier: true } },
-                mixing: true,
-                masteringEngineerProfile: true,
-                instrumentalist: true
-            }
-        });
-        console.log('--- DEBUG DUMP: ALL APPROVED CREATORS ---');
-        debugCreators.forEach(c => {
-            console.log(`[${c.brandName}] ID: ${c.id}`);
-            console.log(`  - Tiers: ${c.CreatorTier.map(t => t.active ? t.tier.name : t.tier.name + '(Inactive)').join(', ')}`);
-            console.log(`  - Genres: ${c.genders.map(g => `${g.genre.name} (${g.genreId})`).join(', ')}`);
-            console.log(`  - Services: Mixing:${!!c.mixing} Mastering:${!!c.masteringEngineerProfile} Inst:${!!c.instrumentalist}`);
-        });
-        console.log('--- END DEBUG DUMP ---');
-        // --- DEBUG END ---
-
         const matchingCreators = await prisma.creatorProfile.findMany({
             where: {
                 status: 'APPROVED',
@@ -193,10 +165,6 @@ export async function GET(request, { params }) {
                     ...creator,
                     matchScore: matchCount
                 });
-
-                console.log(`-> ${creator.brandName} is AVAILABLE. (Match Score: ${matchCount}/${genreIds.length})`);
-            } else {
-                console.log(`-> ${creator.brandName} is BUSY.`);
             }
         }
 
@@ -213,7 +181,6 @@ export async function GET(request, { params }) {
 
         // Select the best available creator
         const selectedCreator = availableCreators[0];
-        console.log(`Selected Best Match: ${selectedCreator.brandName} (Score: ${selectedCreator.matchScore})`);
 
         // Assign the creator to the request with IN_REVIEW status
         // Creator will need to accept/decline from their dashboard

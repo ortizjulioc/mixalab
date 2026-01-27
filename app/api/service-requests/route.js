@@ -75,7 +75,6 @@ export async function POST(request) {
     if (genreIdsJson) {
       try {
         genreIds = JSON.parse(genreIdsJson);
-        console.log('Received genreIds:', genreIds);
         if (!Array.isArray(genreIds)) {
           console.warn('genreIds is not an array, resetting to empty');
           genreIds = [];
