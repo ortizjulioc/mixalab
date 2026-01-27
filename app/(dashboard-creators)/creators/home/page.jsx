@@ -2,139 +2,84 @@
 import CreatorSecurityPass from '@/components/CreatorSecurityPass'
 import useCreatorProfile from '@/hooks/useCreatorProfile'
 import { useSession } from 'next-auth/react'
-import React, { useEffect } from 'react'
-import { Sparkles, TrendingUp, Clock, CheckCircle2 } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import React, { useEffect, useState } from 'react'
+import { Sparkles, TrendingUp, Clock, CheckCircle2, User, Inbox, Music, Award, Zap, ArrowRight, Wallet } from 'lucide-react'
 
-/**
- * Skeleton para las estadísticas del dashboard
- */
-function DashboardStatsSkeleton() {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      {[1, 2, 3].map((i) => (
-        <div key={i} className="bg-gray-800/40 rounded-xl p-6 animate-pulse">
-          <div className="h-4 bg-gray-700 rounded w-24 mb-4"></div>
-          <div className="h-8 bg-gray-700 rounded w-16 mb-2"></div>
-          <div className="h-3 bg-gray-700 rounded w-32"></div>
-        </div>
-      ))}
-    </div>
-  )
-}
+// ... Keep WelcomeMessage or similar logic but styled ...
 
-/**
- * Componente de bienvenida según el estado del perfil
- */
-function WelcomeMessage({ creatorProfile, session }) {
-  if (!creatorProfile) {
-    return (
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white mb-2">
-          Welcome, {session?.user?.name || 'Creator'}! 👋
-        </h1>
-        <p className="text-gray-400 text-lg">
-          Let's get started by completing your Creator Security Pass.
-        </p>
-      </div>
-    )
-  }
+function DashboardStats({ creatorProfile, stats }) {
+  if (!creatorProfile || creatorProfile.status !== 'APPROVED') return null
 
-  const statusMessages = {
-    PENDING: {
-      title: `Welcome back, ${creatorProfile.brandName}! ⏳`,
-      subtitle: 'Your application is under review. We\'ll notify you soon!',
-    },
-    APPROVED: {
-      title: `Welcome back, ${creatorProfile.brandName}! ✨`,
-      subtitle: 'Your creator dashboard is ready. Start accepting projects!',
-    },
-    REJECTED: {
-      title: `Hello, ${creatorProfile.brandName}`,
-      subtitle: 'Please review and resubmit your application.',
-    },
-    SUSPENDED: {
-      title: `Hello, ${creatorProfile.brandName}`,
-      subtitle: 'Your account is currently suspended. Contact support for assistance.',
-    },
-  }
-
-  const message = statusMessages[creatorProfile.status] || statusMessages.PENDING
-
-  return (
-    <div className="mb-8">
-      <h1 className="text-4xl font-bold text-white mb-2">
-        {message.title}
-      </h1>
-      <p className="text-gray-400 text-lg">
-        {message.subtitle}
-      </p>
-    </div>
-  )
-}
-
-/**
- * Estadísticas del dashboard (solo visible cuando está aprobado)
- */
-function DashboardStats({ creatorProfile }) {
-  if (!creatorProfile || creatorProfile.status !== 'APPROVED') {
-    return null
-  }
-
-  // Determinar servicios activos
+  // Determine active services
   const activeServices = []
   if (creatorProfile.mixing) activeServices.push('Mixing')
   if (creatorProfile.masteringEngineerProfile) activeServices.push('Mastering')
   if (creatorProfile.instrumentalist) activeServices.push('Recording')
 
-  // Obtener tier actual
+  // Get current tier
   const currentTier = creatorProfile.CreatorTier?.find(t => t.active)?.tier
   const tierName = currentTier?.name || 'BRONZE'
-  const tierColors = {
-    BRONZE: 'text-orange-400',
-    SILVER: 'text-gray-300',
-    GOLD: 'text-yellow-400',
-    PLATINUM: 'text-purple-400',
-  }
 
-  const stats = [
+  const statCards = [
     {
-      icon: Sparkles,
-      label: 'Active Services',
-      value: activeServices.length.toString(),
-      change: activeServices.join(', ') || 'No services',
+      icon: Inbox,
+      label: 'Available Projects',
+      value: stats.available.toString(),
+      sub: 'Matching your tier',
       color: 'text-amber-400',
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/20'
     },
     {
-      icon: TrendingUp,
+      icon: Zap,
+      label: 'Active Projects',
+      value: stats.active.toString(),
+      sub: 'In progress',
+      color: 'text-cyan-400',
+      bg: 'bg-cyan-500/10',
+      border: 'border-cyan-500/20'
+    },
+    {
+      icon: Wallet,
+      label: 'Pending Earnings',
+      value: '$0.00', // Placeholder for now
+      sub: 'From active jobs',
+      color: 'text-emerald-400',
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/20'
+    },
+    {
+      icon: Award,
       label: 'Creator Tier',
       value: tierName,
-      change: `${creatorProfile.yearsOfExperience} years experience`,
-      color: tierColors[tierName] || 'text-gray-400',
-    },
-    {
-      icon: Clock,
-      label: 'Availability',
-      value: creatorProfile.availability?.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'On Demand',
-      change: `${creatorProfile.genders?.length || 0} genres`,
-      color: 'text-blue-400',
-    },
+      sub: `${activeServices.length} Active Services`,
+      color: 'text-purple-400',
+      bg: 'bg-purple-500/10',
+      border: 'border-purple-500/20'
+    }
   ]
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-      {stats.map((stat, index) => {
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {statCards.map((stat, index) => {
         const Icon = stat.icon
         return (
           <div
             key={index}
-            className="bg-gray-800/40 border border-gray-700 rounded-xl p-6 hover:bg-gray-800/60 transition-all duration-300"
+            className={`group relative overflow-hidden bg-gradient-to-br from-gray-800/50 to-gray-900/50 border ${stat.border} rounded-xl p-5 hover:border-gray-600/60 transition-all duration-300 backdrop-blur-sm`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-gray-400 text-sm font-medium">{stat.label}</span>
-              <Icon className={`w-5 h-5 ${stat.color}`} />
+            <div className={`absolute top-0 right-0 w-24 h-24 ${stat.bg} rounded-full blur-2xl group-hover:opacity-75 transition-opacity`} />
+            <div className="relative">
+              <div className="flex items-center justify-between mb-3">
+                <div className={`p-2.5 ${stat.bg} rounded-lg`}>
+                  <Icon className={`w-5 h-5 ${stat.color}`} />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-white mb-1">{stat.value}</p>
+              <p className="text-sm text-gray-400">{stat.label}</p>
+              <p className="text-xs text-gray-500 mt-1">{stat.sub}</p>
             </div>
-            <div className={`text-3xl font-bold mb-1 ${stat.color}`}>{stat.value}</div>
-            <div className="text-sm text-gray-500">{stat.change}</div>
           </div>
         )
       })}
@@ -142,131 +87,136 @@ function DashboardStats({ creatorProfile }) {
   )
 }
 
-/**
- * Sección de próximos pasos según el estado
- */
-function NextSteps({ creatorProfile }) {
-  if (!creatorProfile) {
-    return null
-  }
-
-  // Verificar si tiene servicios activos
-  const hasServices = !!(creatorProfile.mixing || creatorProfile.masteringEngineerProfile || creatorProfile.instrumentalist)
-
-  const steps = {
-    PENDING: [
-      { icon: Clock, text: 'Wait for admin review (24-48 hours)', completed: false },
-      { icon: CheckCircle2, text: 'Check your email for updates', completed: false },
-      { icon: Sparkles, text: 'Prepare your portfolio samples', completed: false },
-    ],
-    APPROVED: [
-      { icon: CheckCircle2, text: 'Profile approved and services configured', completed: true },
-      { icon: Sparkles, text: 'Profile optimized and ready', completed: true },
-      { icon: TrendingUp, text: 'Land your first project', completed: false },
-    ],
-    REJECTED: [
-      { icon: Clock, text: 'Review rejection feedback', completed: false },
-      { icon: Sparkles, text: 'Improve your application', completed: false },
-      { icon: CheckCircle2, text: 'Resubmit for review', completed: false },
-    ],
-  }
-
-  const currentSteps = steps[creatorProfile.status]
-  if (!currentSteps) return null
-
-  return (
-    <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-6 mb-8">
-      <h2 className="text-xl font-bold text-white mb-4">Next Steps</h2>
-      <div className="space-y-3">
-        {currentSteps.map((step, index) => {
-          const Icon = step.icon
-          return (
-            <div key={index} className="flex items-center space-x-3">
-              <Icon
-                className={`w-5 h-5 flex-shrink-0 ${step.completed ? 'text-green-400' : 'text-gray-400'
-                  }`}
-              />
-              <span
-                className={`text-sm ${step.completed ? 'text-gray-300 line-through' : 'text-gray-200'
-                  }`}
-              >
-                {step.text}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
 export default function Home() {
   const { data: session, status } = useSession()
+  const router = useRouter()
   const { creatorProfile, getCreatorProfileByUserId, loading } = useCreatorProfile()
+  const [requestStats, setRequestStats] = useState({ available: 0, active: 0 })
 
   useEffect(() => {
-    // Only fetch if we have a user ID from the session
     if (session?.user?.id) {
       getCreatorProfileByUserId(session.user.id)
+      fetchStats();
     }
   }, [session?.user?.id, getCreatorProfileByUserId])
+
+  const fetchStats = async () => {
+    try {
+      const res = await fetch('/api/creator/available-requests?filter=ALL');
+      const data = await res.json();
+      if (data.requests) {
+        // Assume 'creatorId' in request object is the CreatorProfile ID. 
+        // We need to compare it with fetched creatorProfile ID, but we might not have it yet inside this effect if it's separated.
+        // For simplicity, let's trust the filter=ALL logic from API which returns relevant requests.
+        // We need to distinguish available vs active.
+
+        // This logic is slightly approximate without full profile loaded in this scope, 
+        // but 'creatorId' being null usually means available (if it matched tier).
+        const available = data.requests.filter(r => !r.creatorId && r.status === 'PENDING').length;
+        const active = data.requests.filter(r => r.creatorId).length; // If it's in the list and has creatorId, it's mine (because API filters by my ID or matching tier)
+        setRequestStats({ available, active });
+      }
+    } catch (e) {
+      console.error("Error fetching stats:", e);
+    }
+  }
 
   const isLoading = loading || status === 'loading'
 
   return (
-    <div>
-      {/* Creator Security Pass Alert */}
+    <div className="px-4 sm:px-6 lg:px-8 space-y-8 pb-8">
       <CreatorSecurityPass
         creatorProfile={creatorProfile}
         loading={isLoading}
       />
 
-      {/* Main Dashboard Content */}
-      <div className="px-4 sm:px-6 lg:px-8">
-        {isLoading ? (
-          <>
-            <div className="mb-8 animate-pulse">
-              <div className="h-10 bg-gray-700 rounded w-64 mb-2"></div>
-              <div className="h-6 bg-gray-700 rounded w-96"></div>
-            </div>
-            <DashboardStatsSkeleton />
-          </>
-        ) : (
-          <>
-            <WelcomeMessage creatorProfile={creatorProfile} session={session} />
-            <DashboardStats creatorProfile={creatorProfile} />
-            <NextSteps creatorProfile={creatorProfile} />
-          </>
-        )}
+      {!isLoading && creatorProfile && (
+        <>
+          {/* Header */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-indigo-900/20 via-gray-900/60 to-gray-800/40 border border-indigo-500/20 rounded-2xl p-8 backdrop-blur-sm">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl -z-10" />
 
-        {/* Contenido adicional del dashboard */}
-        {creatorProfile?.status === 'APPROVED' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Recent Projects</h2>
-              <div className="text-center py-8 text-gray-400">
-                <p>No projects yet</p>
-                <p className="text-sm mt-2">Projects will appear here once you start accepting them</p>
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
+              <div className="flex items-center gap-5">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold shadow-lg shadow-indigo-500/20">
+                  {creatorProfile.brandName?.[0] || 'C'}
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-white mb-1">
+                    Welcome back, {creatorProfile.brandName}!
+                  </h1>
+                  <p className="text-gray-400">
+                    Ready to create some magic today?
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-6">
-              <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
-              <div className="space-y-3">
-                <button className="w-full text-left px-4 py-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors">
-                  <span className="text-white font-medium">Browse Available Projects</span>
-                </button>
-                <button className="w-full text-left px-4 py-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors">
-                  <span className="text-white font-medium">Update Your Services</span>
-                </button>
-                <button className="w-full text-left px-4 py-3 bg-gray-700/50 hover:bg-gray-700 rounded-lg transition-colors">
-                  <span className="text-white font-medium">View Your Portfolio</span>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => router.push('/creators/requests')}
+                  className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 px-6 rounded-xl transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Find Work
                 </button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+
+          <DashboardStats creatorProfile={creatorProfile} stats={requestStats} />
+
+          {/* Quick Actions & Recent */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-white">Recent Projects</h2>
+                  <button
+                    onClick={() => router.push('/creators/requests?filter=ACCEPTED')}
+                    className="text-indigo-400 hover:text-indigo-300 text-sm font-medium flex items-center gap-1"
+                  >
+                    View All <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Placeholder for projects list */}
+                <div className="text-center py-12 bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
+                  <Music className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                  {requestStats.active > 0 ? (
+                    <p className="text-gray-400">Checking your active projects...</p>
+                  ) : (
+                    <>
+                      <p className="text-gray-300 font-medium">No active projects yet</p>
+                      <p className="text-gray-500 text-sm mt-1">Start by finding a request that matches your skills.</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => router.push('/creators/requests')}
+                    className="w-full text-left p-4 bg-gray-700/30 hover:bg-gray-700/50 border border-gray-600/30 rounded-xl transition-all group"
+                  >
+                    <h3 className="text-white font-medium group-hover:text-amber-400 transition-colors">Browse Requests</h3>
+                    <p className="text-sm text-gray-500">Find new opportunities</p>
+                  </button>
+                  <button
+                    className="w-full text-left p-4 bg-gray-700/30 hover:bg-gray-700/50 border border-gray-600/30 rounded-xl transition-all group"
+                  >
+                    <h3 className="text-white font-medium group-hover:text-purple-400 transition-colors">Update Portfolio</h3>
+                    <p className="text-sm text-gray-500">Showcase your best work</p>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   )
 }

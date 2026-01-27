@@ -3,7 +3,7 @@ import ArtistProfileCTA from '@/components/ArtistProfileCTA'
 import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { User, BadgeCheck, Sparkles, Edit3, Eye, Inbox, Music, TrendingUp, Award, Zap, Calendar, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight } from 'lucide-react'
+import { User, BadgeCheck, Sparkles, Edit3, Eye, Inbox, Music, TrendingUp, Award, Zap, Calendar, Star, PlusCircle } from 'lucide-react'
 import useArtistProfiles from '@/hooks/useArtistProfiles'
 import useServiceRequests from '@/hooks/useServiceRequests'
 import MyProjectsSection from '@/components/MyProjectsSection'
@@ -23,6 +23,15 @@ export default function Home() {
   }, [session?.user?.id, getArtistProfileByUserId, getServiceRequestsByUserId])
 
   const isLoading = loading || status === 'loading'
+
+  // Calculate stats
+  const activeRequestsCount = serviceRequests?.filter(r =>
+    !['COMPLETED', 'CANCELLED', 'REJECTED'].includes(r.status)
+  ).length || 0;
+
+  const completedRequestsCount = serviceRequests?.filter(r =>
+    r.status === 'COMPLETED'
+  ).length || 0;
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 space-y-8 pb-8">
@@ -115,7 +124,7 @@ export default function Home() {
                   </div>
                   <TrendingUp className="w-4 h-4 text-gray-500" />
                 </div>
-                <p className="text-2xl font-bold text-white mb-1">0</p>
+                <p className="text-2xl font-bold text-white mb-1">{activeRequestsCount}</p>
                 <p className="text-sm text-gray-400">Active Requests</p>
               </div>
             </div>
@@ -130,7 +139,7 @@ export default function Home() {
                   </div>
                   <Award className="w-4 h-4 text-emerald-500/40" />
                 </div>
-                <p className="text-2xl font-bold text-white mb-1">0</p>
+                <p className="text-2xl font-bold text-white mb-1">{completedRequestsCount}</p>
                 <p className="text-sm text-gray-400">Completed</p>
               </div>
             </div>
@@ -250,20 +259,19 @@ export default function Home() {
             </button>
 
             <button
-              onClick={() => router.push('/artists/order')}
+              onClick={() => router.push('/artists/my-requests')}
               className="group relative overflow-hidden bg-gradient-to-br from-gray-800/80 to-gray-900/80 hover:from-gray-700/80 hover:to-gray-800/80 border border-gray-700/60 hover:border-gray-600/80 text-white font-semibold rounded-xl px-6 py-4 flex items-center justify-center gap-3 transition-all duration-300 backdrop-blur-sm hover:scale-[1.02]"
             >
               <Inbox className="w-5 h-5 text-gray-300" />
-              <span>Service Requests</span>
+              <span>My Requests</span>
             </button>
 
             <button
-              onClick={() => { /* Placeholder hasta tener la ruta pública */ }}
-              className="group relative overflow-hidden bg-gradient-to-br from-gray-800/80 to-gray-900/80 hover:from-gray-700/80 hover:to-gray-800/80 border border-gray-700/60 hover:border-gray-600/80 text-white font-semibold rounded-xl px-6 py-4 flex items-center justify-center gap-3 transition-all duration-300 backdrop-blur-sm hover:scale-[1.02]"
-              title="Public profile coming soon"
+              onClick={() => router.push('/artists/order')}
+              className="group relative overflow-hidden bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold rounded-xl px-6 py-4 flex items-center justify-center gap-3 transition-all duration-300 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30 hover:scale-[1.02]"
             >
-              <Eye className="w-5 h-5 text-gray-300" />
-              <span>Public Profile</span>
+              <PlusCircle className="w-5 h-5" />
+              <span>New Request</span>
             </button>
           </div>
         </>

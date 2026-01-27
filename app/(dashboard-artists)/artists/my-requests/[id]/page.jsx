@@ -15,6 +15,7 @@ import {
     AlertCircle,
     CheckCircle2,
     Loader2,
+    CreditCard,
 } from 'lucide-react';
 
 export default function RequestDetailPage() {
@@ -82,6 +83,7 @@ export default function RequestDetailPage() {
     const statusColor = getStatusColor(currentRequest.status);
     const statusLabel = getStatusLabel(currentRequest.status);
     const canCancel = ['PENDING', 'IN_REVIEW'].includes(currentRequest.status);
+    const canPay = ['ACCEPTED', 'AWAITING_PAYMENT'].includes(currentRequest.status);
 
     return (
         <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto">
@@ -143,6 +145,17 @@ export default function RequestDetailPage() {
                         >
                             <XCircle className="w-5 h-5" />
                             Cancel Request
+                        </button>
+                    </div>
+                )}
+                {canPay && (
+                    <div className="mt-6 pt-6 border-t border-zinc-700/50">
+                        <button
+                            onClick={() => router.push(`/artists/checkout/${params.id}`)}
+                            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold py-3 px-6 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2"
+                        >
+                            <CreditCard className="w-5 h-5" />
+                            Proceed to Payment
                         </button>
                     </div>
                 )}

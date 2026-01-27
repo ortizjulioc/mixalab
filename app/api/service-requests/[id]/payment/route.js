@@ -47,66 +47,73 @@ export async function POST(request, { params }) {
         }
 
         // Verify status
-        if (serviceRequest.status !== 'AWAITING_PAYMENT') {
+        if (!['ACCEPTED', 'AWAITING_PAYMENT'].includes(serviceRequest.status)) {
             return NextResponse.json(
                 { error: 'Request is not ready for payment' },
                 { status: 400 }
             );
         }
 
-        // TODO: Integrate with payment gateway (Stripe, PayPal, etc.)
-        // For now, we'll simulate a successful payment
+        // Get Creator User ID for notification
+        let creatorUserId = null;
+        if (serviceRequest.creatorId) {
+            const creatorProfile = await prisma.creatorProfile.findUnique({
+                where: { id: serviceRequest.creatorId },
+                select: { userId: true }
+            });
+            creatorUserId = creatorProfile?.userId;
+        }
 
-        // Example Stripe integration:
-        // const paymentIntent = await stripe.paymentIntents.create({
-        //     amount: body.amount * 100, // Convert to cents
-        //     currency: 'usd',
-        //     metadata: {
-        //         serviceRequestId: id,
-        //         userId: userId,
-        //     },
-        // });
-
-        // Update service request status to PAID
-        const updatedRequest = await prisma.serviceRequest.update({
-            where: { id },
-            data: {
-                status: 'PAID',
-                // TODO: Store payment information
-                // paymentId: paymentIntent.id,
-                // paymentAmount: body.amount,
-                // paymentDate: new Date(),
-            },
-            include: {
-                user: {
-                    select: {
-                        id: true,
-                        name: true,
-                        email: true,
-                    }
+        // Transaction to update request, create event, and notification
+        const [updatedRequest] = await prisma.$transaction([
+            // 1. Update Request to PAID
+            prisma.serviceRequest.update({
+                where: { id },
+                data: {
+                    status: 'PAID',
+                    statusUpdatedAt: new Date()
                 },
-                creator: {
-                    include: {
-                        user: {
-                            select: {
-                                id: true,
-                                name: true,
-                                email: true,
-                            }
+                include: {
+                    user: { select: { id: true, name: true, email: true } },
+                    creator: {
+                        select: {
+                            id: true,
+                            brandName: true,
+                            user: { select: { id: true, name: true, email: true } }
                         }
-                    }
-                },
-                genres: {
-                    include: {
-                        genre: true
-                    }
-                },
-                files: true,
-            }
-        });
+                    },
+                    files: true,
+                    genres: { include: { genre: true } }
+                }
+            }),
 
-        // TODO: Send notification to creator that payment was received
-        // TODO: Create Project entity from ServiceRequest
+            // 2. Create Payment Event
+            prisma.projectEvent.create({
+                data: {
+                    requestId: id,
+                    type: 'PAYMENT_COMPLETED',
+                    description: `Payment completed by ${session.user.name || 'Artist'}`,
+                    userId: userId,
+                    metadata: {
+                        amount: 'Simulated',
+                        currency: 'USD'
+                    }
+                }
+            }),
+
+            // 3. Notify Creator
+            ...(creatorUserId ? [
+                prisma.notification.create({
+                    data: {
+                        userId: creatorUserId,
+                        type: 'STATUS_CHANGED', // Or new PAYMENT_RECEIVED type if we add it, reusing STATUS_CHANGED for now
+                        title: 'Payment Received',
+                        message: `Payment received for project "${serviceRequest.projectName}". You can now start working!`,
+                        link: `/creators/projects/${id}`, // Future project page
+                    }
+                })
+            ] : [])
+        ]);
 
         return NextResponse.json({
             message: 'Payment processed successfully',

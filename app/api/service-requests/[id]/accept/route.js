@@ -59,17 +59,18 @@ export async function POST(request, { params }) {
       );
     }
 
-    // If already in AWAITING_PAYMENT or later status, it's already been accepted
-    if (serviceRequest.status === 'AWAITING_PAYMENT' || serviceRequest.status === 'PAID' || serviceRequest.status === 'IN_PROGRESS') {
+    // Confirm valid status transition
+    if (['ACCEPTED', 'AWAITING_PAYMENT', 'PAID', 'IN_PROGRESS', 'COMPLETED'].includes(serviceRequest.status)) {
       return NextResponse.json(
         { message: 'Request already accepted', data: serviceRequest },
         { status: 200 }
       );
     }
 
-    // Update service request - assign creator if not assigned, update status to AWAITING_PAYMENT
+    // Update service request
     const updateData = {
-      status: 'AWAITING_PAYMENT' // Creator accepted, now waiting for artist payment
+      status: 'ACCEPTED', // Creator accepted, project initiated
+      statusUpdatedAt: new Date(),
     };
 
     // If creator is not assigned yet, assign them
@@ -79,39 +80,56 @@ export async function POST(request, { params }) {
       };
     }
 
-    const updatedRequest = await prisma.serviceRequest.update({
-      where: { id },
-      data: updateData,
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true
-          }
-        },
-        creator: {
-          select: {
-            id: true,
-            brandName: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true
+    // Transaction to update request, create event, and create notification
+    const [updatedRequest] = await prisma.$transaction([
+      // 1. Update Request
+      prisma.serviceRequest.update({
+        where: { id },
+        data: updateData,
+        include: {
+          user: {
+            select: { id: true, name: true, email: true, image: true }
+          },
+          creator: {
+            select: {
+              id: true,
+              brandName: true,
+              user: {
+                select: { id: true, name: true, email: true }
               }
             }
-          }
-        },
-        files: true,
-        genres: {
-          include: {
-            genre: true
+          },
+          files: true,
+          genres: { include: { genre: true } }
+        }
+      }),
+
+      // 2. Create Event
+      prisma.projectEvent.create({
+        data: {
+          requestId: id,
+          type: 'CREATOR_ACCEPTED',
+          description: `Request accepted by ${creatorProfile.brandName || 'Creator'}`,
+          userId: userId,
+          metadata: {
+            creatorId: creatorProfile.id,
+            previousStatus: serviceRequest.status,
+            newStatus: 'ACCEPTED'
           }
         }
-      }
-    });
+      }),
+
+      // 3. Create Notification for Artist
+      prisma.notification.create({
+        data: {
+          userId: serviceRequest.userId,
+          type: 'REQUEST_ACCEPTED',
+          title: 'Request Accepted',
+          message: `Your request "${serviceRequest.projectName}" has been accepted by ${creatorProfile.brandName || 'a Creator'}.`,
+          link: `/artists/my-requests/${id}`,
+        }
+      })
+    ]);
 
     return NextResponse.json({
       message: 'Service request accepted successfully',
