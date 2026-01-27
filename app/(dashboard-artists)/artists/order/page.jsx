@@ -129,7 +129,7 @@ export default function NewRequestPage() {
     try {
       const submissionData = {
         ...formData,
-        genreIds: JSON.stringify(formData.genreIds),
+        genreIds: formData.genreIds,
         // Group acceptance fields into a single object expected by backend
         acceptance: {
           checklist: formData.checklist,
@@ -184,8 +184,8 @@ export default function NewRequestPage() {
                 return (
                   <div key={step.number} className="relative flex flex-col items-center group">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center border-4 transition-all duration-300 z-10 ${isCompleted ? 'bg-amber-500 border-amber-500' :
-                        isCurrent ? 'bg-black border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]' :
-                          'bg-zinc-900 border-zinc-700'
+                      isCurrent ? 'bg-black border-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]' :
+                        'bg-zinc-900 border-zinc-700'
                       }`}>
                       {isCompleted ? (
                         <CheckCircle2 size={14} className="text-black" />
@@ -239,8 +239,8 @@ export default function NewRequestPage() {
               onClick={handleBack}
               disabled={currentStep === 1 || submitting}
               className={`flex items-center space-x-2 px-6 py-3 rounded-xl font-medium transition-all ${currentStep === 1
-                  ? 'text-zinc-600 cursor-not-allowed'
-                  : 'text-white hover:bg-zinc-800'
+                ? 'text-zinc-600 cursor-not-allowed'
+                : 'text-white hover:bg-zinc-800'
                 }`}
             >
               <ChevronLeft size={20} />

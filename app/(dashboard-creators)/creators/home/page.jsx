@@ -221,6 +221,49 @@ export default function Home() {
             </div>
 
             <div className="space-y-6">
+              {/* Expertise Snapshot */}
+              <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
+                <h2 className="text-xl font-bold text-white mb-4">My Expertise</h2>
+
+                {/* Genres */}
+                <div className="mb-4">
+                  <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 font-bold">Genres</p>
+                  <div className="flex flex-wrap gap-2">
+                    {creatorProfile.genders?.map((g) => (
+                      <span key={g.id || Math.random()} className="px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-300 text-xs font-semibold border border-indigo-500/20">
+                        {g.genre?.name || 'Unknown'}
+                      </span>
+                    ))}
+                    {(!creatorProfile.genders || creatorProfile.genders.length === 0) && (
+                      <span className="text-gray-500 text-xs italic">No genres selected</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* DAW & Exp */}
+                <div className="space-y-2 pt-4 border-t border-gray-700/50">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Main DAW</span>
+                    <span className="text-white font-medium">
+                      {{
+                        'fl_studio': 'FL Studio',
+                        'ableton_live': 'Ableton Live',
+                        'logic_pro': 'Logic Pro',
+                        'pro_tools': 'Pro Tools',
+                        'studio_one': 'Studio One',
+                        'cubase': 'Cubase',
+                        'reaper': 'Reaper',
+                        'garageband': 'GarageBand'
+                      }[creatorProfile.mainDaw] || creatorProfile.mainDaw?.replace(/_/g, ' ') || 'Not set'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400">Experience</span>
+                    <span className="text-white font-medium">{creatorProfile.yearsOfExperience || 0} Years</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
                 <h2 className="text-xl font-bold text-white mb-4">Quick Actions</h2>
                 <div className="space-y-3">

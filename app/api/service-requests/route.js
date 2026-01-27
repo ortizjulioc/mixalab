@@ -75,12 +75,16 @@ export async function POST(request) {
     if (genreIdsJson) {
       try {
         genreIds = JSON.parse(genreIdsJson);
+        console.log('Received genreIds:', genreIds);
         if (!Array.isArray(genreIds)) {
+          console.warn('genreIds is not an array, resetting to empty');
           genreIds = [];
         }
       } catch (e) {
         console.error('Error parsing genreIds:', e);
       }
+    } else {
+      console.log('No genreIds received in FormData');
     }
 
     let addOns = {};
@@ -164,6 +168,12 @@ export async function POST(request) {
           status: 'PENDING',
           files: {
             connect: fileRecords.map(f => ({ id: f.id }))
+          },
+          // Create genre relations atomically using nested write
+          genres: {
+            create: genreIds.map(genreId => ({
+              genreId: genreId
+            }))
           }
         },
         include: {
@@ -183,17 +193,9 @@ export async function POST(request) {
           }
         }
       });
+      // (No need for separate createMany anymore)
 
-      // Create genre relations if provided
-      if (genreIds.length > 0) {
-        await tx.serviceRequestGenre.createMany({
-          data: genreIds.map(genreId => ({
-            serviceRequestId: serviceRequest.id,
-            genreId
-          })),
-          skipDuplicates: true
-        });
-      }
+      return serviceRequest;
 
       return serviceRequest;
     });

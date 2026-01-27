@@ -305,8 +305,23 @@ export default function CreatorProfilePage() {
                     </div>
                 </div>
 
+                {/* Genres */}
+                <div className="mt-6 pt-6 border-t border-white/10">
+                    <label className="text-sm text-gray-400 block mb-3">Genres & Styles</label>
+                    <div className="flex flex-wrap gap-2">
+                        {profile.genders?.map((g) => (
+                            <span key={g.id || Math.random()} className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-300 text-sm border border-blue-500/20">
+                                {g.genre?.name || 'Unknown'}
+                            </span>
+                        ))}
+                        {(!profile.genders || profile.genders.length === 0) && (
+                            <p className="text-gray-500 italic">No genres specified</p>
+                        )}
+                    </div>
+                </div>
+
                 {profile.gearList && (
-                    <div className="mt-6">
+                    <div className="mt-6 pt-6 border-t border-white/10">
                         <label className="text-sm text-gray-400">Gear List</label>
                         <p className="text-white mt-1">{profile.gearList}</p>
                     </div>
