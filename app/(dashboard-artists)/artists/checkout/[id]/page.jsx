@@ -11,6 +11,7 @@ export default function CheckoutPage({ params }) {
     const router = useRouter();
     const { data: session } = useSession();
     const [request, setRequest] = useState(null);
+    const [addOnsDetails, setAddOnsDetails] = useState([]);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
 
@@ -24,7 +25,7 @@ export default function CheckoutPage({ params }) {
 
     // Calculate totals safely
     const basePrice = request ? (TIER_PRICES[request.tier] || 0) : 0;
-    const addonsTotal = request?.addOns ? Object.values(request.addOns).reduce((acc, curr) => acc + (Number(curr.price) || 0), 0) : 0;
+    const addonsTotal = addOnsDetails.reduce((acc, addon) => acc + (Number(addon.price) || 0), 0);
     const subtotal = basePrice + addonsTotal;
     const serviceFee = subtotal * 0.10;
     const totalAmount = subtotal + serviceFee;
@@ -41,11 +42,30 @@ export default function CheckoutPage({ params }) {
             if (!res.ok) throw new Error('Failed to load request');
             const data = await res.json();
             setRequest(data.request);
+
+            // Fetch add-ons details if there are any
+            if (data.request.addOns && typeof data.request.addOns === 'object') {
+                const addonIds = Object.keys(data.request.addOns);
+                if (addonIds.length > 0) {
+                    await fetchAddOnsDetails(addonIds);
+                }
+            }
         } catch (error) {
             console.error('Error:', error);
             openNotification('error', 'Error loading request details');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const fetchAddOnsDetails = async (addonIds) => {
+        try {
+            const res = await fetch(`/api/service-add-ons?ids=${addonIds.join(',')}`);
+            if (!res.ok) throw new Error('Failed to load add-ons');
+            const data = await res.json();
+            setAddOnsDetails(data.addOns || []);
+        } catch (error) {
+            console.error('Error fetching add-ons:', error);
         }
     };
 
@@ -142,13 +162,13 @@ export default function CheckoutPage({ params }) {
                                 </div>
 
                                 {/* Add-ons Section */}
-                                {request.addOns && Object.keys(request.addOns).length > 0 && (
+                                {addOnsDetails.length > 0 && (
                                     <div className="border-t border-zinc-800 pt-3 mt-3">
                                         <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Add-ons</p>
-                                        {Object.values(request.addOns).map((addon, index) => (
-                                            <div key={index} className="flex justify-between text-sm mb-1">
-                                                <span className="text-gray-300">+ {addon.name || addon.title || 'Extra'}</span>
-                                                <span className="text-gray-400">${addon.price || 0}</span>
+                                        {addOnsDetails.map((addon) => (
+                                            <div key={addon.id} className="flex justify-between text-sm mb-1">
+                                                <span className="text-gray-300">+ {addon.name}</span>
+                                                <span className="text-gray-400">${addon.price?.toFixed(2) || '0.00'}</span>
                                             </div>
                                         ))}
                                     </div>
