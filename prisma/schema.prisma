@@ -120,6 +120,7 @@ model User {
   projects        Project[]
   ProjectEvent    ProjectEvent[]
   Notification    Notification[]
+  messages        Message[]
 
   @@map("users")
 }
@@ -464,10 +465,6 @@ model MaintainRequirements {
   requireRetentionFeedback Boolean
 }
 
-// ---------------------------------------------------------
-// SERVICE REQUEST (CORREGIDO: files → File[])
-// ---------------------------------------------------------
-
 model ServiceRequest {
   id          String      @id @default(uuid())
   userId      String
@@ -499,8 +496,9 @@ model ServiceRequest {
   genres  ServiceRequestGenre[]
   events  ProjectEvent[] // Timeline of events
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  chatRoom  ChatRoom?
 
   @@map("service_requests")
 }
@@ -516,10 +514,6 @@ model ServiceRequestGenre {
   @@unique([serviceRequestId, genreId])
   @@map("service_request_genres")
 }
-
-// ---------------------------------------------------------
-// ACCEPTANCE CONDITIONS
-// ---------------------------------------------------------
 
 model AcceptanceCondition {
   id          String      @id @default(uuid())
@@ -537,10 +531,6 @@ model AcceptanceCondition {
   @@unique([serviceType, fieldName])
   @@map("acceptance_conditions")
 }
-
-// ---------------------------------------------------------
-// PAYMENT PROVIDER FEES
-// ---------------------------------------------------------
 
 model PaymentProviderFee {
   id       String          @id @default(uuid())
@@ -564,10 +554,6 @@ model PaymentProviderFee {
 
   @@map("payment_provider_fees")
 }
-
-// ---------------------------------------------------------
-// PROJECT EVENTS & NOTIFICATIONS
-// ---------------------------------------------------------
 
 model ProjectEvent {
   id          String         @id @default(uuid())
@@ -595,6 +581,46 @@ model Notification {
   createdAt DateTime         @default(now()) @map("created_at")
 
   @@map("notifications")
+}
+
+// ---------------------------------------------------------
+// MODELOS PARA CHAT EN VIVO (TEXTO)
+// ---------------------------------------------------------
+
+model ChatRoom {
+  id               String         @id @default(uuid())
+  // Relacionamos el chat con una solicitud de servicio específica
+  serviceRequestId String         @unique @map("service_request_id")
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+
+  // Participantes para facilitar queries de "mis chats"
+  artistId  String @map("artist_id")
+  creatorId String @map("creator_id")
+
+  messages Message[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("chat_rooms")
+}
+
+model Message {
+  id         String @id @default(uuid())
+  chatRoomId String @map("chat_room_id")
+  senderId   String @map("sender_id") // ID del User que envía
+  content    String @db.Text
+
+  // Para saber si el otro usuario ya leyó el mensaje
+  isRead Boolean @default(false) @map("is_read")
+
+  // Relaciones
+  chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  sender   User     @relation(fields: [senderId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("messages")
 }
 
 // ENUMS--------------------------------------------
