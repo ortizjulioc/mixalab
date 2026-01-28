@@ -61,9 +61,12 @@ export async function GET(request) {
                 }
             };
         } else if (filter === 'ACCEPTED') {
-            // Show requests accepted by this creator
+            // Show requests accepted by this creator (exclude PENDING which are rejected/unassigned)
             whereClause = {
-                creatorId: creatorProfile.id
+                creatorId: creatorProfile.id,
+                status: {
+                    not: 'PENDING' // Exclude rejected requests that went back to PENDING
+                }
             };
         } else if (filter === 'ALL') {
             // Show all requests matching tier (both available and accepted by this creator)

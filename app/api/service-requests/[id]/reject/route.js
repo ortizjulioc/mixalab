@@ -6,6 +6,7 @@ import { authOptions } from '../../../auth/[...nextauth]/route';
 /**
  * PATCH /api/service-requests/:id/reject
  * Reject a service request (creator only)
+ * When rejected, the request goes back to PENDING and is unassigned from the creator
  */
 export async function PATCH(request, { params }) {
   try {
@@ -37,7 +38,8 @@ export async function PATCH(request, { params }) {
     const serviceRequest = await prisma.serviceRequest.findUnique({
       where: { id },
       include: {
-        creator: true
+        creator: true,
+        user: true
       }
     });
 
@@ -56,27 +58,21 @@ export async function PATCH(request, { params }) {
       );
     }
 
-    // Check if already accepted or rejected
-    if (serviceRequest.creatorStatus === 'REJECTED') {
-      return NextResponse.json(
-        { error: 'Service request already rejected' },
-        { status: 400 }
-      );
-    }
-
-    if (serviceRequest.creatorStatus === 'ACCEPTED') {
+    // Check if already accepted
+    if (serviceRequest.status === 'ACCEPTED' || serviceRequest.status === 'AWAITING_PAYMENT') {
       return NextResponse.json(
         { error: 'Cannot reject an accepted service request' },
         { status: 400 }
       );
     }
 
-    // Update service request
+    // Update service request: unassign creator and return to PENDING
     const updatedRequest = await prisma.serviceRequest.update({
       where: { id },
       data: {
-        creatorStatus: 'REJECTED',
-        status: 'CANCELLED' // Update main status to CANCELLED when rejected
+        creatorId: null, // Unassign the creator
+        status: 'PENDING', // Return to PENDING so other creators can see it
+        statusUpdatedAt: new Date()
       },
       include: {
         user: {
@@ -85,19 +81,6 @@ export async function PATCH(request, { params }) {
             name: true,
             email: true,
             image: true
-          }
-        },
-        creator: {
-          select: {
-            id: true,
-            brandName: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
           }
         },
         files: true,
@@ -109,8 +92,33 @@ export async function PATCH(request, { params }) {
       }
     });
 
+    // Create a project event for rejection
+    await prisma.projectEvent.create({
+      data: {
+        requestId: id,
+        type: 'CREATOR_REJECTED',
+        description: `${creatorProfile.brandName} rejected the request`,
+        userId: userId,
+        metadata: {
+          creatorId: creatorProfile.id,
+          creatorBrandName: creatorProfile.brandName
+        }
+      }
+    });
+
+    // Create notification for the artist
+    await prisma.notification.create({
+      data: {
+        userId: serviceRequest.userId,
+        type: 'REQUEST_REJECTED',
+        title: 'Request Rejected',
+        message: `${creatorProfile.brandName} has declined your request "${serviceRequest.projectName}". We'll find another creator for you.`,
+        link: `/artists/my-requests/${id}`
+      }
+    });
+
     return NextResponse.json({
-      message: 'Service request rejected successfully',
+      message: 'Service request rejected successfully. The request is now available for other creators.',
       data: updatedRequest
     });
 

@@ -476,7 +476,7 @@ model ServiceRequest {
   services    ServiceType
   mixingType  String? // STUDIO_MIX, LIVE_MIX, ESSENTIAL_MIX
 
-  description String?
+  description String?       @db.Text
   status      RequestStatus @default(PENDING)
 
   // Add-ons selected by user (service-specific)
