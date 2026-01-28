@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
-import { LogOut, Menu, Bell, Search, User, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LogOut, Menu, Search, User, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import NotificationBell from './notifications/NotificationBell';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -299,7 +300,7 @@ const DashboardLayout = ({ children, navItems }) => {
 
                             {/* User Profile and Notifications */}
                             <div className="flex items-center space-x-4 text-white">
-                                <Bell size={33} className="hover:text-white/80 transition cursor-pointer liquid-glass rounded-xl p-2 border border-white/20 animate-pulse-glow" />
+                                <NotificationBell />
                                 <RoleBadge role={userRole} />
                                 <div className="flex items-center space-x-3 cursor-pointer p-2 hover:bg-white/10 transition rounded-xl">
                                     {userImage ? (

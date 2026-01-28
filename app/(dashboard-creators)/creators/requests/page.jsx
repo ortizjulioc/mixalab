@@ -388,7 +388,7 @@ function RequestDetailsModal({ request, onClose, onAccept, onDecline }) {
 
                 {/* Actions */}
                 <div className="sticky bottom-0 bg-zinc-900/95 backdrop-blur-sm border-t border-zinc-700 p-6">
-                    {request.status === 'PENDING' ? (
+                    {['PENDING', 'IN_REVIEW'].includes(request.status) ? (
                         <div className="flex gap-3">
                             <button
                                 onClick={onDecline}

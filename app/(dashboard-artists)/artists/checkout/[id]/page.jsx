@@ -1,18 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { ArrowLeft, CreditCard, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
 import { openNotification } from '@/utils/open-notification';
 
 export default function CheckoutPage({ params }) {
-    const { id } = params;
+    const { id } = use(params);
     const router = useRouter();
     const { data: session } = useSession();
     const [request, setRequest] = useState(null);
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
+
+    // Pricing Logic
+    const TIER_PRICES = {
+        'BRONZE': 99,
+        'SILVER': 199,
+        'GOLD': 299,
+        'PLATINUM': 499
+    };
+
+    // Calculate totals safely
+    const basePrice = request ? (TIER_PRICES[request.tier] || 0) : 0;
+    const addonsTotal = request?.addOns ? Object.values(request.addOns).reduce((acc, curr) => acc + (Number(curr.price) || 0), 0) : 0;
+    const subtotal = basePrice + addonsTotal;
+    const serviceFee = subtotal * 0.10;
+    const totalAmount = subtotal + serviceFee;
 
     useEffect(() => {
         if (session?.user?.id) {
@@ -39,7 +54,7 @@ export default function CheckoutPage({ params }) {
         try {
             const res = await fetch(`/api/service-requests/${id}/payment`, {
                 method: 'POST',
-                body: JSON.stringify({ amount: 100 }), // Mock amount
+                body: JSON.stringify({ amount: totalAmount }),
             });
 
             if (!res.ok) {
@@ -115,8 +130,8 @@ export default function CheckoutPage({ params }) {
                                 <div className="flex justify-between">
                                     <span className="text-gray-400">Tier</span>
                                     <span className={`font-bold ${request.tier === 'PLATINUM' ? 'text-cyan-400' :
-                                            request.tier === 'GOLD' ? 'text-amber-400' :
-                                                request.tier === 'SILVER' ? 'text-gray-300' : 'text-orange-400'
+                                        request.tier === 'GOLD' ? 'text-amber-400' :
+                                            request.tier === 'SILVER' ? 'text-gray-300' : 'text-orange-400'
                                         }`}>{request.tier}</span>
                                 </div>
                                 <div className="flex justify-between">
@@ -125,22 +140,44 @@ export default function CheckoutPage({ params }) {
                                         {request.creator?.brandName || 'Assigned Creator'}
                                     </span>
                                 </div>
+
+                                {/* Add-ons Section */}
+                                {request.addOns && Object.keys(request.addOns).length > 0 && (
+                                    <div className="border-t border-zinc-800 pt-3 mt-3">
+                                        <p className="text-xs text-gray-500 uppercase font-semibold mb-2">Add-ons</p>
+                                        {Object.values(request.addOns).map((addon, index) => (
+                                            <div key={index} className="flex justify-between text-sm mb-1">
+                                                <span className="text-gray-300">+ {addon.name || addon.title || 'Extra'}</span>
+                                                <span className="text-gray-400">${addon.price || 0}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
 
                             <div className="bg-zinc-800/50 p-4 rounded-xl border border-zinc-700/50 mt-6">
                                 <div className="flex justify-between items-center mb-2">
+                                    <span className="text-gray-400">Base Price ({request.tier})</span>
+                                    <span className="font-medium">${basePrice.toFixed(2)}</span>
+                                </div>
+                                {addonsTotal > 0 && (
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="text-gray-400">Add-ons Total</span>
+                                        <span className="font-medium">${addonsTotal.toFixed(2)}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-center mb-2 border-t border-zinc-700/50 pt-2">
                                     <span className="text-gray-400">Subtotal</span>
-                                    <span className="font-medium">$199.00</span>
+                                    <span className="font-medium">${subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between items-center mb-2">
-                                    <span className="text-gray-400">Service Fee</span>
-                                    <span className="font-medium">$19.90</span>
+                                    <span className="text-gray-400">Service Fee (10%)</span>
+                                    <span className="font-medium">${serviceFee.toFixed(2)}</span>
                                 </div>
                                 <div className="border-t border-zinc-700 my-2 pt-2 flex justify-between items-center">
                                     <span className="text-lg font-bold text-white">Total</span>
-                                    <span className="text-2xl font-bold text-amber-400">$218.90</span>
+                                    <span className="text-2xl font-bold text-amber-400">${totalAmount.toFixed(2)}</span>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-2 text-center">*Mock price for demonstration</p>
                             </div>
                         </div>
 

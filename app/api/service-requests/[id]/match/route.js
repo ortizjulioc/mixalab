@@ -194,6 +194,36 @@ export async function GET(request, { params }) {
             }
         });
 
+        // --- NOTIFICATIONS ---
+        try {
+            // 1. Notify Creator
+            await prisma.notification.create({
+                data: {
+                    userId: selectedCreator.userId,
+                    type: 'REQUEST_MATCHED',
+                    title: 'New Service Request Available',
+                    message: `You have been matched with a new ${serviceRequest.projectType} project: "${serviceRequest.projectName}". Check it out!`,
+                    link: `/creators/projects/${id}`,
+                    read: false
+                }
+            });
+
+            // 2. Notify Artist
+            await prisma.notification.create({
+                data: {
+                    userId: session.user.id,
+                    type: 'REQUEST_MATCHED',
+                    title: 'Match Found!',
+                    message: `We found a creator for "${serviceRequest.projectName}". ${selectedCreator.brandName} is reviewing your request.`,
+                    link: `/artists/my-requests/${id}`,
+                    read: false
+                }
+            });
+        } catch (notifError) {
+            console.error('Error sending notifications:', notifError);
+            // Don't fail the request if notifications fail
+        }
+
         // Return the matched creator with real data
         return NextResponse.json({
             matched: true,

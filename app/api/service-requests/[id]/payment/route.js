@@ -106,7 +106,7 @@ export async function POST(request, { params }) {
                 prisma.notification.create({
                     data: {
                         userId: creatorUserId,
-                        type: 'STATUS_CHANGED', // Or new PAYMENT_RECEIVED type if we add it, reusing STATUS_CHANGED for now
+                        type: 'PAYMENT_RECEIVED',
                         title: 'Payment Received',
                         message: `Payment received for project "${serviceRequest.projectName}". You can now start working!`,
                         link: `/creators/projects/${id}`, // Future project page
