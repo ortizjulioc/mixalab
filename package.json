@@ -6,9 +6,9 @@
     "seed": "node prisma/seed.js"
   },
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "node server.mjs",
     "build": "next build --turbopack",
-    "start": "next start"
+    "start": "NODE_ENV=production node server.mjs"
   },
   "dependencies": {
     "@prisma/client": "^7.3.0",
@@ -27,6 +27,8 @@
     "react-icons": "^5.5.0",
     "react-quill-new": "^3.6.0",
     "react-select": "^5.10.2",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3",
     "sweetalert2": "^11.26.3",
     "three": "^0.180.0",
     "yup": "^1.7.1"
@@ -35,6 +37,7 @@
     "@tailwindcss/postcss": "^4",
     "dotenv": "^17.2.3",
     "prisma": "^7.3.0",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "typescript": "5.9.3"
   }
 }
