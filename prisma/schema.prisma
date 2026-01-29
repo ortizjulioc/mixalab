@@ -8,7 +8,7 @@ generator client {
 
 datasource db {
   provider = "mysql"
-  url      = env("DATABASE_URL")
+  // url      = env("DATABASE_URL")
 }
 
 // ---------------------------------------------------------
@@ -623,23 +623,26 @@ model Message {
   @@map("messages")
 }
 
-// ENUMS--------------------------------------------
+// ---------------------------------------------------------
+// ENUMS ESTANDARIZADOS (PascalCase en código -> snake_case en BD)
+// ---------------------------------------------------------
+
 enum EventType {
-  STATUS_CHANGED
-  FILE_UPLOADED
-  COMMENT_ADDED
-  REVISION_REQUESTED
-  MILESTONE_COMPLETED
-  CREATOR_ASSIGNED
-  CREATOR_ACCEPTED
-  CREATOR_REJECTED
-  PAYMENT_COMPLETED
+  STATUS_CHANGED      @map("status_changed")
+  FILE_UPLOADED       @map("file_uploaded")
+  COMMENT_ADDED       @map("comment_added")
+  REVISION_REQUESTED  @map("revision_requested")
+  MILESTONE_COMPLETED @map("milestone_completed")
+  CREATOR_ASSIGNED    @map("creator_assigned")
+  CREATOR_ACCEPTED    @map("creator_accepted")
+  CREATOR_REJECTED    @map("creator_rejected")
+  PAYMENT_COMPLETED   @map("payment_completed")
 }
 
 enum CreatorRequestStatus {
-  PENDING
-  ACCEPTED
-  REJECTED
+  PENDING  @map("pending")
+  ACCEPTED @map("accepted")
+  REJECTED @map("rejected")
 }
 
 enum UserRole {
@@ -664,16 +667,16 @@ enum AvailabilityStatus {
 }
 
 enum ServiceType {
-  MIXING
-  MASTERING
-  RECORDING
+  MIXING    @map("mixing")
+  MASTERING @map("mastering")
+  RECORDING @map("recording")
 }
 
 enum PaymentProvider {
-  STRIPE
-  PAYPAL
-  MERCADOPAGO
-  OTHER
+  STRIPE      @map("stripe")
+  PAYPAL      @map("paypal")
+  MERCADOPAGO @map("mercadopago")
+  OTHER       @map("other")
 }
 
 enum CreatorExampleTag {
@@ -687,16 +690,16 @@ enum CreatorExampleTag {
 }
 
 enum TierName {
-  BRONZE
-  SILVER
-  GOLD
-  PLATINUM
+  BRONZE   @map("bronze")
+  SILVER   @map("silver")
+  GOLD     @map("gold")
+  PLATINUM @map("platinum")
 }
 
 enum CreatorRoles {
-  MIXING
-  MASTERING
-  RECORDING
+  MIXING    @map("mixing")
+  MASTERING @map("mastering")
+  RECORDING @map("recording")
 }
 
 enum CreatorProfileStatus {
@@ -707,49 +710,45 @@ enum CreatorProfileStatus {
 }
 
 enum ProjectType {
-  SINGLE
-  EP
-  ALBUM
+  SINGLE @map("single")
+  EP     @map("ep")
+  ALBUM  @map("album")
 }
 
 enum RequestStatus {
-  PENDING // Artist created request, waiting for creator match
-  IN_REVIEW // Creator is reviewing the request
-  ACCEPTED // Creator accepted, project initiated
-  AWAITING_PAYMENT // Creator accepted, waiting for artist payment
-  PAID // Payment completed, ready to convert to Project
-  IN_PROGRESS // Project in progress (legacy, will be replaced by Project entity)
-  UNDER_REVIEW // Artist reviewing delivery
-  REVISION_REQUESTED // Artist requested changes
-  DELIVERED // Project completed and delivered (legacy)
-  COMPLETED // Project fully completed
-  CANCELLED // Request cancelled
-  REJECTED // Creator rejected the request
+  PENDING            @map("pending")
+  IN_REVIEW          @map("in_review")
+  ACCEPTED           @map("accepted")
+  AWAITING_PAYMENT   @map("awaiting_payment")
+  PAID               @map("paid")
+  IN_PROGRESS        @map("in_progress")
+  UNDER_REVIEW       @map("under_review")
+  REVISION_REQUESTED @map("revision_requested")
+  DELIVERED          @map("delivered")
+  COMPLETED          @map("completed")
+  CANCELLED          @map("cancelled")
+  REJECTED           @map("rejected")
 }
 
-// ---------------------------------------------------------
-// NUEVOS ENUMS PARA PROJECT MODULE
-// ---------------------------------------------------------
-
 enum ProjectServiceType {
-  mixing
-  mastering
-  production
+  MIXING     @map("mixing")
+  MASTERING  @map("mastering")
+  PRODUCTION @map("production")
 }
 
 enum ProjectFileType {
-  demo
-  stems
+  DEMO  @map("demo")
+  STEMS @map("stems")
 }
 
 enum NotificationType {
-  REQUEST_MATCHED
-  REQUEST_ACCEPTED
-  REQUEST_REJECTED
-  FILE_UPLOADED
-  STATUS_CHANGED
-  REVISION_REQUESTED
-  PROJECT_COMPLETED
-  PAYMENT_RECEIVED
-  NEW_COMMENT
+  REQUEST_MATCHED    @map("request_matched")
+  REQUEST_ACCEPTED   @map("request_accepted")
+  REQUEST_REJECTED   @map("request_rejected")
+  FILE_UPLOADED      @map("file_uploaded")
+  STATUS_CHANGED     @map("status_changed")
+  REVISION_REQUESTED @map("revision_requested")
+  PROJECT_COMPLETED  @map("project_completed")
+  PAYMENT_RECEIVED   @map("payment_received")
+  NEW_COMMENT        @map("new_comment")
 }
