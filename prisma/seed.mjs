@@ -1,8 +1,18 @@
-const { PrismaClient } = require("@prisma/client");
-const bcrypt = require("bcrypt");
-const fs = require("fs");
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
+import fs from 'node:fs';
+import 'dotenv/config';
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 
-const prisma = new PrismaClient();
+const adapter = new PrismaMariaDb({
+  host: process.env.DATABASE_HOST,
+  user: process.env.DATABASE_USER,
+  password: process.env.DATABASE_PASSWORD,
+  database: process.env.DATABASE_NAME,
+  connectionLimit: 5
+});
+
+const prisma = new PrismaClient({ adapter });
 
 // Leer settings.json
 const settings = JSON.parse(fs.readFileSync("settings.json", "utf8"));

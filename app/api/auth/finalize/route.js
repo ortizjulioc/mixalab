@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import db from "@/utils/lib/prisma";
+import prisma from "@/utils/lib/prisma";
 import { UserRole } from "@prisma/client";
 
 
@@ -43,7 +43,7 @@ export async function GET(req) {
     }
 
     // Buscar usuario
-    const user = await db.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
 
@@ -61,7 +61,7 @@ export async function GET(req) {
     });
 
     // Actualizar rol en la base de datos
-    await db.user.update({
+    await prisma.user.update({
       where: { email: session.user.email },
       data: { role },
     });

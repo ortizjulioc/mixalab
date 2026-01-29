@@ -51,3 +51,6 @@ settings.json
 
 #ingnore package lock files
 package-lock.json
+
+/generated/
+/generated/prisma/

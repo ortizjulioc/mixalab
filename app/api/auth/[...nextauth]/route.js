@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
-import db from "@/utils/lib/prisma";
+import prisma from "@/utils/lib/prisma";
 import bcrypt from "bcrypt";
 import { UserStatus, UserRole } from "@prisma/client";
 
@@ -23,7 +23,7 @@ export const authOptions = {
       },
       async authorize(credentials) {
         try {
-          const userFound = await db.user.findUnique({
+          const userFound = await prisma.user.findUnique({
             where: { email: credentials.email },
           });
 
@@ -59,7 +59,7 @@ export const authOptions = {
               if (requestedRole !== userFound.role.toString()) {
                 console.log(`🔄 Updating role from ${userFound.role} to ${requestedRole}`);
 
-                await db.user.update({
+                await prisma.user.update({
                   where: { id: userFound.id },
                   data: { role: UserRole[requestedRole] }
                 });
@@ -94,7 +94,7 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        const admin = await db.user.findUnique({
+        const admin = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
 
@@ -134,13 +134,13 @@ export const authOptions = {
         if (account?.provider === "google") {
           let userRole = UserRole.ARTIST;
 
-          let dbUser = await db.user.findUnique({
+          let dbUser = await prisma.user.findUnique({
             where: { email: user.email },
             include: { accounts: true },
           });
 
           if (!dbUser) {
-            dbUser = await db.user.create({
+            dbUser = await prisma.user.create({
               data: {
                 email: user.email,
                 name: user.name,
@@ -168,7 +168,7 @@ export const authOptions = {
             );
 
             if (!existingAccount) {
-              await db.account.create({
+              await prisma.account.create({
                 data: {
                   userId: dbUser.id,
                   provider: account.provider,
@@ -228,7 +228,7 @@ export const authOptions = {
       // Siempre verificar el rol actual en la base de datos
       // Esto asegura que el token tenga el rol más actualizado
       if (token.email) {
-        const dbUser = await db.user.findUnique({
+        const dbUser = await prisma.user.findUnique({
           where: { email: token.email },
           select: { role: true, id: true }
         });
@@ -262,7 +262,7 @@ export const authOptions = {
 
       // Siempre traer el rol más actualizado
       if (session.user.email) {
-        const dbUser = await db.user.findUnique({
+        const dbUser = await prisma.user.findUnique({
           where: { email: session.user.email },
         });
         if (dbUser) {

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.mjs"
   },
   "scripts": {
     "dev": "node server.mjs",
@@ -11,6 +11,7 @@
     "start": "NODE_ENV=production node server.mjs"
   },
   "dependencies": {
+    "@prisma/adapter-mariadb": "^7.3.0",
     "@prisma/client": "^7.3.0",
     "@prisma/config": "^7.3.0",
     "bcrypt": "^6.0.0",
