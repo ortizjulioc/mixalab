@@ -259,23 +259,6 @@ export const authOptions = {
       if (token?.role) {
         session.user.role = token.role;
       }
-
-      // Siempre traer el rol más actualizado
-      if (session.user.email) {
-        const dbUser = await prisma.user.findUnique({
-          where: { email: session.user.email },
-        });
-        if (dbUser) {
-          console.log("🔄 Session refresh:", {
-            email: session.user.email,
-            tokenRole: token.role,
-            dbRole: dbUser.role,
-            sessionRole: session.user.role
-          });
-          session.user.role = dbUser.role;
-        }
-      }
-
       return session;
     },
   },

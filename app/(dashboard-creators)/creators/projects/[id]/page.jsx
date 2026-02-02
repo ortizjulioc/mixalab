@@ -137,6 +137,34 @@ export default function CreatorProjectPage() {
                 {/* Main Content: Files & Workspace */}
                 <div className="lg:col-span-2 space-y-8">
 
+                    {/* Acceptance Section - Only if IN_REVIEW or PENDING */}
+                    {['IN_REVIEW', 'PENDING'].includes(project.status) && (
+                        <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm shadow-xl animate-pulse-glow">
+                            <div>
+                                <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
+                                    New Project Request
+                                </h3>
+                                <p className="text-gray-300">
+                                    You have been matched with this project. Review the details and accept to start working.
+                                </p>
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => handleStatusUpdate('REJECTED', 'Creator declined the project')}
+                                    className="px-6 py-3 rounded-xl border border-gray-600 hover:bg-gray-800 text-gray-300 font-semibold transition-all"
+                                >
+                                    Decline
+                                </button>
+                                <button
+                                    onClick={() => handleStatusUpdate('ACCEPTED', 'Creator accepted the project')}
+                                    className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold shadow-lg shadow-indigo-500/20 hover:scale-105 transition-all flex items-center gap-2"
+                                >
+                                    <CheckCircle2 className="w-5 h-5" /> Accept Project
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Action Center - Only if Active */}
                     {['ACCEPTED', 'IN_PROGRESS', 'UNDER_REVIEW', 'REVISION_REQUESTED'].includes(project.status) && (
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -256,6 +284,7 @@ function getStatusColor(status) {
         PENDING: 'text-gray-400 border-gray-600 bg-gray-500/10',
         ACCEPTED: 'text-blue-400 border-blue-600 bg-blue-500/10',
         IN_PROGRESS: 'text-indigo-400 border-indigo-600 bg-indigo-500/10',
+        IN_REVIEW: 'text-purple-400 border-purple-600 bg-purple-500/10', // Added IN_REVIEW
         UNDER_REVIEW: 'text-amber-400 border-amber-600 bg-amber-500/10',
         COMPLETED: 'text-emerald-400 border-emerald-600 bg-emerald-500/10',
         CANCELLED: 'text-red-400 border-red-600 bg-red-500/10',

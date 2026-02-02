@@ -160,7 +160,7 @@ export default function PaymentPage() {
         );
     }
 
-    if (request.status !== 'AWAITING_PAYMENT') {
+    if (request.status !== 'AWAITING_PAYMENT' && request.status !== 'ACCEPTED') {
         return (
             <div className="min-h-screen flex items-center justify-center p-6">
                 <div className="text-center max-w-md">

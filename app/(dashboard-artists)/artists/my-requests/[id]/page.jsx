@@ -151,7 +151,7 @@ export default function RequestDetailPage() {
                 {canPay && (
                     <div className="mt-6 pt-6 border-t border-zinc-700/50">
                         <button
-                            onClick={() => router.push(`/artists/checkout/${params.id}`)}
+                            onClick={() => router.push(`/artists/payment/${params.id}`)}
                             className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold py-3 px-6 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2"
                         >
                             <CreditCard className="w-5 h-5" />

@@ -6,11 +6,16 @@ import { User, Clock, AlertCircle, TrendingUp, CheckCircle2, XCircle, ArrowRight
 const STATUS_CONFIG = {
     PENDING: { icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/30', label: 'Pending Match' },
     IN_REVIEW: { icon: AlertCircle, color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/30', label: 'In Review' },
+    ACCEPTED: { icon: DollarSign, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30', label: 'Awaiting Payment' },
     AWAITING_PAYMENT: { icon: DollarSign, color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/30', label: 'Awaiting Payment' },
     PAID: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', label: 'Paid' },
     IN_PROGRESS: { icon: TrendingUp, color: 'text-cyan-400', bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', label: 'In Progress' },
+    UNDER_REVIEW: { icon: AlertCircle, color: 'text-indigo-400', bg: 'bg-indigo-500/10', border: 'border-indigo-500/30', label: 'Under Review' },
+    REVISION_REQUESTED: { icon: AlertCircle, color: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/30', label: 'Revision Requested' },
     DELIVERED: { icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', label: 'Delivered' },
+    COMPLETED: { icon: CheckCircle2, color: 'text-green-400', bg: 'bg-green-500/10', border: 'border-green-500/30', label: 'Completed' },
     CANCELLED: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30', label: 'Cancelled' },
+    REJECTED: { icon: XCircle, color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/30', label: 'Rejected' },
 };
 
 export default function MyProjectsSection({ serviceRequests, loading }) {
@@ -90,7 +95,7 @@ export default function MyProjectsSection({ serviceRequests, loading }) {
                                         </div>
                                     )}
 
-                                    {request.status === 'AWAITING_PAYMENT' && (
+                                    {(request.status === 'AWAITING_PAYMENT' || request.status === 'ACCEPTED') && (
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();

@@ -109,7 +109,7 @@ export default function useMyRequests() {
         const labels = {
             PENDING: 'Pending Match',
             IN_REVIEW: 'Under Review',
-            ACCEPTED: 'Accepted',
+            ACCEPTED: 'Awaiting Payment', // Changed from "Accepted" - Creator accepted, now artist must pay
             AWAITING_PAYMENT: 'Awaiting Payment',
             PAID: 'Paid',
             IN_PROGRESS: 'In Progress',
