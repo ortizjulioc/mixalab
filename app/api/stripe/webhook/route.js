@@ -127,7 +127,8 @@ async function handleCheckoutSessionCompleted(session) {
                 // Map ServiceType to ProjectServiceType
                 services: {
                     create: {
-                        type: mapServiceTypeToProjectService(serviceRequest.services)
+                        type: mapServiceTypeToProjectService(serviceRequest.services),
+                        creatorId: creatorId // Assign creator ID
                     }
                 }
             }
