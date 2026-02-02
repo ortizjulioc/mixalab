@@ -3,10 +3,9 @@ import ArtistProfileCTA from '@/components/ArtistProfileCTA'
 import React, { useEffect, useState } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { User, BadgeCheck, Sparkles, Inbox, Music, TrendingUp, Award, Zap, Calendar, Star, PlayCircle, ArrowRight, Edit3, Eye } from 'lucide-react'
+import { User, BadgeCheck, Sparkles, Edit3, Eye, Inbox, Music, TrendingUp, Award, Zap, Calendar, Star, Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight } from 'lucide-react'
 import useArtistProfiles from '@/hooks/useArtistProfiles'
 import useServiceRequests from '@/hooks/useServiceRequests'
-import useArtistProjects from '@/hooks/useArtistProjects'
 import MyProjectsSection from '@/components/MyProjectsSection'
 
 export default function Home() {
@@ -14,28 +13,16 @@ export default function Home() {
   const router = useRouter()
   const { artistProfile, getArtistProfileByUserId, loading } = useArtistProfiles()
   const { serviceRequests, getServiceRequestsByUserId, loading: requestsLoading } = useServiceRequests()
-  const { projects, getArtistProjectsByUserId, loading: projectsLoading } = useArtistProjects()
 
   useEffect(() => {
     // Only fetch if we have a user ID from the session
     if (session?.user?.id) {
       getArtistProfileByUserId(session.user.id)
       getServiceRequestsByUserId(session.user.id)
-      getArtistProjectsByUserId(session.user.id)
     }
-  }, [session?.user?.id, getArtistProfileByUserId, getServiceRequestsByUserId, getArtistProjectsByUserId])
+  }, [session?.user?.id, getArtistProfileByUserId, getServiceRequestsByUserId])
 
   const isLoading = loading || status === 'loading'
-
-  // Calculate Stats
-  const activeRequestsCount = serviceRequests?.filter(r =>
-    !['COMPLETED', 'CANCELLED', 'REJECTED', 'PAID'].includes(r.status)
-  ).length || 0;
-
-  const completedProjectsCount = projects?.filter(p => p.status === 'COMPLETED').length || 0;
-
-  // Use artist creation year or current year if not available
-  const memberSince = artistProfile?.createdAt ? new Date(artistProfile.createdAt).getFullYear() : '2026';
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 space-y-8 pb-8">
@@ -53,6 +40,11 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[...Array(4)].map((_, i) => (
               <div key={i} className="h-28 bg-gradient-to-br from-gray-800/60 to-gray-900/60 border border-gray-700/50 rounded-2xl animate-pulse backdrop-blur-sm" />
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-48 bg-gradient-to-br from-gray-800/60 to-gray-900/60 border border-gray-700/50 rounded-2xl animate-pulse backdrop-blur-sm" />
             ))}
           </div>
         </div>
@@ -113,7 +105,7 @@ export default function Home() {
 
           {/* Stats Cards Grid - tonos más sutiles */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Active Requests */}
+            {/* Total Projects */}
             <div className="group relative overflow-hidden bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/40 rounded-xl p-5 hover:border-gray-600/60 transition-all duration-300">
               <div className="absolute top-0 right-0 w-24 h-24 bg-gray-600/5 rounded-full blur-2xl group-hover:bg-gray-600/10 transition-all" />
               <div className="relative">
@@ -123,7 +115,7 @@ export default function Home() {
                   </div>
                   <TrendingUp className="w-4 h-4 text-gray-500" />
                 </div>
-                <p className="text-2xl font-bold text-white mb-1">{activeRequestsCount}</p>
+                <p className="text-2xl font-bold text-white mb-1">0</p>
                 <p className="text-sm text-gray-400">Active Requests</p>
               </div>
             </div>
@@ -138,12 +130,12 @@ export default function Home() {
                   </div>
                   <Award className="w-4 h-4 text-emerald-500/40" />
                 </div>
-                <p className="text-2xl font-bold text-white mb-1">{completedProjectsCount}</p>
-                <p className="text-sm text-gray-400">Completed Projects</p>
+                <p className="text-2xl font-bold text-white mb-1">0</p>
+                <p className="text-sm text-gray-400">Completed</p>
               </div>
             </div>
 
-            {/* Rating - Placeholder for now until real data */}
+            {/* Rating */}
             <div className="group relative overflow-hidden bg-gradient-to-br from-gray-800/50 to-gray-900/50 border border-gray-700/40 rounded-xl p-5 hover:border-amber-500/30 transition-all duration-300">
               <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-full blur-2xl group-hover:bg-amber-500/10 transition-all" />
               <div className="relative">
@@ -167,74 +159,13 @@ export default function Home() {
                     <Calendar className="w-5 h-5 text-gray-300" />
                   </div>
                 </div>
-                <p className="text-2xl font-bold text-white mb-1">{memberSince}</p>
+                <p className="text-2xl font-bold text-white mb-1">2026</p>
                 <p className="text-sm text-gray-400">Member Since</p>
               </div>
             </div>
           </div>
 
-          {/* ACTIVE PROJECTS - Integrated with Premium Design */}
-          {projects && projects.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-                <PlayCircle className="w-6 h-6 text-indigo-400" /> Active Projects
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {projects.map(project => (
-                  <div
-                    key={project.id}
-                    onClick={() => router.push(`/artists/projects/${project.id}`)}
-                    className="group relative overflow-hidden bg-gradient-to-br from-indigo-900/20 to-zinc-900 border border-indigo-500/30 rounded-xl p-6 hover:border-indigo-500/60 transition-all cursor-pointer"
-                  >
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-600/5 rounded-full blur-2xl group-hover:bg-indigo-600/10 transition-all" />
-
-                    <div className="relative flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <h3 className="text-lg font-bold text-white mb-1">{project.projectName}</h3>
-                            <p className="text-sm text-gray-400">{project.projectType || 'Project'}</p>
-                          </div>
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30">
-                            <TrendingUp className="w-4 h-4 text-indigo-400" />
-                            <span className="text-xs font-semibold text-indigo-400">In Progress</span>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {/* Display services if available or just generic info */}
-                          {project.services?.map(s => (
-                            <span key={s.id} className="px-2.5 py-1 bg-gray-700/40 text-gray-200 text-xs rounded-full border border-gray-600/40">
-                              {s.type}
-                            </span>
-                          ))}
-                          {/* Fallback info if services array is empty or structured differently */}
-                          <span className="px-2.5 py-1 bg-gray-700/40 text-gray-200 text-xs rounded-full border border-gray-600/40">
-                            {project.tier || 'Standard'}
-                          </span>
-                        </div>
-
-                        <div className="flex items-center gap-3 p-3 bg-gray-900/40 rounded-lg border border-gray-700/30">
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
-                            <User className="w-5 h-5 text-gray-300" />
-                          </div>
-                          <div>
-                            <p className="text-sm font-semibold text-white">Project Workspace</p>
-                            <p className="text-xs text-gray-400">View files & progress</p>
-                          </div>
-                          <button className="ml-auto text-sm font-semibold text-indigo-400 group-hover:text-indigo-300 flex items-center gap-1 transition-colors">
-                            Enter <ArrowRight className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* My Projects Section (Requests) */}
+          {/* My Projects Section */}
           <MyProjectsSection serviceRequests={serviceRequests} loading={requestsLoading} />
 
           {/* Content Cards - colores más elegantes */}
@@ -277,11 +208,15 @@ export default function Home() {
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {['Mixing', 'Mastering', 'Production'].map(service => (
-                    <span key={service} className="text-xs px-3 py-1.5 rounded-full bg-gray-700/40 text-gray-200 border border-gray-600/40">
-                      {service}
-                    </span>
-                  ))}
+                  <span className="text-xs px-3 py-1.5 rounded-full bg-gray-700/40 text-gray-200 border border-gray-600/40">
+                    Mixing
+                  </span>
+                  <span className="text-xs px-3 py-1.5 rounded-full bg-gray-700/40 text-gray-200 border border-gray-600/40">
+                    Mastering
+                  </span>
+                  <span className="text-xs px-3 py-1.5 rounded-full bg-gray-700/40 text-gray-200 border border-gray-600/40">
+                    Production
+                  </span>
                 </div>
                 <p className="text-xs text-gray-500 italic">Personalized services coming soon</p>
               </div>
@@ -319,7 +254,7 @@ export default function Home() {
               className="group relative overflow-hidden bg-gradient-to-br from-gray-800/80 to-gray-900/80 hover:from-gray-700/80 hover:to-gray-800/80 border border-gray-700/60 hover:border-gray-600/80 text-white font-semibold rounded-xl px-6 py-4 flex items-center justify-center gap-3 transition-all duration-300 backdrop-blur-sm hover:scale-[1.02]"
             >
               <Inbox className="w-5 h-5 text-gray-300" />
-              <span>New Request</span>
+              <span>Service Requests</span>
             </button>
 
             <button
