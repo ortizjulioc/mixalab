@@ -39,6 +39,8 @@ export default function PaymentPage() {
             const data = await response.json();
 
             if (data.data) {
+                console.log('Request data:', data.data);
+                console.log('Add-ons from request:', data.data.addOns);
                 setRequest(data.data);
                 // Fetch add-ons details if they exist
                 if (data.data.addOns && Object.keys(data.data.addOns).length > 0) {
@@ -57,10 +59,13 @@ export default function PaymentPage() {
             const response = await fetch(`/api/add-ons?serviceType=${serviceType}`);
             const data = await response.json();
 
-            if (data.addOns) {
+            // The API returns an array directly, not { addOns: [...] }
+            const addOnsArray = Array.isArray(data) ? data : (data.addOns || []);
+
+            if (addOnsArray.length > 0) {
                 // Filter and map selected add-ons with their details
                 const selectedAddOnsWithDetails = Object.entries(selectedAddOns).map(([addOnId, config]) => {
-                    const addOnDetails = data.addOns.find(a => a.id === addOnId);
+                    const addOnDetails = addOnsArray.find(a => a.id === addOnId);
                     if (addOnDetails) {
                         return {
                             ...addOnDetails,
@@ -71,6 +76,7 @@ export default function PaymentPage() {
                     return null;
                 }).filter(Boolean);
 
+                console.log('Selected add-ons with details:', selectedAddOnsWithDetails);
                 setAddOns(selectedAddOnsWithDetails);
             }
         } catch (error) {
@@ -81,53 +87,51 @@ export default function PaymentPage() {
     const handlePayment = async () => {
         setProcessing(true);
         try {
-            // TODO: Integrate with payment gateway (Stripe, PayPal, etc.)
-            // For now, we'll simulate a successful payment
-
-            const response = await fetch(`/api/service-requests/${requestId}/payment`, {
+            // Create Stripe Checkout session
+            const response = await fetch('/api/stripe/create-checkout-session', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    // Payment details would go here
-                    paymentMethod: 'card',
-                    amount: calculateTotal(),
+                    requestId: requestId,
+                    tier: request.tier,
+                    addOns: addOns,
                 }),
             });
 
             if (!response.ok) {
-                throw new Error('Payment failed');
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to create checkout session');
             }
 
-            // Redirect to success page or dashboard
-            router.push('/artists/home?payment=success');
+            const { sessionUrl } = await response.json();
+
+            // Redirect to Stripe Checkout
+            window.location.href = sessionUrl;
         } catch (error) {
             console.error('Payment error:', error);
-            alert('Payment failed. Please try again.');
-        } finally {
+            // You might want to use a proper notification system here
+            alert(error.message || 'Payment failed. Please try again.');
             setProcessing(false);
         }
     };
-
     const calculateTotal = () => {
         if (!request) return 0;
 
-        // Base price from tier
         const tierPrices = {
-            BRONZE: 50,
-            SILVER: 100,
-            GOLD: 200,
-            PLATINUM: 500,
+            BRONZE: 99,
+            SILVER: 199,
+            GOLD: 299,
+            PLATINUM: 499,
         };
 
-        const basePrice = tierPrices[request.tier] || 50;
+        const basePrice = tierPrices[request.tier] || 99;
 
         // Calculate add-ons price
         const addOnsPrice = addOns.reduce((total, addOn) => {
-            const price = addOn.price || 0;
+            // Handle both price and pricePerUnit
+            const unitPrice = addOn.pricePerUnit || addOn.price || 0;
             const quantity = addOn.quantity || 1;
-            return total + (price * quantity);
+            return total + (unitPrice * quantity);
         }, 0);
 
         return basePrice + addOnsPrice;
@@ -355,8 +359,8 @@ export default function PaymentPage() {
                                 <div className="flex justify-between text-gray-300">
                                     <span>{request.tier} Tier Service</span>
                                     <span>${(() => {
-                                        const tierPrices = { BRONZE: 50, SILVER: 100, GOLD: 200, PLATINUM: 500 };
-                                        return tierPrices[request.tier] || 50;
+                                        const tierPrices = { BRONZE: 99, SILVER: 199, GOLD: 299, PLATINUM: 499 };
+                                        return tierPrices[request.tier] || 99;
                                     })()}</span>
                                 </div>
 
@@ -366,17 +370,21 @@ export default function PaymentPage() {
                                         <div className="pt-2 border-t border-zinc-700/50">
                                             <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Add-ons</p>
                                         </div>
-                                        {addOns.map((addOn, idx) => (
-                                            <div key={idx} className="flex justify-between text-gray-300 text-sm">
-                                                <span className="flex items-center gap-2">
-                                                    {addOn.name}
-                                                    {addOn.quantity > 1 && (
-                                                        <span className="text-xs text-gray-500">×{addOn.quantity}</span>
-                                                    )}
-                                                </span>
-                                                <span>${addOn.price * addOn.quantity}</span>
-                                            </div>
-                                        ))}
+                                        {addOns.map((addOn, idx) => {
+                                            const unitPrice = addOn.pricePerUnit || addOn.price || 0;
+                                            const quantity = addOn.quantity || 1;
+                                            return (
+                                                <div key={idx} className="flex justify-between text-gray-300 text-sm">
+                                                    <span className="flex items-center gap-2">
+                                                        {addOn.name}
+                                                        {quantity > 1 && (
+                                                            <span className="text-xs text-gray-500">×{quantity}</span>
+                                                        )}
+                                                    </span>
+                                                    <span>${(unitPrice * quantity).toFixed(2)}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </>
                                 )}
                             </div>
