@@ -186,13 +186,16 @@ export default function useServiceRequests() {
                 formData.append('acceptance', JSON.stringify(requestData.acceptance));
             }
 
-            // Add files if provided
-            if (files.demoFile) {
-                formData.append('demoFile', files.demoFile);
+            // Add files if provided (check both files arg and requestData)
+            const demoFile = files.demoFile || requestData.demoFile;
+            const stemsFile = files.stemsFile || requestData.stemsFile;
+
+            if (demoFile) {
+                formData.append('demoFile', demoFile);
             }
 
-            if (files.stemsFile) {
-                formData.append('stemsFile', files.stemsFile);
+            if (stemsFile) {
+                formData.append('stemsFile', stemsFile);
             }
 
             // Use fetch directly for FormData (fetchClient may add JSON headers)

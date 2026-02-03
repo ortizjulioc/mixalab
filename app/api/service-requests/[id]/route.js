@@ -47,7 +47,17 @@ export async function GET(request, { params }) {
             }
           }
         },
-        files: true,
+        files: {
+          include: {
+            owner: {
+              select: {
+                id: true,
+                name: true,
+                role: true
+              }
+            }
+          }
+        },
         genres: {
           include: {
             genre: true
