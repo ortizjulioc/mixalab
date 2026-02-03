@@ -47,7 +47,7 @@ export default function MyProjectsSection({ serviceRequests, loading }) {
                         <div
                             key={request.id}
                             className="liquid-glass-item group border border-gray-700/50 hover:border-gray-600/70"
-                            onClick={() => router.push(`/artists/projects/${request.id}`)}
+                            onClick={() => router.push(`/artists/my-requests/${request.id}`)}
                         >
                             <div className="absolute top-0 right-0 w-32 h-32 bg-gray-600/5 rounded-full blur-2xl group-hover:bg-gray-600/10 transition-all" />
 
@@ -112,7 +112,7 @@ export default function MyProjectsSection({ serviceRequests, loading }) {
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        router.push(`/artists/projects/${request.id}`);
+                                        router.push(`/artists/my-requests/${request.id}`);
                                     }}
                                     className="p-2 hover:bg-gray-700/30 rounded-lg transition-colors"
                                 >
@@ -126,7 +126,7 @@ export default function MyProjectsSection({ serviceRequests, loading }) {
 
             {serviceRequests.length > 3 && (
                 <button
-                    onClick={() => router.push('/artists/projects')}
+                    onClick={() => router.push('/artists/my-requests')}
                     className="liquid-glass-action w-full py-3 text-gray-300 hover:text-white font-semibold"
                 >
                     View All Requests ({serviceRequests.length})
