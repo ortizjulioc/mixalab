@@ -6,25 +6,11 @@ import Link from 'next/link';
 export default function UnauthorizedPage() {
   return (
     <>
-      {/* GLOBAL LIQUID GLASS STYLES */}
+      {/* GLOBAL STYLES FOR THIS PAGE ONLY */}
       <style>{`
         @keyframes pulse-bg {
           0% { opacity: 0.15; }
           100% { opacity: 0.35; }
-        }
-        .liquid-glass {
-          background: linear-gradient(145deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
-          backdrop-filter: blur(20px) saturate(180%);
-          -webkit-backdrop-filter: blur(20px) saturate(180%);
-          border: 1px solid rgba(255, 255, 255, 0.18);
-          box-shadow: 
-            0 8px 32px rgba(31,38,135,0.37),
-            inset 0 1px rgba(255,255,255,0.2);
-        }
-        .glow-border {
-          box-shadow: 
-            0 0 25px rgba(255, 70, 70, 0.4),
-            inset 0 1px rgba(255,255,255,0.2);
         }
         @keyframes soft-glow {
           0%, 100% { opacity: 0.8; }

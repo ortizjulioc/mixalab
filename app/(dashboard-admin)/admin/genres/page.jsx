@@ -93,7 +93,8 @@ export default function GenresPage() {
         ]}
       />
       {/* Header with Search and New Button */}
-      <div className="flex flex-col sm:flex-row items-center gap-4 p-6 border border-white/20 rounded-2xl liquid-glass w-full">
+      <div className="flex flex-col sm:flex-row items-center gap-4 p-6 rounded-2xl liquid-glass w-full relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full -mr-10 -mt-10 transition-all duration-500 group-hover:bg-indigo-500/10"></div>
         <div className="flex-1 w-full">
           <Input
             type="text"
@@ -119,7 +120,8 @@ export default function GenresPage() {
 
       {/* Table with Skeleton */}
       {loading ? (
-        <div className="space-y-4 p-4 border border-white/20 rounded-2xl liquid-glass">
+        <div className="space-y-4 p-4 rounded-2xl liquid-glass relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full -mr-10 -mt-10"></div>
           {[...Array(5)].map((_, i) => (
             <div key={i} className="flex items-center p-4 space-x-4">
               <div className="h-4 bg-white/10 rounded w-1/4 animate-pulse"></div>
@@ -132,17 +134,19 @@ export default function GenresPage() {
           ))}
         </div>
       ) : genres.length === 0 ? (
-        <div className="p-8 text-center text-gray-400 liquid-glass rounded-2xl border border-white/20">
+        <div className="p-8 text-center text-gray-400 liquid-glass rounded-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full -mr-10 -mt-10"></div>
           No genres found. Create one above!
         </div>
       ) : (
-        <div className="overflow-x-auto border border-white/20 rounded-2xl liquid-glass">
-          <table className="w-full">
+        <div className="rounded-2xl liquid-glass relative overflow-hidden group border border-white/20">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] rounded-full -mr-32 -mt-32 transition-all duration-500 group-hover:bg-indigo-500/10"></div>
+          <table className="w-full relative z-10">
             <thead>
-              <tr className="bg-white/5">
-                <th className="p-4 text-left text-white font-semibold border-b border-white/20">Name</th>
-                <th className="p-4 text-left text-white font-semibold border-b border-white/20">Created At</th>
-                <th className="p-4 text-right text-white font-semibold border-b border-white/20">Actions</th>
+              <tr className="bg-white/5 border-b border-white/10">
+                <th className="p-4 text-left text-white font-semibold">Name</th>
+                <th className="p-4 text-left text-white font-semibold">Created At</th>
+                <th className="p-4 text-right text-white font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -187,43 +191,46 @@ export default function GenresPage() {
 
       {/* Inline Modal for Create/Edit */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-transparent liquid-glass rounded-2xl border border-white/20 p-6 w-full max-w-md shadow-2xl">
-            <h2 className="text-2xl font-bold mb-6 text-white">
-              {editingId ? 'Edit Genre' : 'Create New Genre'}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Genre name"
-                className="w-full p-3 rounded-xl   bg-transparent text-white placeholder-gray-400 focus:outline-none focus:border-white/50 "
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="liquid-glass rounded-2xl p-8 w-full max-w-md shadow-2xl relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 blur-3xl rounded-full -mr-10 -mt-10 transition-all duration-500 group-hover:bg-indigo-500/20"></div>
+            <div className="relative z-10">
+              <h2 className="text-2xl font-bold mb-6 text-white">
+                {editingId ? 'Edit Genre' : 'Create New Genre'}
+              </h2>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <Input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Genre name"
+                  className="w-full p-3 rounded-xl   bg-transparent text-white placeholder-gray-400 focus:outline-none focus:border-white/50 "
 
-              />
-              <div className="flex justify-end space-x-3">
-                <Button
-                  type="button"
-                  onClick={closeModal}
-                  color="gray"
-                  size="md"
-                  className="px-6"
-                  variant="secondary"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  color="blue"
-                  size="md"
-                  loading={formLoading}
-                  disabled={formLoading}
-                  className="px-6 flex-0"
-                >
-                  {editingId ? 'Update' : 'Create'}
-                </Button>
-              </div>
-            </form>
+                />
+                <div className="flex justify-end space-x-3">
+                  <Button
+                    type="button"
+                    onClick={closeModal}
+                    color="gray"
+                    size="md"
+                    className="px-6"
+                    variant="secondary"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    color="blue"
+                    size="md"
+                    loading={formLoading}
+                    disabled={formLoading}
+                    className="px-6 flex-0"
+                  >
+                    {editingId ? 'Update' : 'Create'}
+                  </Button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

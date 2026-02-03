@@ -39,24 +39,116 @@ body {
   animation: shimmer 2s infinite;
 }
 
+/* Base Liquid Glass Effect - Enhanced Visibility */
 .liquid-glass {
-  background: linear-gradient(135deg, rgba(30, 27, 75, 0.2) 0%, rgba(17, 24, 39, 0.6) 50%, rgba(31, 41, 55, 0.4) 100%);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(99, 102, 241, 0.2);
+  background: linear-gradient(135deg, rgba(55, 65, 81, 0.6) 0%, rgba(45, 55, 72, 0.7) 50%, rgba(30, 41, 59, 0.6) 100%);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(148, 163, 184, 0.3);
   box-shadow:
-    0 8px 32px 0 rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 8px 32px 0 rgba(0, 0, 0, 0.5),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.1);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .liquid-glass:hover {
-  background: linear-gradient(135deg, rgba(30, 27, 75, 0.25) 0%, rgba(17, 24, 39, 0.7) 50%, rgba(31, 41, 55, 0.45) 100%);
-  border: 1px solid rgba(99, 102, 241, 0.3);
+  background: linear-gradient(135deg, rgba(55, 65, 81, 0.7) 0%, rgba(45, 55, 72, 0.8) 50%, rgba(30, 41, 59, 0.7) 100%);
+  border: 1px solid rgba(148, 163, 184, 0.4);
   transform: translateY(-2px);
   box-shadow:
-    0 12px 40px 0 rgba(0, 0, 0, 0.5),
+    0 12px 40px 0 rgba(0, 0, 0, 0.6),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Stat Card Variant - Para cards de estadísticas con efecto glassmorphism */
+.liquid-glass-stat {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.6) 0%, rgba(17, 24, 39, 0.5) 100%);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  box-shadow:
+    0 4px 24px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass-stat:hover {
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.7) 0%, rgba(17, 24, 39, 0.6) 100%);
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Content Card Variant - Para secciones de contenido */
+.liquid-glass-content {
+  background: rgba(31, 41, 55, 0.5);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(55, 65, 81, 0.6);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow:
+    0 4px 24px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass-content:hover {
+  border-color: rgba(75, 85, 99, 0.7);
+  box-shadow:
+    0 6px 28px 0 rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+/* Project/Item Card Variant - Para cards de proyectos individuales */
+.liquid-glass-item {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(to right, rgba(31, 41, 55, 0.8) 0%, rgba(17, 24, 39, 0.7) 100%);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  cursor: pointer;
+  box-shadow:
+    0 4px 24px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass-item:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Action Card Variant - Para botones de acción */
+.liquid-glass-action {
+  background: rgba(55, 65, 81, 0.4);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border: 1px solid rgba(75, 85, 99, 0.4);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow:
+    0 2px 16px 0 rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass-action:hover {
+  background: rgba(55, 65, 81, 0.6);
+  border-color: rgba(75, 85, 99, 0.6);
+  box-shadow:
+    0 4px 20px 0 rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .glow-border {
@@ -83,3 +175,5 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
+
+/* Updated: 2026-02-03 - Liquid Glass Styles v2.0 */

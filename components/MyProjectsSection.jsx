@@ -46,7 +46,7 @@ export default function MyProjectsSection({ serviceRequests, loading }) {
                     return (
                         <div
                             key={request.id}
-                            className="group relative overflow-hidden bg-gradient-to-br from-gray-800/60 to-gray-900/60 border border-gray-700/50 rounded-xl p-6 hover:border-gray-600/70 transition-all duration-300 backdrop-blur-sm cursor-pointer"
+                            className="liquid-glass-item group border border-gray-700/50 hover:border-gray-600/70"
                             onClick={() => router.push(`/artists/projects/${request.id}`)}
                         >
                             <div className="absolute top-0 right-0 w-32 h-32 bg-gray-600/5 rounded-full blur-2xl group-hover:bg-gray-600/10 transition-all" />
@@ -127,7 +127,7 @@ export default function MyProjectsSection({ serviceRequests, loading }) {
             {serviceRequests.length > 3 && (
                 <button
                     onClick={() => router.push('/artists/projects')}
-                    className="w-full py-3 bg-gray-800/60 hover:bg-gray-700/60 border border-gray-700/50 hover:border-gray-600/70 rounded-xl text-gray-300 hover:text-white font-semibold transition-all duration-300"
+                    className="liquid-glass-action w-full py-3 text-gray-300 hover:text-white font-semibold"
                 >
                     View All Requests ({serviceRequests.length})
                 </button>

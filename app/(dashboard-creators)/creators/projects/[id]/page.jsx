@@ -99,7 +99,7 @@ export default function CreatorProjectPage() {
                     <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
                 </button>
 
-                <div className="bg-gradient-to-r from-gray-900 via-zinc-900 to-black border border-zinc-800 rounded-2xl p-8 relative overflow-hidden">
+                <div className="liquid-glass bg-gradient-to-r from-gray-900 via-zinc-900 to-black border border-zinc-800 rounded-2xl p-8 relative">
                     <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -z-10" />
 
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
@@ -139,7 +139,7 @@ export default function CreatorProjectPage() {
 
                     {/* Acceptance Section - Only if IN_REVIEW or PENDING */}
                     {['IN_REVIEW', 'PENDING'].includes(project.status) && (
-                        <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-sm shadow-xl animate-pulse-glow">
+                        <div className="liquid-glass bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl animate-pulse-glow">
                             <div>
                                 <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
                                     New Project Request
@@ -171,7 +171,7 @@ export default function CreatorProjectPage() {
                             <button
                                 onClick={() => document.getElementById('file-upload').click()}
                                 disabled={uploading}
-                                className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group transition-all"
+                                className="liquid-glass-action bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group"
                             >
                                 <div className="p-3 bg-indigo-500/10 rounded-full group-hover:scale-110 transition-transform">
                                     <Upload className="w-6 h-6 text-indigo-400" />
@@ -189,7 +189,7 @@ export default function CreatorProjectPage() {
 
                             <button
                                 onClick={() => handleStatusUpdate('UNDER_REVIEW', 'Sent initial demo for review')}
-                                className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group transition-all"
+                                className="liquid-glass-action bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group"
                             >
                                 <div className="p-3 bg-amber-500/10 rounded-full group-hover:scale-110 transition-transform">
                                     <Send className="w-6 h-6 text-amber-400" />
@@ -199,7 +199,7 @@ export default function CreatorProjectPage() {
 
                             <button
                                 onClick={() => handleStatusUpdate('COMPLETED', 'Final files delivered')}
-                                className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group transition-all"
+                                className="liquid-glass-action bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group"
                             >
                                 <div className="p-3 bg-emerald-500/10 rounded-full group-hover:scale-110 transition-transform">
                                     <CheckCircle2 className="w-6 h-6 text-emerald-400" />
@@ -210,7 +210,7 @@ export default function CreatorProjectPage() {
                     )}
 
                     {/* Files Section */}
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                    <div className="liquid-glass-content bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                         <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
                             <FileAudio className="w-5 h-5 text-indigo-400" /> Project Files
                         </h2>
@@ -242,7 +242,7 @@ export default function CreatorProjectPage() {
 
                 {/* Sidebar: Details & Timeline */}
                 <div className="space-y-8">
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                    <div className="liquid-glass-content bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                         <h2 className="text-lg font-bold text-white mb-4">Project Info</h2>
                         <div className="space-y-4">
                             <div className="flex justify-between py-2 border-b border-zinc-800/50">
@@ -260,7 +260,7 @@ export default function CreatorProjectPage() {
                         </div>
                     </div>
 
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                    <div className="liquid-glass-content bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
                         <h2 className="text-lg font-bold text-white mb-4">Activity</h2>
                         <div className="space-y-6 relative ml-2">
                             <div className="absolute left-1.5 top-2 bottom-2 w-0.5 bg-zinc-800" />

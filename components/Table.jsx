@@ -35,7 +35,7 @@ export default function Table({
   }
 
   return (
-    <div className="overflow-x-auto border border-white/20 rounded-2xl liquid-glass">
+    <div className="border border-white/20 rounded-2xl liquid-glass overflow-hidden">
       <table className="w-full">
         <thead>
           <tr className="bg-white/5">
@@ -75,7 +75,7 @@ export default function Table({
         </tbody>
       </table>
 
-      
+
     </div>
   )
 }
