@@ -89,214 +89,249 @@ export default function CreatorProjectPage() {
     const currentTierInfo = tiers.find(t => t.name === project.tier);
 
     return (
-        <div className="min-h-screen bg-zinc-950 px-4 sm:px-6 lg:px-8 py-8 md:ml-64">
-            {/* Back & Header */}
-            <div className="mb-8">
-                <button
-                    onClick={() => router.back()}
-                    className="flex items-center text-gray-400 hover:text-white mb-6 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
-                </button>
+        <>
+            <div className="grid grid-cols-12 gap-6 lg:pr-[420px]">
+                {/* Back & Header */}
+                <div className="col-span-12">
 
-                <div className="bg-gradient-to-r from-gray-900 via-zinc-900 to-black border border-zinc-800 rounded-xl p-6 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -z-10" />
-
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                        <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(project.status || 'IN_PROGRESS')}`}>
-                                    {(project.status || 'IN_PROGRESS').replace('_', ' ')}
-                                </span>
-                                <span className="text-gray-500 text-sm flex items-center gap-1">
-                                    <Clock className="w-3 h-3" /> Due in 5 days
-                                </span>
-                            </div>
-                            <h1 className="text-3xl font-bold text-white mb-2">{project.projectName}</h1>
-                            <p className="text-gray-400 max-w-2xl">Client: {project.user?.name} • {project.tier} Tier</p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            {project.user?.image ? (
-                                <img src={project.user.image} className="w-12 h-12 rounded-full border-2 border-zinc-700" alt="Client" />
-                            ) : (
-                                <div className="w-12 h-12 rounded-full bg-zinc-700 flex items-center justify-center border-2 border-zinc-600">
-                                    <User className="w-6 h-6 text-gray-400" />
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-6">
-
-                    {/* Action Center - Creator Specific */}
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* ===================== HEADER ===================== */}
+                    <div className="mb-8">
                         <button
-                            onClick={() => document.getElementById('file-upload-creator').click()}
-                            disabled={uploading}
-                            className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group transition-all"
+                            onClick={() => router.back()}
+                            className="flex items-center text-gray-400 hover:text-white mb-6 transition-colors"
                         >
-                            <div className="p-3 bg-indigo-500/10 rounded-full group-hover:scale-110 transition-transform">
-                                <Upload className="w-6 h-6 text-indigo-400" />
-                            </div>
-                            <span className="text-gray-300 font-medium text-sm">Upload Deliverable</span>
+                            <ArrowLeft className="w-4 h-4 mr-2" />
+                            Back to Dashboard
                         </button>
 
-                        <button
-                            onClick={() => handleStatusUpdate('UNDER_REVIEW', 'Sent initial demo for review')}
-                            className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group transition-all"
-                        >
-                            <div className="p-3 bg-amber-500/10 rounded-full group-hover:scale-110 transition-transform">
-                                <Send className="w-6 h-6 text-amber-400" />
-                            </div>
-                            <span className="text-gray-300 font-medium text-sm">Send for Review</span>
-                        </button>
+                        <div className="relative overflow-hidden bg-gradient-to-r from-gray-900 via-zinc-900 to-black border border-zinc-800 rounded-xl p-6">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -z-10" />
 
-                        <button
-                            onClick={() => handleStatusUpdate('COMPLETED', 'Final files delivered')}
-                            className="bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl p-4 flex flex-col items-center justify-center gap-2 group transition-all"
-                        >
-                            <div className="p-3 bg-emerald-500/10 rounded-full group-hover:scale-110 transition-transform">
-                                <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-                            </div>
-                            <span className="text-gray-300 font-medium text-sm">Mark Complete</span>
-                        </button>
-                    </div>
-
-                    {/* Files Section */}
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                        <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                                <FileAudio className="w-5 h-5 text-indigo-400" /> Project Files
-                            </h2>
-                            <input
-                                type="file"
-                                id="file-upload-creator"
-                                className="hidden"
-                                onChange={(e) => {
-                                    if (e.target.files[0]) handleFileUpload({ name: e.target.files[0].name });
-                                }}
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            {project.files && project.files.length > 0 ? (
-                                project.files.map((file) => (
-                                    <div key={file.id} className="flex items-center justify-between bg-black/20 p-3 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-zinc-800 rounded-lg">
-                                                <Music className="w-4 h-4 text-gray-400" />
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-white">{file.name}</p>
-                                                <p className="text-xs text-gray-500">{new Date(file.createdAt).toLocaleDateString()}</p>
-                                            </div>
-                                        </div>
-                                        <button className="text-indigo-400 hover:text-indigo-300 transition-colors p-2">
-                                            <Download className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ))
-                            ) : (
-                                <div className="text-center py-8 border-2 border-dashed border-zinc-800 rounded-lg bg-zinc-900/30">
-                                    <div className="bg-zinc-800 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
-                                        <Upload className="w-6 h-6 text-gray-500" />
-                                    </div>
-                                    <p className="text-gray-400 text-sm">No files uploaded yet.</p>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Services Section */}
-                    {project.services && project.services.length > 0 && (
-                        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                <Music className="w-5 h-5 text-indigo-400" /> Services
-                            </h2>
-                            <div className="space-y-3">
-                                {project.services.map((service, idx) => (
-                                    <div key={idx} className="p-3 bg-zinc-800/30 rounded-lg border border-zinc-700/50 flex justify-between items-center text-sm">
-                                        <span className="text-white font-medium">{service.type}</span>
-                                        <span className="text-gray-500 text-xs">Included</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {/* Sidebar */}
-                <div className="space-y-6">
-                    {/* Tier Info Card */}
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                        <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                            <Info className="w-4 h-4 text-amber-500" /> Project Specs
-                        </h2>
-                        <div className="space-y-4">
-                            <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
-                                <span className="text-gray-500">Tier Level</span>
-                                <span className="text-amber-400 font-bold">{project.tier}</span>
-                            </div>
-                            <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
-                                <span className="text-gray-500">Delivery Time</span>
-                                <div className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3 text-gray-400" />
-                                    <span className="text-white">{currentTierInfo?.deliveryDays || 'N/A'} Days</span>
-                                </div>
-                            </div>
-                            <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
-                                <span className="text-gray-500">Revisions</span>
-                                <div className="flex items-center gap-1">
-                                    <RefreshCw className="w-3 h-3 text-gray-400" />
-                                    <span className="text-white">{currentTierInfo?.numberOfRevisions || 'Unlimited'}</span>
-                                </div>
-                            </div>
-                            <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
-                                <span className="text-gray-500">Type</span>
-                                <span className="text-white">{project.projectType}</span>
-                            </div>
-                            <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
-                                <span className="text-gray-500">Genre</span>
-                                <span className="text-white">{project.genre || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between py-2 text-sm">
-                                <span className="text-gray-500">BPM</span>
-                                <span className="text-white">{project.bpm || 'N/A'}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Client Info Card */}
-                    {project.user && (
-                        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                                <User className="w-4 h-4 text-indigo-400" /> Client
-                            </h2>
-                            <div className="flex items-center gap-4">
-                                {project.user.image ? (
-                                    <img src={project.user.image} className="w-10 h-10 rounded-full" alt="User" />
-                                ) : (
-                                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center">
-                                        <User className="w-5 h-5 text-gray-400" />
-                                    </div>
-                                )}
+                            <div className="flex flex-col md:flex-row justify-between gap-6">
+                                {/* Project Info */}
                                 <div>
-                                    <p className="text-sm font-semibold text-white">{project.user.name}</p>
-                                    <p className="text-xs text-gray-500">{project.user.email}</p>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span
+                                            className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(
+                                                project.status || 'IN_PROGRESS'
+                                            )}`}
+                                        >
+                                            {(project.status || 'IN_PROGRESS').replace('_', ' ')}
+                                        </span>
+
+                                        <span className="text-gray-500 text-sm flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            Due in 5 days
+                                        </span>
+                                    </div>
+
+                                    <h1 className="text-3xl font-bold text-white mb-2">
+                                        {project.projectName}
+                                    </h1>
+
+                                    <p className="text-gray-400">
+                                        Client: {project.user?.name} • {project.tier} Tier
+                                    </p>
+                                </div>
+
+                                {/* Client Avatar */}
+                                <div className="flex items-center">
+                                    {project.user?.image ? (
+                                        <img
+                                            src={project.user.image}
+                                            alt="Client"
+                                            className="w-12 h-12 rounded-full border-2 border-zinc-700"
+                                        />
+                                    ) : (
+                                        <div className="w-12 h-12 rounded-full bg-zinc-700 flex items-center justify-center border-2 border-zinc-600">
+                                            <User className="w-6 h-6 text-gray-400" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
-                    )}
+                    </div>
 
-                    {/* Chat Section */}
-                    <ProjectChat project={project} currentUser={session?.user} />
+                    {/* ===================== MAIN GRID ===================== */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+                        {/* ===================== MAIN CONTENT ===================== */}
+                        <div className="lg:col-span-2 space-y-6">
+
+                            {/* Action Center */}
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                {/* Upload */}
+                                <button
+                                    onClick={() => document.getElementById('file-upload-creator').click()}
+                                    disabled={uploading}
+                                    className="action-card"
+                                >
+                                    <div className="icon-wrapper bg-indigo-500/10">
+                                        <Upload className="w-6 h-6 text-indigo-400" />
+                                    </div>
+                                    <span>Upload Deliverable</span>
+                                </button>
+
+                                {/* Review */}
+                                <button
+                                    onClick={() =>
+                                        handleStatusUpdate('UNDER_REVIEW', 'Sent initial demo for review')
+                                    }
+                                    className="action-card"
+                                >
+                                    <div className="icon-wrapper bg-amber-500/10">
+                                        <Send className="w-6 h-6 text-amber-400" />
+                                    </div>
+                                    <span>Send for Review</span>
+                                </button>
+
+                                {/* Complete */}
+                                <button
+                                    onClick={() =>
+                                        handleStatusUpdate('COMPLETED', 'Final files delivered')
+                                    }
+                                    className="action-card"
+                                >
+                                    <div className="icon-wrapper bg-emerald-500/10">
+                                        <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                                    </div>
+                                    <span>Mark Complete</span>
+                                </button>
+                            </div>
+
+                            {/* Files */}
+                            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                                <h2 className="section-title">
+                                    <FileAudio className="w-5 h-5 text-indigo-400" />
+                                    Project Files
+                                </h2>
+
+                                <input
+                                    type="file"
+                                    id="file-upload-creator"
+                                    className="hidden"
+                                    onChange={(e) =>
+                                        e.target.files?.[0] &&
+                                        handleFileUpload({ name: e.target.files[0].name })
+                                    }
+                                />
+
+                                <div className="space-y-3">
+                                    {project.files?.length ? (
+                                        project.files.map((file) => (
+                                            <div key={file.id} className="file-row">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="file-icon">
+                                                        <Music className="w-4 h-4 text-gray-400" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-white">{file.name}</p>
+                                                        <p className="text-xs text-gray-500">
+                                                            {new Date(file.createdAt).toLocaleDateString()}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Download className="w-4 h-4 text-indigo-400" />
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="empty-state">
+                                            <Upload className="w-6 h-6 text-gray-500" />
+                                            <p>No files uploaded yet.</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Services */}
+                            {project.services?.length > 0 && (
+                                <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                                    <h2 className="section-title">
+                                        <Music className="w-5 h-5 text-indigo-400" />
+                                        Services
+                                    </h2>
+
+                                    <div className="space-y-3">
+                                        {project.services.map((service, idx) => (
+                                            <div key={idx} className="service-row">
+                                                <span>{service.type}</span>
+                                                <span className="text-xs text-gray-500">Included</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ===================== SIDEBAR ===================== */}
+                        <div className="space-y-6">
+
+                            {/* Project Specs */}
+                            <div className="sidebar-card">
+                                <h2 className="sidebar-title">
+                                    <Info className="w-4 h-4 text-amber-500" />
+                                    Project Specs
+                                </h2>
+
+                                <Spec label="Tier" value={project.tier} highlight />
+                                <Spec label="Delivery" value={`${currentTierInfo?.deliveryDays || 'N/A'} Days`} />
+                                <Spec label="Revisions" value={currentTierInfo?.numberOfRevisions || 'Unlimited'} />
+                                <Spec label="Type" value={project.projectType} />
+                                <Spec label="Genre" value={project.genre || 'N/A'} />
+                                <Spec label="BPM" value={project.bpm || 'N/A'} />
+                            </div>
+
+                            {/* Client */}
+                            {project.user && (
+                                <div className="sidebar-card">
+                                    <h2 className="sidebar-title">
+                                        <User className="w-4 h-4 text-indigo-400" />
+                                        Client
+                                    </h2>
+
+                                    <div className="flex items-center gap-4">
+                                        {project.user.image ? (
+                                            <img src={project.user.image} className="w-10 h-10 rounded-full" />
+                                        ) : (
+                                            <div className="avatar-fallback">
+                                                <User className="w-5 h-5 text-gray-400" />
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <p className="text-sm font-semibold text-white">
+                                                {project.user.name}
+                                            </p>
+                                            <p className="text-xs text-gray-500">
+                                                {project.user.email}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
                 </div>
+
+
             </div>
-        </div>
+            {/* Fixed Chat */}
+            <div
+                className="
+                          fixed
+                          top-25
+                          right-6
+                          h-[calc(90vh-3rem)]
+                          w-[360px]
+                          xl:w-[380px]
+                          2xl:w-[420px]
+                          z-50
+                        "
+
+            >
+                <ProjectChat project={project} currentUser={session?.user} />
+            </div>
+        </>
     );
 }
 

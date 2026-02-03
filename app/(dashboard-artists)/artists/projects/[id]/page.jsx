@@ -73,39 +73,37 @@ export default function ArtistProjectPage() {
     const currentTierInfo = tiers.find(t => t.name === project.tier);
 
     return (
-        <div className="grid grid-cols-12 gap-4">
-            {/* Back & Header */}
-            <div className='col-span-8'>
-                <div className="mb-6">
-                    <button
-                        onClick={() => router.push('/artists/my-requests')}
-                        className="flex items-center text-gray-400 hover:text-white mb-4 transition-colors"
-                    >
-                        <ArrowLeft className="w-4 h-4 mr-2" /> Back to My Requests
-                    </button>
+        <>
+            <div className="grid grid-cols-12 gap-6 lg:pr-[420px]">
+                {/* Back & Header & Main Content */}
+                <div className="col-span-12">
+                    <div className="mb-6">
+                        <button
+                            onClick={() => router.push('/artists/my-requests')}
+                            className="flex items-center text-gray-400 hover:text-white mb-4 transition-colors"
+                        >
+                            <ArrowLeft className="w-4 h-4 mr-2" /> Back to My Requests
+                        </button>
 
-                    <div className="bg-gradient-to-r from-gray-900 via-zinc-900 to-black border border-zinc-800 rounded-xl p-6">
-                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                            <div>
-                                <div className="flex items-center gap-3 mb-2">
-                                    <span className="px-3 py-1 rounded-full text-xs font-bold border text-indigo-400 border-indigo-600 bg-indigo-500/10">
-                                        IN PROGRESS
-                                    </span>
-                                    <span className="text-gray-500 text-sm flex items-center gap-1">
-                                        <Clock className="w-3 h-3" /> Started: {new Date(project.createdAt).toLocaleDateString()}
-                                    </span>
+                        <div className="bg-gradient-to-r from-gray-900 via-zinc-900 to-black border border-zinc-800 rounded-xl p-6">
+                            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                                <div>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <span className="px-3 py-1 rounded-full text-xs font-bold border text-indigo-400 border-indigo-600 bg-indigo-500/10">
+                                            IN PROGRESS
+                                        </span>
+                                        <span className="text-gray-500 text-sm flex items-center gap-1">
+                                            <Clock className="w-3 h-3" /> Started: {new Date(project.createdAt).toLocaleDateString()}
+                                        </span>
+                                    </div>
+                                    <h1 className="text-3xl font-bold text-white mb-1">{project.projectName}</h1>
+                                    <p className="text-gray-400">Artist: {project.artistName}</p>
                                 </div>
-                                <h1 className="text-3xl font-bold text-white mb-1">{project.projectName}</h1>
-                                <p className="text-gray-400">Artist: {project.artistName}</p>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-                    {/* Main Content (Left 3 cols) */}
-                    <div className="xl:col-span-3 space-y-6">
-
+                    <div className="space-y-6">
                         {/* Status & Quick Stats */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="md:col-span-2 bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-xl p-5 backdrop-blur-sm">
@@ -229,16 +227,26 @@ export default function ArtistProjectPage() {
                         )}
                     </div>
 
-
                 </div>
 
             </div>
-            {/* Right Column: Chat (1 col) */}
-            <div className="xl:col-span-4 h-full mb-6">
-                <div className="sticky top-6">
-                    <ProjectChat project={project} currentUser={session?.user} />
-                </div>
+
+            {/* Fixed Chat */}
+            <div
+                className="
+              fixed
+              top-25
+              right-6
+              h-[calc(90vh-3rem)]
+              w-[360px]
+              xl:w-[380px]
+              2xl:w-[420px]
+              z-50
+            "
+
+            >
+                <ProjectChat project={project} currentUser={session?.user} />
             </div>
-        </div>
+        </>
     );
 }

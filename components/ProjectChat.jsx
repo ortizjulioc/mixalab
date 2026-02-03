@@ -21,7 +21,8 @@ export default function ProjectChat({ project, currentUser }) {
     };
 
     return (
-        <div className="flex flex-col h-[600px] bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+        <div className="flex flex-col h-full bg-zinc-900/50 border border-zinc-800 rounded-xl">
+
             {/* Chat Header */}
             <div className="p-4 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
                 <h3 className="font-bold text-white flex items-center gap-2">
@@ -31,14 +32,14 @@ export default function ProjectChat({ project, currentUser }) {
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
+            <div className="flex-1 p-4 space-y-4 overflow-hidden">
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
                         <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${msg.sender === 'me'
-                                ? 'bg-indigo-600 text-white rounded-br-none'
-                                : msg.sender === 'system'
-                                    ? 'bg-zinc-800/50 text-gray-400 text-xs w-full text-center'
-                                    : 'bg-zinc-800 text-gray-200 rounded-bl-none'
+                            ? 'bg-indigo-600 text-white rounded-br-none'
+                            : msg.sender === 'system'
+                                ? 'bg-zinc-800/50 text-gray-400 text-xs w-full text-center'
+                                : 'bg-zinc-800 text-gray-200 rounded-bl-none'
                             }`}>
                             <p>{msg.text}</p>
                             {msg.sender !== 'system' && (
