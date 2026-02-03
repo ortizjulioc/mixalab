@@ -38,3 +38,48 @@ body {
 .animate-shimmer {
   animation: shimmer 2s infinite;
 }
+
+.liquid-glass {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.2) 0%, rgba(17, 24, 39, 0.6) 50%, rgba(31, 41, 55, 0.4) 100%);
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.liquid-glass:hover {
+  background: linear-gradient(135deg, rgba(30, 27, 75, 0.25) 0%, rgba(17, 24, 39, 0.7) 50%, rgba(31, 41, 55, 0.45) 100%);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  transform: translateY(-2px);
+  box-shadow:
+    0 12px 40px 0 rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.glow-border {
+  box-shadow:
+    0 0 25px rgba(99, 102, 241, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Scrollbar Utility for global use if class is not enough */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

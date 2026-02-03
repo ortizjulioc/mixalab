@@ -255,7 +255,9 @@ export default function EditCreatorProfilePage() {
                         { label: 'Edit' },
                     ]}
                 />
-                <div className="p-8 border border-white/20 rounded-2xl liquid-glass text-center">
+                <div className="p-8 rounded-2xl liquid-glass text-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full -mr-10 -mt-10"></div>
+
                     <AlertCircle className="w-16 h-16 mx-auto mb-4 text-red-500" />
                     <h2 className="text-2xl font-bold text-white mb-2">Profile Not Found</h2>
                     <p className="text-gray-400 mb-6">{error || 'Unable to load your profile'}</p>
@@ -278,7 +280,8 @@ export default function EditCreatorProfilePage() {
                         { label: 'Edit' },
                     ]}
                 />
-                <div className="p-8 border border-orange-500/30 bg-orange-500/10 rounded-2xl liquid-glass text-center">
+                <div className="p-8 border border-orange-500/20 bg-orange-500/5 rounded-2xl liquid-glass text-center relative overflow-hidden">
+
                     <AlertCircle className="w-16 h-16 mx-auto mb-4 text-orange-500" />
                     <h2 className="text-2xl font-bold text-white mb-2">Profile Suspended</h2>
                     <p className="text-gray-400 mb-6">
@@ -293,7 +296,7 @@ export default function EditCreatorProfilePage() {
     }
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 pb-20">
             <BreadcrumbsTitle
                 title="Edit Profile"
                 items={[
@@ -326,452 +329,459 @@ export default function EditCreatorProfilePage() {
             )}
 
             {/* Edit Form */}
-            <div className="p-8 border border-white/20 rounded-2xl liquid-glass">
-                <form onSubmit={formik.handleSubmit} className="space-y-8">
-                    {/* Role Selection */}
-                    <div className="bg-gray-700/50 p-6 rounded-lg border border-gray-700">
-                        <h3 className="text-xl font-semibold mb-4 text-blue-300">Select Your Services</h3>
-                        <p className="text-sm text-gray-400 mb-4">Choose which services you want to offer. You can add or remove services at any time.</p>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {['mixing', 'mastering', 'recording'].map(role => (
-                                <label key={role} className="flex items-center p-3 rounded-lg cursor-pointer bg-black hover:bg-gray-900 transition duration-150 ease-in-out border border-transparent has-[:checked]:border-blue-500 has-[:checked]:bg-gray-700/70">
-                                    <Checkbox
-                                        id={`${role}-checkbox`}
-                                        checked={values.roles[role]}
-                                        onChange={(e) => setFieldValue(`roles.${role}`, e.target.checked)}
-                                        label={
-                                            role === 'mixing' ? 'Mixing Engineer' :
-                                                role === 'mastering' ? 'Mastering Engineer' :
-                                                    'Recording Session (Musician)'
-                                        }
-                                        className="capitalize text-gray-200"
-                                        containerClassName="w-full"
-                                    />
-                                </label>
-                            ))}
+            <div className="rounded-2xl liquid-glass shadow-2xl shadow-indigo-500/5 overflow-hidden">
+                <div className="p-8 space-y-8">
+                    <form onSubmit={formik.handleSubmit} className="space-y-10">
+                        {/* Role Selection */}
+                        <div className="bg-indigo-500/5 p-8 rounded-2xl border border-indigo-500/10 backdrop-blur-md relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-600/5 blur-[100px] rounded-full -mr-32 -mt-32 transition-all duration-500 group-hover:bg-indigo-600/10"></div>
+                            <h3 className="text-xl font-bold mb-4 text-indigo-300 flex items-center gap-2">
+                                <Headphones className="w-5 h-5 text-indigo-400" />
+                                Select Your Services
+                            </h3>
+                            <p className="text-sm text-gray-400 mb-6 bg-black/20 p-3 rounded-lg border border-white/5 inline-block">Choose which services you want to offer. You can add or remove services at any time.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {['mixing', 'mastering', 'recording'].map(role => (
+                                    <label key={role} className="flex items-center p-4 rounded-xl cursor-pointer bg-black/40 hover:bg-black/60 transition-all duration-300 border border-white/5 hover:border-indigo-500/30 has-[:checked]:border-indigo-500/50 has-[:checked]:bg-indigo-500/10 group/item shadow-lg">
+                                        <Checkbox
+                                            id={`${role}-checkbox`}
+                                            checked={values.roles[role]}
+                                            onChange={(e) => setFieldValue(`roles.${role}`, e.target.checked)}
+                                            label={
+                                                role === 'mixing' ? 'Mixing Engineer' :
+                                                    role === 'mastering' ? 'Mastering Engineer' :
+                                                        'Recording Session'
+                                            }
+                                            className="font-semibold text-gray-200 group-hover/item:text-white transition-colors capitalize"
+                                            containerClassName="w-full"
+                                        />
+                                    </label>
+                                ))}
+                            </div>
+
+                            {!values.roles.mixing && !values.roles.mastering && !values.roles.recording && (
+                                <p className="text-yellow-400 text-sm mt-3">Please select at least one service to continue.</p>
+                            )}
                         </div>
-                        {!values.roles.mixing && !values.roles.mastering && !values.roles.recording && (
-                            <p className="text-yellow-400 text-sm mt-3">Please select at least one service to continue.</p>
-                        )}
-                    </div>
 
-                    {/* General Info Section */}
-                    <SectionHeader title="General Info" icon={User} id="general-info" />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <Input
-                            label="Stage / Brand Name"
-                            id="stageName"
-                            name="stageName"
-                            required
-                            value={values.stageName}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={touched.stageName && errors.stageName}
-                        />
+                        {/* General Info Section */}
+                        <SectionHeader title="General Info" icon={User} id="general-info" />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            <Input
+                                label="Stage / Brand Name"
+                                id="stageName"
+                                name="stageName"
+                                required
+                                value={values.stageName}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                error={touched.stageName && errors.stageName}
+                            />
 
-                        <Select
-                            label="Country of Residence"
-                            id="country"
-                            name="country"
-                            required
-                            options={COUNTRIES}
-                            value={values.country}
-                            onChange={(newValue) => setFieldValue('country', newValue)}
-                            onBlur={handleBlur}
-                            error={touched.country && errors.country}
-                        />
+                            <Select
+                                label="Country of Residence"
+                                id="country"
+                                name="country"
+                                required
+                                options={COUNTRIES}
+                                value={values.country}
+                                onChange={(newValue) => setFieldValue('country', newValue)}
+                                onBlur={handleBlur}
+                                error={touched.country && errors.country}
+                            />
 
-                        <Input
-                            label="Years of Experience"
-                            id="yearsExperience"
-                            name="yearsExperience"
-                            required
-                            type="number"
-                            min="0"
-                            value={values.yearsExperience}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={touched.yearsExperience && errors.yearsExperience}
-                        />
+                            <Input
+                                label="Years of Experience"
+                                id="yearsExperience"
+                                name="yearsExperience"
+                                required
+                                type="number"
+                                min="0"
+                                value={values.yearsExperience}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                error={touched.yearsExperience && errors.yearsExperience}
+                            />
 
-                        <Select
-                            label="Availability"
-                            id="availability"
-                            name="availability"
-                            required
-                            options={[
-                                { label: 'Full-Time', value: 'FULL_TIME' },
-                                { label: 'Part-Time', value: 'PART_TIME' },
-                                { label: 'On-Demand', value: 'ON_DEMAND' },
-                            ]}
-                            value={values.availability}
-                            onChange={(newValue) => setFieldValue('availability', newValue)}
-                            onBlur={handleBlur}
-                            error={touched.availability && errors.availability}
-                        />
+                            <Select
+                                label="Availability"
+                                id="availability"
+                                name="availability"
+                                required
+                                options={[
+                                    { label: 'Full-Time', value: 'FULL_TIME' },
+                                    { label: 'Part-Time', value: 'PART_TIME' },
+                                    { label: 'On-Demand', value: 'ON_DEMAND' },
+                                ]}
+                                value={values.availability}
+                                onChange={(newValue) => setFieldValue('availability', newValue)}
+                                onBlur={handleBlur}
+                                error={touched.availability && errors.availability}
+                            />
 
-                        <Input
-                            label="Portfolio or Sample Link (optional)"
-                            id="portfolioLink"
-                            name="portfolioLink"
-                            value={values.portfolioLink}
-                            onChange={handleChange}
-                            onBlur={handleBlur}
-                            error={touched.portfolioLink && errors.portfolioLink}
-                        />
+                            <Input
+                                label="Portfolio or Sample Link (optional)"
+                                id="portfolioLink"
+                                name="portfolioLink"
+                                value={values.portfolioLink}
+                                onChange={handleChange}
+                                onBlur={handleBlur}
+                                error={touched.portfolioLink && errors.portfolioLink}
+                            />
 
-                        <Select
-                            label="Main DAW"
-                            id="mainDaw"
-                            name="mainDAWs"
-                            required
-                            placeholder="Type DAW names, press Enter to add"
-                            value={values.mainDAWs}
-                            onChange={(newValue) => setFieldValue('mainDAWs', newValue)}
-                            onBlur={handleBlur}
-                            error={touched.mainDAWs && errors.mainDAWs}
-                            isMulti
-                            isCreatable
-                            options={[
-                                { label: 'Ableton Live', value: 'ableton_live' },
-                                { label: 'FL Studio', value: 'fl_studio' },
-                                { label: 'Logic Pro', value: 'logic_pro' },
-                                { label: 'Pro Tools', value: 'pro_tools' },
-                                { label: 'Cubase', value: 'cubase' },
-                                { label: 'Studio One', value: 'studio_one' },
-                                { label: 'Reaper', value: 'reaper' },
-                            ]}
-                        />
+                            <Select
+                                label="Main DAW"
+                                id="mainDaw"
+                                name="mainDAWs"
+                                required
+                                placeholder="Type DAW names, press Enter to add"
+                                value={values.mainDAWs}
+                                onChange={(newValue) => setFieldValue('mainDAWs', newValue)}
+                                onBlur={handleBlur}
+                                error={touched.mainDAWs && errors.mainDAWs}
+                                isMulti
+                                isCreatable
+                                options={[
+                                    { label: 'Ableton Live', value: 'ableton_live' },
+                                    { label: 'FL Studio', value: 'fl_studio' },
+                                    { label: 'Logic Pro', value: 'logic_pro' },
+                                    { label: 'Pro Tools', value: 'pro_tools' },
+                                    { label: 'Cubase', value: 'cubase' },
+                                    { label: 'Studio One', value: 'studio_one' },
+                                    { label: 'Reaper', value: 'reaper' },
+                                ]}
+                            />
 
-                        <SocialsInput
-                            label="Social Media Links"
-                            name="socialLinks"
-                            socials={values.socialLinks}
-                            setSocials={(newSocials) => setFieldValue('socialLinks', newSocials)}
-                            className="sm:col-span-2"
-                            required
-                            error={touched.socialLinks && errors.socialLinks}
-                        />
+                            <SocialsInput
+                                label="Social Media Links"
+                                name="socialLinks"
+                                socials={values.socialLinks}
+                                setSocials={(newSocials) => setFieldValue('socialLinks', newSocials)}
+                                className="sm:col-span-2"
+                                required
+                                error={touched.socialLinks && errors.socialLinks}
+                            />
 
-                        <Select
-                            label="Plugin Chain / Gear List"
-                            id="gearList"
-                            name="pluginChains"
-                            required
-                            placeholder="Type gear names, press Enter to add"
-                            value={values.pluginChains}
-                            onChange={(newValue) => setFieldValue('pluginChains', newValue)}
-                            onBlur={handleBlur}
-                            error={touched.pluginChains && errors.pluginChains}
-                            isMulti
-                            isCreatable
-                            options={[
-                                { label: 'Waves', value: 'waves' },
-                                { label: 'FabFilter', value: 'fabfilter' },
-                                { label: 'Universal Audio', value: 'universal_audio' },
-                                { label: 'iZotope', value: 'izotope' },
-                                { label: 'Native Instruments', value: 'native_instruments' },
-                            ]}
-                            className="sm:col-span-2"
-                        />
+                            <Select
+                                label="Plugin Chain / Gear List"
+                                id="gearList"
+                                name="pluginChains"
+                                required
+                                placeholder="Type gear names, press Enter to add"
+                                value={values.pluginChains}
+                                onChange={(newValue) => setFieldValue('pluginChains', newValue)}
+                                onBlur={handleBlur}
+                                error={touched.pluginChains && errors.pluginChains}
+                                isMulti
+                                isCreatable
+                                options={[
+                                    { label: 'Waves', value: 'waves' },
+                                    { label: 'FabFilter', value: 'fabfilter' },
+                                    { label: 'Universal Audio', value: 'universal_audio' },
+                                    { label: 'iZotope', value: 'izotope' },
+                                    { label: 'Native Instruments', value: 'native_instruments' },
+                                ]}
+                                className="sm:col-span-2"
+                            />
 
-                        <SelectGenres
-                            label="Genres You Specialize In"
-                            id="genresSpecialized"
-                            name="generalGenres"
-                            required
-                            value={values.generalGenres}
-                            onChange={(event) => setFieldValue('generalGenres', event.target.value)}
-                            onBlur={handleBlur}
-                            error={touched.generalGenres && errors.generalGenres}
-                            className="sm:col-span-2"
-                        />
-                    </div>
+                            <SelectGenres
+                                label="Genres You Specialize In"
+                                id="genresSpecialized"
+                                name="generalGenres"
+                                required
+                                value={values.generalGenres}
+                                onChange={(event) => setFieldValue('generalGenres', event.target.value)}
+                                onBlur={handleBlur}
+                                error={touched.generalGenres && errors.generalGenres}
+                                className="sm:col-span-2"
+                            />
+                        </div>
 
-                    {/* 🎧 MIXING ENGINEER SECTION */}
-                    {values.roles.mixing && (
-                        <>
-                            <SectionHeader title="Mixing Engineer" icon={Headphones} id="mixing-engineer" />
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <Input
-                                    label="Years Mixing"
-                                    id="yearsMixing"
-                                    name="yearsMixing"
-                                    required
-                                    type="number"
-                                    placeholder="3"
-                                    min="0"
-                                    value={values.yearsMixing}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={touched.yearsMixing && errors.yearsMixing}
-                                />
-                                <Input
-                                    label="Average Turnaround Time (days)"
-                                    id="mixingTurnaround"
-                                    name="mixingTurnaround"
-                                    required
-                                    type="number"
-                                    placeholder="3"
-                                    min="1"
-                                    value={values.mixingTurnaround}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={touched.mixingTurnaround && errors.mixingTurnaround}
-                                />
+                        {/* 🎧 MIXING ENGINEER SECTION */}
+                        {values.roles.mixing && (
+                            <>
+                                <SectionHeader title="Mixing Engineer" icon={Headphones} id="mixing-engineer" />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <Input
+                                        label="Years Mixing"
+                                        id="yearsMixing"
+                                        name="yearsMixing"
+                                        required
+                                        type="number"
+                                        placeholder="3"
+                                        min="0"
+                                        value={values.yearsMixing}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        error={touched.yearsMixing && errors.yearsMixing}
+                                    />
+                                    <Input
+                                        label="Average Turnaround Time (days)"
+                                        id="mixingTurnaround"
+                                        name="mixingTurnaround"
+                                        required
+                                        type="number"
+                                        placeholder="3"
+                                        min="1"
+                                        value={values.mixingTurnaround}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        error={touched.mixingTurnaround && errors.mixingTurnaround}
+                                    />
 
-                                <SelectGenres
-                                    label="Genres You Mix"
-                                    id="mixingGenres"
-                                    name="mixingGenresList"
-                                    required
-                                    value={values.mixingGenresList}
-                                    onChange={(event) => setFieldValue('mixingGenresList', event.target.value)}
-                                    onBlur={handleBlur}
-                                    error={touched.mixingGenresList && errors.mixingGenresList}
-                                    className="sm:col-span-2"
-                                />
+                                    <SelectGenres
+                                        label="Genres You Mix"
+                                        id="mixingGenres"
+                                        name="mixingGenresList"
+                                        required
+                                        value={values.mixingGenresList}
+                                        onChange={(event) => setFieldValue('mixingGenresList', event.target.value)}
+                                        onBlur={handleBlur}
+                                        error={touched.mixingGenresList && errors.mixingGenresList}
+                                        className="sm:col-span-2"
+                                    />
 
-                                <Input
-                                    label="Notable Artists You've Worked With (optional)"
-                                    id="notableArtists"
-                                    name="notableArtists"
-                                    placeholder="Artist X, Band Y"
-                                    value={values.notableArtists}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={touched.notableArtists && errors.notableArtists}
-                                    className="sm:col-span-2"
-                                />
+                                    <Input
+                                        label="Notable Artists You've Worked With (optional)"
+                                        id="notableArtists"
+                                        name="notableArtists"
+                                        placeholder="Artist X, Band Y"
+                                        value={values.notableArtists}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        error={touched.notableArtists && errors.notableArtists}
+                                        className="sm:col-span-2"
+                                    />
 
-                                <div className="sm:col-span-2 space-y-3">
-                                    <label className="text-sm font-medium text-gray-300 block">Do You Tune Vocals? <span className="text-red-400">*</span></label>
-                                    <div className="flex space-x-6">
-                                        <Checkbox
-                                            id="tuneVocals-yes"
-                                            checked={values.tunedVocalExampleNeeded}
-                                            onChange={(e) => setFieldValue('tunedVocalExampleNeeded', e.target.checked)}
-                                            label="Yes"
-                                            containerClassName="mr-4"
-                                        />
-                                        <Checkbox
-                                            id="tuneVocals-no"
-                                            checked={!values.tunedVocalExampleNeeded}
-                                            onChange={(e) => setFieldValue('tunedVocalExampleNeeded', !e.target.checked)}
-                                            label="No"
-                                        />
+                                    <div className="sm:col-span-2 space-y-3">
+                                        <label className="text-sm font-medium text-gray-300 block">Do You Tune Vocals? <span className="text-red-400">*</span></label>
+                                        <div className="flex space-x-6">
+                                            <Checkbox
+                                                id="tuneVocals-yes"
+                                                checked={values.tunedVocalExampleNeeded}
+                                                onChange={(e) => setFieldValue('tunedVocalExampleNeeded', e.target.checked)}
+                                                label="Yes"
+                                                containerClassName="mr-4"
+                                            />
+                                            <Checkbox
+                                                id="tuneVocals-no"
+                                                checked={!values.tunedVocalExampleNeeded}
+                                                onChange={(e) => setFieldValue('tunedVocalExampleNeeded', !e.target.checked)}
+                                                label="No"
+                                            />
+                                        </div>
+
+                                        {values.tunedVocalExampleNeeded && (
+                                            <FileUploadPlaceholder
+                                                label="Upload Example with Tuned Vocals"
+                                                id="tunedVocalsExample"
+                                                helperText="Upload an audio example showcasing your vocal tuning skill."
+                                                icon={Sparkles}
+                                                onChange={(file) => handleFileChange('tunedVocalsExampleFile', file)}
+                                                accept="audio/*"
+                                            />
+                                        )}
                                     </div>
 
-                                    {values.tunedVocalExampleNeeded && (
-                                        <FileUploadPlaceholder
-                                            label="Upload Example with Tuned Vocals"
-                                            id="tunedVocalsExample"
-                                            helperText="Upload an audio example showcasing your vocal tuning skill."
-                                            icon={Sparkles}
-                                            onChange={(file) => handleFileChange('tunedVocalsExampleFile', file)}
-                                            accept="audio/*"
-                                        />
-                                    )}
+                                    <FileUploadPlaceholder
+                                        label="Upload 1 Before & After Mix"
+                                        id="mixExample"
+                                        helperText="Please upload one pair of 'before' (raw) and 'after' (mixed) files."
+                                        icon={Music}
+                                        className="sm:col-span-2"
+                                        onChange={(file) => handleFileChange('mixExampleFile', file)}
+                                        accept="audio/*"
+                                    />
                                 </div>
+                            </>
+                        )}
 
-                                <FileUploadPlaceholder
-                                    label="Upload 1 Before & After Mix"
-                                    id="mixExample"
-                                    helperText="Please upload one pair of 'before' (raw) and 'after' (mixed) files."
-                                    icon={Music}
-                                    className="sm:col-span-2"
-                                    onChange={(file) => handleFileChange('mixExampleFile', file)}
-                                    accept="audio/*"
-                                />
-                            </div>
-                        </>
-                    )}
+                        {/* 🔊 MASTERING ENGINEER SECTION */}
+                        {values.roles.mastering && (
+                            <>
+                                <SectionHeader title="Mastering Engineer" icon={Sliders} id="mastering-engineer" />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <Input
+                                        label="Years Mastering"
+                                        id="yearsMastering"
+                                        name="yearsMastering"
+                                        required
+                                        type="number"
+                                        placeholder="2"
+                                        min="0"
+                                        value={values.yearsMastering}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        error={touched.yearsMastering && errors.yearsMastering}
+                                    />
+                                    <Input
+                                        label="Average Turnaround Time (days)"
+                                        id="masteringTurnaround"
+                                        name="masteringTurnaround"
+                                        required
+                                        type="number"
+                                        placeholder="2"
+                                        min="1"
+                                        value={values.masteringTurnaround}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        error={touched.masteringTurnaround && errors.masteringTurnaround}
+                                    />
 
-                    {/* 🔊 MASTERING ENGINEER SECTION */}
-                    {values.roles.mastering && (
-                        <>
-                            <SectionHeader title="Mastering Engineer" icon={Sliders} id="mastering-engineer" />
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <Input
-                                    label="Years Mastering"
-                                    id="yearsMastering"
-                                    name="yearsMastering"
-                                    required
-                                    type="number"
-                                    placeholder="2"
-                                    min="0"
-                                    value={values.yearsMastering}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={touched.yearsMastering && errors.yearsMastering}
-                                />
-                                <Input
-                                    label="Average Turnaround Time (days)"
-                                    id="masteringTurnaround"
-                                    name="masteringTurnaround"
-                                    required
-                                    type="number"
-                                    placeholder="2"
-                                    min="1"
-                                    value={values.masteringTurnaround}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={touched.masteringTurnaround && errors.masteringTurnaround}
-                                />
+                                    <SelectGenres
+                                        label="Genres You Master"
+                                        id="masteringGenres"
+                                        name="masteringGenresList"
+                                        required
+                                        value={values.masteringGenresList}
+                                        onChange={(event) => setFieldValue('masteringGenresList', event.target.value)}
+                                        onBlur={handleBlur}
+                                        error={touched.masteringGenresList && errors.masteringGenresList}
+                                        className="sm:col-span-2"
+                                    />
 
-                                <SelectGenres
-                                    label="Genres You Master"
-                                    id="masteringGenres"
-                                    name="masteringGenresList"
-                                    required
-                                    value={values.masteringGenresList}
-                                    onChange={(event) => setFieldValue('masteringGenresList', event.target.value)}
-                                    onBlur={handleBlur}
-                                    error={touched.masteringGenresList && errors.masteringGenresList}
-                                    className="sm:col-span-2"
-                                />
+                                    <Input
+                                        label="Preferred Loudness Range (LUFS or RMS, optional)"
+                                        id="loudnessRange"
+                                        name="loudnessRange"
+                                        placeholder="-12 LUFS to -8 LUFS"
+                                        value={values.loudnessRange}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        error={touched.loudnessRange && errors.loudnessRange}
+                                        className="sm:col-span-2"
+                                    />
 
-                                <Input
-                                    label="Preferred Loudness Range (LUFS or RMS, optional)"
-                                    id="loudnessRange"
-                                    name="loudnessRange"
-                                    placeholder="-12 LUFS to -8 LUFS"
-                                    value={values.loudnessRange}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={touched.loudnessRange && errors.loudnessRange}
-                                    className="sm:col-span-2"
-                                />
+                                    <FileUploadPlaceholder
+                                        label="Upload 1 Before & After Master"
+                                        id="masterExample"
+                                        helperText="Please upload one pair of 'before' (mixed) and 'after' (mastered) files."
+                                        icon={Music}
+                                        className="sm:col-span-2"
+                                        onChange={(file) => handleFileChange('masterExampleFile', file)}
+                                        accept="audio/*"
+                                    />
+                                </div>
+                            </>
+                        )}
 
-                                <FileUploadPlaceholder
-                                    label="Upload 1 Before & After Master"
-                                    id="masterExample"
-                                    helperText="Please upload one pair of 'before' (mixed) and 'after' (mastered) files."
-                                    icon={Music}
-                                    className="sm:col-span-2"
-                                    onChange={(file) => handleFileChange('masterExampleFile', file)}
-                                    accept="audio/*"
-                                />
-                            </div>
-                        </>
-                    )}
+                        {/* 🎙️ RECORDING SESSION SECTION */}
+                        {values.roles.recording && (
+                            <>
+                                <SectionHeader title="Recording Session (Instrumentalist)" icon={Mic} id="recording-session" />
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    <Input
+                                        label="Years of Recording or Playing"
+                                        id="yearsRecording"
+                                        name="yearsRecording"
+                                        required
+                                        type="number"
+                                        placeholder="10"
+                                        min="0"
+                                        value={values.yearsRecording}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        error={touched.yearsRecording && errors.yearsRecording}
+                                    />
+                                    <div></div>
 
-                    {/* 🎙️ RECORDING SESSION SECTION */}
-                    {values.roles.recording && (
-                        <>
-                            <SectionHeader title="Recording Session (Instrumentalist)" icon={Mic} id="recording-session" />
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <Input
-                                    label="Years of Recording or Playing"
-                                    id="yearsRecording"
-                                    name="yearsRecording"
-                                    required
-                                    type="number"
-                                    placeholder="10"
-                                    min="0"
-                                    value={values.yearsRecording}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={touched.yearsRecording && errors.yearsRecording}
-                                />
-                                <div></div>
+                                    <Select
+                                        label="What Instruments do you play"
+                                        id="instrumentsPlayed"
+                                        name="instrumentsPlayed"
+                                        required
+                                        placeholder="Type instrument names, press Enter to add"
+                                        value={values.instrumentsPlayed}
+                                        onChange={(newValue) => setFieldValue('instrumentsPlayed', newValue)}
+                                        onBlur={handleBlur}
+                                        error={touched.instrumentsPlayed && errors.instrumentsPlayed}
+                                        isMulti
+                                        isCreatable
+                                        options={[
+                                            { label: 'Guitar', value: 'guitar' },
+                                            { label: 'Bass', value: 'bass' },
+                                            { label: 'Drums', value: 'drums' },
+                                            { label: 'Piano', value: 'piano' },
+                                            { label: 'Keyboard', value: 'keyboard' },
+                                            { label: 'Vocals', value: 'vocals' },
+                                            { label: 'Saxophone', value: 'saxophone' },
+                                            { label: 'Trumpet', value: 'trumpet' },
+                                            { label: 'Violin', value: 'violin' },
+                                            { label: 'Cello', value: 'cello' },
+                                            { label: 'Flute', value: 'flute' },
+                                            { label: 'Clarinet', value: 'clarinet' },
+                                            { label: 'Synthesizer', value: 'synthesizer' },
+                                            { label: 'Percussion', value: 'percussion' },
+                                        ]}
+                                        className="sm:col-span-2"
+                                    />
 
-                                <Select
-                                    label="What Instruments do you play"
-                                    id="instrumentsPlayed"
-                                    name="instrumentsPlayed"
-                                    required
-                                    placeholder="Type instrument names, press Enter to add"
-                                    value={values.instrumentsPlayed}
-                                    onChange={(newValue) => setFieldValue('instrumentsPlayed', newValue)}
-                                    onBlur={handleBlur}
-                                    error={touched.instrumentsPlayed && errors.instrumentsPlayed}
-                                    isMulti
-                                    isCreatable
-                                    options={[
-                                        { label: 'Guitar', value: 'guitar' },
-                                        { label: 'Bass', value: 'bass' },
-                                        { label: 'Drums', value: 'drums' },
-                                        { label: 'Piano', value: 'piano' },
-                                        { label: 'Keyboard', value: 'keyboard' },
-                                        { label: 'Vocals', value: 'vocals' },
-                                        { label: 'Saxophone', value: 'saxophone' },
-                                        { label: 'Trumpet', value: 'trumpet' },
-                                        { label: 'Violin', value: 'violin' },
-                                        { label: 'Cello', value: 'cello' },
-                                        { label: 'Flute', value: 'flute' },
-                                        { label: 'Clarinet', value: 'clarinet' },
-                                        { label: 'Synthesizer', value: 'synthesizer' },
-                                        { label: 'Percussion', value: 'percussion' },
-                                    ]}
-                                    className="sm:col-span-2"
-                                />
+                                    <SelectGenres
+                                        label="Genres You Record or Perform"
+                                        id="recordingGenres"
+                                        name="recordingGenresList"
+                                        required
+                                        value={values.recordingGenresList}
+                                        onChange={(event) => setFieldValue('recordingGenresList', event.target.value)}
+                                        onBlur={handleBlur}
+                                        error={touched.recordingGenresList && errors.recordingGenresList}
+                                        className="sm:col-span-2"
+                                    />
 
-                                <SelectGenres
-                                    label="Genres You Record or Perform"
-                                    id="recordingGenres"
-                                    name="recordingGenresList"
-                                    required
-                                    value={values.recordingGenresList}
-                                    onChange={(event) => setFieldValue('recordingGenresList', event.target.value)}
-                                    onBlur={handleBlur}
-                                    error={touched.recordingGenresList && errors.recordingGenresList}
-                                    className="sm:col-span-2"
-                                />
+                                    <Input
+                                        label="Studio Setup (brief description)"
+                                        id="studioSetup"
+                                        name="studioSetup"
+                                        required
+                                        placeholder="Home studio, custom acoustic treatment, Focusrite interface, specific mic models."
+                                        as="textarea"
+                                        value={values.studioSetup}
+                                        onChange={handleChange}
+                                        onBlur={handleBlur}
+                                        error={touched.studioSetup && errors.studioSetup}
+                                        className="sm:col-span-2"
+                                    />
 
-                                <Input
-                                    label="Studio Setup (brief description)"
-                                    id="studioSetup"
-                                    name="studioSetup"
-                                    required
-                                    placeholder="Home studio, custom acoustic treatment, Focusrite interface, specific mic models."
-                                    as="textarea"
-                                    value={values.studioSetup}
-                                    onChange={handleChange}
-                                    onBlur={handleBlur}
-                                    error={touched.studioSetup && errors.studioSetup}
-                                    className="sm:col-span-2"
-                                />
+                                    <FileUploadPlaceholder
+                                        label="Upload Audio or Video Example"
+                                        id="performanceExample"
+                                        helperText="Upload an example showcasing your performance/recording quality."
+                                        icon={Music}
+                                        className="sm:col-span-2"
+                                        onChange={(file) => handleFileChange('performanceExampleFile', file)}
+                                        accept="audio/*,video/*"
+                                    />
+                                </div>
+                            </>
+                        )}
 
-                                <FileUploadPlaceholder
-                                    label="Upload Audio or Video Example"
-                                    id="performanceExample"
-                                    helperText="Upload an example showcasing your performance/recording quality."
-                                    icon={Music}
-                                    className="sm:col-span-2"
-                                    onChange={(file) => handleFileChange('performanceExampleFile', file)}
-                                    accept="audio/*,video/*"
-                                />
-                            </div>
-                        </>
-                    )}
-
-                    <div className="flex gap-4 justify-end pt-4 border-t border-white/10">
-                        <Button
-                            type="button"
-                            color="gray"
-                            onClick={() => router.push('/creators/profile')}
-                            disabled={isSubmitting}
-                            className="flex items-center gap-2"
-                        >
-                            <X size={18} />
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            color="blue"
-                            loading={isSubmitting}
-                            disabled={isSubmitting || (!values.roles.mixing && !values.roles.mastering && !values.roles.recording)}
-                            className="flex items-center gap-2"
-                        >
-                            <Save size={18} />
-                            Save Changes
-                        </Button>
-                    </div>
-                    {!values.roles.mixing && !values.roles.mastering && !values.roles.recording && (
-                        <p className="text-center text-sm text-yellow-400 mt-3">You must select at least one service to save changes.</p>
-                    )}
-                </form>
+                        <div className="flex gap-4 justify-end pt-8 border-t border-white/5">
+                            <Button
+                                type="button"
+                                color="gray"
+                                onClick={() => router.push('/creators/profile')}
+                                disabled={isSubmitting}
+                                className="flex items-center gap-2 border-white/10 hover:bg-white/5"
+                            >
+                                <X size={18} />
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                color="blue"
+                                loading={isSubmitting}
+                                disabled={isSubmitting || (!values.roles.mixing && !values.roles.mastering && !values.roles.recording)}
+                                className="bg-indigo-600 hover:bg-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.4)] flex items-center gap-2 px-8"
+                            >
+                                <Save size={18} />
+                                Save Changes
+                            </Button>
+                        </div>
+                        {!values.roles.mixing && !values.roles.mastering && !values.roles.recording && (
+                            <p className="text-center text-sm text-yellow-400 mt-3">You must select at least one service to save changes.</p>
+                        )}
+                    </form>
+                </div>
             </div>
         </div>
     )
