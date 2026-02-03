@@ -26,6 +26,17 @@ export default function PaymentPage() {
     const [loading, setLoading] = useState(true);
     const [processing, setProcessing] = useState(false);
     const [addOns, setAddOns] = useState([]);
+    const [tiers, setTiers] = useState([]);
+
+    useEffect(() => {
+        // Fetch tiers for dynamic pricing
+        fetch('/api/tiers')
+            .then(res => res.json())
+            .then(data => {
+                if (data.tiers) setTiers(data.tiers);
+            })
+            .catch(err => console.error('Error fetching tiers:', err));
+    }, []);
 
     useEffect(() => {
         if (requestId) {
@@ -114,17 +125,30 @@ export default function PaymentPage() {
             setProcessing(false);
         }
     };
+    const getBasePrice = () => {
+        if (!request) return 0;
+        let basePrice = 0;
+        if (tiers.length > 0) {
+            const tierObj = tiers.find(t => t.name === request.tier);
+            if (tierObj) {
+                if (tierObj.prices && tierObj.prices[request.services]) {
+                    basePrice = Number(tierObj.prices[request.services]);
+                } else {
+                    basePrice = Number(tierObj.price || 0);
+                }
+            }
+        }
+
+        // Fallback if tiers not loaded yet (though loading state handles most cases)
+        if (basePrice === 0 && request.tier === 'BRONZE') basePrice = 99;
+
+        return basePrice;
+    };
+
     const calculateTotal = () => {
         if (!request) return 0;
 
-        const tierPrices = {
-            BRONZE: 99,
-            SILVER: 199,
-            GOLD: 299,
-            PLATINUM: 499,
-        };
-
-        const basePrice = tierPrices[request.tier] || 99;
+        const basePrice = getBasePrice();
 
         // Calculate add-ons price
         const addOnsPrice = addOns.reduce((total, addOn) => {
@@ -301,10 +325,7 @@ export default function PaymentPage() {
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-gray-300">
                                     <span>{request.tier} Tier Service</span>
-                                    <span>${(() => {
-                                        const tierPrices = { BRONZE: 99, SILVER: 199, GOLD: 299, PLATINUM: 499 };
-                                        return tierPrices[request.tier] || 99;
-                                    })()}</span>
+                                    <span>${getBasePrice()}</span>
                                 </div>
 
                                 {/* Add-ons */}

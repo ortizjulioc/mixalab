@@ -109,15 +109,18 @@ export default function Home() {
       const res = await fetch('/api/creator/available-requests?filter=ALL');
       const data = await res.json();
       if (data.requests) {
-        // Filter requests that are        // Filter out requests that are already projects (PAID, IN_PROGRESS, etc.)
+        // Filter out requests that are completed/cancelled
         const filteredRequests = data.requests.filter(r =>
           !['PAID', 'IN_PROGRESS', 'COMPLETED', 'DELIVERED', 'CANCELLED'].includes(r.status)
         );
 
-        const available = filteredRequests.filter(r => r.status === 'PENDING' || r.status === 'AWAITING_PAYMENT' || r.status === 'ACCEPTED').length;
+        const available = filteredRequests.length;
 
-        setRequestStats({ available, active: activeProjects?.length || 0 });
-        setAvailableRequests(filteredRequests.slice(0, 3)); // Showing top 3 filteredh || 0 });
+        // Count matches: assigned to me (creatorId exists/not null) and status is IN_REVIEW
+        const matches = filteredRequests.filter(r => r.creatorId && r.status === 'IN_REVIEW').length;
+
+        setRequestStats({ available, active: activeProjects?.length || 0, matches });
+        setAvailableRequests(filteredRequests.slice(0, 3));
       }
     } catch (e) {
       console.error("Error fetching stats:", e);
@@ -167,6 +170,32 @@ export default function Home() {
           </div>
 
           <DashboardStats creatorProfile={creatorProfile} stats={requestStats} activeProjectsCount={activeProjects?.length || 0} />
+
+          {/* Alert Banner for Matches */}
+          {requestStats.matches > 0 && (
+            <div
+              onClick={() => router.push('/creators/requests')}
+              className="mb-8 cursor-pointer relative overflow-hidden bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-transparent border border-amber-500/30 rounded-xl p-6 hover:border-amber-500/50 transition-all group"
+            >
+              <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-amber-500/20 rounded-full animate-pulse group-hover:scale-110 transition-transform">
+                  <Sparkles className="w-6 h-6 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
+                    You have {requestStats.matches} New Match{requestStats.matches !== 1 ? 'es' : ''}!
+                  </h3>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Congratulations! You've been matched with new artists. Tap here to review.
+                  </p>
+                </div>
+                <div className="ml-auto">
+                  <ArrowRight className="w-6 h-6 text-amber-500 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Quick Actions & Recent */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -221,7 +250,7 @@ export default function Home() {
               <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold text-white flex items-center gap-2">
-                    <Inbox className="w-6 h-6 text-amber-400" /> New Opportunities
+                    <Inbox className="w-6 h-6 text-amber-400" /> Requests
                   </h2>
                   <button
                     onClick={() => router.push('/creators/requests')}
@@ -236,10 +265,8 @@ export default function Home() {
                     {availableRequests.map((request) => (
                       <div
                         key={request.id}
-                        // Note: Available requests usually don't have a specific project ID yet for creator view until accepted/matched?
-                        // Or they go to a request detail page. Assuming /creators/requests/[id] or similar if it exists.
-                        // For now keep pushing to requests list or if filtered.
-                        className="bg-gray-800/60 border border-gray-700 hover:border-amber-500/50 rounded-xl p-4 flex items-center justify-between transition-all group"
+                        onClick={() => router.push('/creators/requests')}
+                        className="bg-gray-800/60 border border-gray-700 hover:border-amber-500/50 rounded-xl p-4 flex items-center justify-between transition-all group cursor-pointer hover:bg-gray-800"
                       >
                         <div className="flex items-center gap-4">
                           <div className="p-3 bg-gray-700/50 rounded-lg group-hover:bg-amber-500/10 transition-colors">

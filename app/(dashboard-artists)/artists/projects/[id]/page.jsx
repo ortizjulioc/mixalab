@@ -5,35 +5,53 @@ import { useRouter, useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import {
     ArrowLeft, Music, Calendar, Clock, FileAudio, Download,
-    CheckCircle2, User
+    CheckCircle2, User, Upload, Info, RefreshCw, Zap
 } from 'lucide-react';
 import { openNotification } from '@/utils/open-notification';
+import ProjectChat from '@/components/ProjectChat';
 
 export default function ArtistProjectPage() {
     const params = useParams();
     const router = useRouter();
     const { data: session } = useSession();
     const [project, setProject] = useState(null);
+    const [tiers, setTiers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [uploading, setUploading] = useState(false);
 
-    // Fetch Project Data
+    // Fetch Project Data and Tiers
     useEffect(() => {
-        if (session?.user?.id && params.id) {
-            fetchProject();
-        }
+        const fetchData = async () => {
+            if (session?.user?.id && params.id) {
+                try {
+                    const [projectRes, tiersRes] = await Promise.all([
+                        fetch(`/api/artists/projects/${params.id}`).then(res => res.json()),
+                        fetch('/api/tiers').then(res => res.json())
+                    ]);
+
+                    if (projectRes.project) setProject(projectRes.project);
+                    if (tiersRes.tiers) setTiers(tiersRes.tiers);
+                } catch (error) {
+                    console.error(error);
+                    openNotification('error', 'Error loading project details');
+                } finally {
+                    setLoading(false);
+                }
+            }
+        };
+        fetchData();
     }, [params.id, session]);
 
-    const fetchProject = async () => {
+    const handleFileUpload = async (fileData) => {
+        setUploading(true);
         try {
-            const res = await fetch(`/api/artists/projects/${params.id}`);
-            if (!res.ok) throw new Error('Failed to load project');
-            const data = await res.json();
-            setProject(data.project);
+            // Simulate upload delay
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            openNotification('success', 'File uploaded successfully (Simulation)');
         } catch (error) {
-            console.error(error);
-            openNotification('error', 'Error loading project details');
+            openNotification('error', 'Failed to upload file');
         } finally {
-            setLoading(false);
+            setUploading(false);
         }
     };
 
@@ -52,103 +70,173 @@ export default function ArtistProjectPage() {
         </div>
     );
 
+    const currentTierInfo = tiers.find(t => t.name === project.tier);
+
     return (
-        <div className="min-h-screen bg-zinc-950 px-4 sm:px-6 lg:px-8 py-8 md:ml-64">
+        <div className="grid grid-cols-12 gap-4">
             {/* Back & Header */}
-            <div className="mb-8">
-                <button
-                    onClick={() => router.push('/artists/my-requests')}
-                    className="flex items-center text-gray-400 hover:text-white mb-6 transition-colors"
-                >
-                    <ArrowLeft className="w-4 h-4 mr-2" /> Back to My Requests
-                </button>
+            <div className='col-span-8'>
+                <div className="mb-6">
+                    <button
+                        onClick={() => router.push('/artists/my-requests')}
+                        className="flex items-center text-gray-400 hover:text-white mb-4 transition-colors"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" /> Back to My Requests
+                    </button>
 
-                <div className="bg-gradient-to-r from-gray-900 via-zinc-900 to-black border border-zinc-800 rounded-2xl p-8 relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -z-10" />
-
-                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-                        <div>
-                            <div className="flex items-center gap-3 mb-2">
-                                <span className="px-3 py-1 rounded-full text-xs font-bold border text-indigo-400 border-indigo-600 bg-indigo-500/10">
-                                    IN PROGRESS (Simulated)
-                                </span>
-                                <span className="text-gray-500 text-sm flex items-center gap-1">
-                                    <Clock className="w-3 h-3" /> Started: {new Date(project.createdAt).toLocaleDateString()}
-                                </span>
+                    <div className="bg-gradient-to-r from-gray-900 via-zinc-900 to-black border border-zinc-800 rounded-xl p-6">
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                            <div>
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="px-3 py-1 rounded-full text-xs font-bold border text-indigo-400 border-indigo-600 bg-indigo-500/10">
+                                        IN PROGRESS
+                                    </span>
+                                    <span className="text-gray-500 text-sm flex items-center gap-1">
+                                        <Clock className="w-3 h-3" /> Started: {new Date(project.createdAt).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <h1 className="text-3xl font-bold text-white mb-1">{project.projectName}</h1>
+                                <p className="text-gray-400">Artist: {project.artistName}</p>
                             </div>
-                            <h1 className="text-3xl font-bold text-white mb-2">{project.projectName}</h1>
-                            <p className="text-gray-400 max-w-2xl">Artist: {project.artistName}</p>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Main Content */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+                    {/* Main Content (Left 3 cols) */}
+                    <div className="xl:col-span-3 space-y-6">
 
-                    {/* Status Banner */}
-                    <div className="bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-2xl p-6 backdrop-blur-sm shadow-xl">
-                        <h3 className="text-xl font-bold text-white mb-2 flex items-center gap-2">
-                            <CheckCircle2 className="w-6 h-6 text-green-400" /> Project Active
-                        </h3>
-                        <p className="text-gray-300">
-                            Your project has been kicked off. The creator will begin working on your files shortly. You will be notified when updates are available.
-                        </p>
-                    </div>
+                        {/* Status & Quick Stats */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="md:col-span-2 bg-gradient-to-r from-indigo-900/40 to-purple-900/40 border border-indigo-500/30 rounded-xl p-5 backdrop-blur-sm">
+                                <h3 className="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                                    <CheckCircle2 className="w-5 h-5 text-green-400" /> Project Active
+                                </h3>
+                                <p className="text-gray-300 text-sm">
+                                    Your project has been kicked off. The creator will begin working on your files shortly.
+                                </p>
+                            </div>
+                            {/* Tier Summary Card */}
+                            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-5">
+                                <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                                    <Zap className="w-4 h-4 text-amber-500" /> Tier Specs
+                                </h3>
+                                <div className="flex justify-between items-center mb-2">
+                                    <span className="text-white font-bold text-lg">{project.tier}</span>
+                                    <span className="text-xs bg-amber-500/10 text-amber-400 px-2 py-1 rounded border border-amber-500/20">{project.projectType}</span>
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-gray-400">
+                                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {currentTierInfo?.deliveryDays || 'N/A'} Days</span>
+                                    <span className="flex items-center gap-1"><RefreshCw className="w-3 h-3" /> {currentTierInfo?.numberOfRevisions || 'Unlimited'} Revs</span>
+                                </div>
+                            </div>
+                        </div>
 
-                    {/* Services Section */}
-                    {project.services && project.services.length > 0 && (
+                        {/* Detailed Info Grid */}
                         <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                            <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                                <Music className="w-5 h-5 text-indigo-400" /> Services Included
+                            <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                <Info className="w-5 h-5 text-indigo-400" /> Project Details
                             </h2>
-                            <div className="space-y-3">
-                                {project.services.map(service => (
-                                    <div key={service.id} className="p-4 bg-zinc-800/50 rounded-lg border border-zinc-700/50 flex justify-between items-center">
-                                        <span className="text-white font-medium">{service.type}</span>
-                                    </div>
-                                ))}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">Genre</p>
+                                    <p className="text-white font-medium">{project.genre || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">BPM</p>
+                                    <p className="text-white font-medium">{project.bpm || 'N/A'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">Revisions</p>
+                                    <p className="text-white font-medium">{currentTierInfo?.numberOfRevisions || 'Unlimited'}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-gray-500 mb-1">Delivery Time</p>
+                                    <p className="text-white font-medium">{currentTierInfo?.deliveryDays || 'N/A'} Days</p>
+                                </div>
                             </div>
                         </div>
-                    )}
 
-                    {/* Files Section (Example) */}
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                            <FileAudio className="w-5 h-5 text-indigo-400" /> Project Files
-                        </h2>
+                        {/* Files Section */}
+                        <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                            <div className="flex items-center justify-between mb-6">
+                                <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                                    <FileAudio className="w-5 h-5 text-indigo-400" /> Project Files
+                                </h2>
+                                <button
+                                    onClick={() => document.getElementById('file-upload-artist').click()}
+                                    disabled={uploading}
+                                    className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white rounded-lg text-sm flex items-center gap-2 transition-colors border border-zinc-700"
+                                >
+                                    {uploading ? <div className="animate-spin w-4 h-4 border-2 border-white rounded-full border-t-transparent" /> : <Upload className="w-4 h-4" />}
+                                    Upload File
+                                </button>
+                                <input
+                                    type="file"
+                                    id="file-upload-artist"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        if (e.target.files[0]) handleFileUpload({ name: e.target.files[0].name });
+                                    }}
+                                />
+                            </div>
 
-                        <div className="space-y-3">
-                            <p className="text-center text-gray-500 py-8">No files delivered yet.</p>
+                            <div className="space-y-3">
+                                {project.files && project.files.length > 0 ? (
+                                    project.files.map((file) => (
+                                        <div key={file.id} className="flex items-center justify-between bg-black/20 p-3 rounded-lg border border-zinc-800 hover:border-zinc-700 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-zinc-800 rounded-lg">
+                                                    <Music className="w-4 h-4 text-gray-400" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-medium text-white">{file.name}</p>
+                                                    <p className="text-xs text-gray-500">{new Date(file.createdAt).toLocaleDateString()}</p>
+                                                </div>
+                                            </div>
+                                            <button className="text-indigo-400 hover:text-indigo-300 transition-colors p-2">
+                                                <Download className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div className="text-center py-8 border-2 border-dashed border-zinc-800 rounded-lg bg-zinc-900/30">
+                                        <div className="bg-zinc-800 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-3">
+                                            <Upload className="w-6 h-6 text-gray-500" />
+                                        </div>
+                                        <p className="text-gray-400 text-sm">No files uploaded yet.</p>
+                                        <p className="text-gray-600 text-xs mt-1">Files shared by you or the creator will appear here.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
+
+                        {/* Services Section */}
+                        {project.services && project.services.length > 0 && (
+                            <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
+                                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                                    <Music className="w-5 h-5 text-indigo-400" /> Services
+                                </h2>
+                                <div className="space-y-3">
+                                    {project.services.map(service => (
+                                        <div key={service.id} className="p-3 bg-zinc-800/30 rounded-lg border border-zinc-700/50 flex justify-between items-center text-sm">
+                                            <span className="text-white font-medium">{service.type}</span>
+                                            <span className="text-gray-500 text-xs">Included in Tier</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
+
 
                 </div>
 
-                {/* Sidebar */}
-                <div className="space-y-8">
-                    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-6">
-                        <h2 className="text-lg font-bold text-white mb-4">Project Details</h2>
-                        <div className="space-y-4">
-                            <div className="flex justify-between py-2 border-b border-zinc-800/50">
-                                <span className="text-gray-500">Tier</span>
-                                <span className="text-amber-400 font-bold">{project.tier}</span>
-                            </div>
-                            <div className="flex justify-between py-2 border-b border-zinc-800/50">
-                                <span className="text-gray-500">Type</span>
-                                <span className="text-white">{project.projectType}</span>
-                            </div>
-                            <div className="flex justify-between py-2 border-b border-zinc-800/50">
-                                <span className="text-gray-500">Genre</span>
-                                <span className="text-white">{project.genre || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between py-2 border-b border-zinc-800/50">
-                                <span className="text-gray-500">BPM</span>
-                                <span className="text-white">{project.bpm || 'N/A'}</span>
-                            </div>
-                        </div>
-                    </div>
+            </div>
+            {/* Right Column: Chat (1 col) */}
+            <div className="xl:col-span-4 h-full mb-6">
+                <div className="sticky top-6">
+                    <ProjectChat project={project} currentUser={session?.user} />
                 </div>
             </div>
         </div>
