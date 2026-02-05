@@ -34,6 +34,83 @@ export default function RequestDetailPage() {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [cancellationReason, setCancellationReason] = useState('');
     const [cancelling, setCancelling] = useState(false);
+    const [addOns, setAddOns] = useState([]);
+    const [tiers, setTiers] = useState([]);
+
+    useEffect(() => {
+        if (params.id) {
+            fetchRequestById(params.id);
+        }
+        // Fetch tiers for dynamic pricing
+        fetch('/api/tiers')
+            .then(res => res.json())
+            .then(data => {
+                if (data.tiers) setTiers(data.tiers);
+            })
+            .catch(err => console.error('Error fetching tiers:', err));
+    }, [params.id, fetchRequestById]);
+
+    useEffect(() => {
+        if (currentRequest && currentRequest.addOns) {
+            fetchAddOnsDetails(currentRequest.addOns, currentRequest.services);
+        }
+    }, [currentRequest]);
+
+    const fetchAddOnsDetails = async (selectedAddOns, serviceType) => {
+        try {
+            // Check if there are any add-ons to fetch
+            if (!selectedAddOns || Object.keys(selectedAddOns).length === 0) {
+                setAddOns([]);
+                return;
+            }
+
+            const response = await fetch(`/api/add-ons?serviceType=${serviceType}`);
+            const data = await response.json();
+
+            const addOnsArray = Array.isArray(data) ? data : (data.addOns || []);
+
+            if (addOnsArray.length > 0) {
+                const selectedAddOnsWithDetails = Object.entries(selectedAddOns).map(([addOnId, config]) => {
+                    const addOnDetails = addOnsArray.find(a => a.id === addOnId);
+                    if (addOnDetails) {
+                        return {
+                            ...addOnDetails,
+                            quantity: config.quantity || 1,
+                            selectedOptions: config.selectedOptions || [],
+                        };
+                    }
+                    return null;
+                }).filter(Boolean);
+                setAddOns(selectedAddOnsWithDetails);
+            }
+        } catch (error) {
+            console.error('Error fetching add-ons:', error);
+        }
+    };
+
+    const getBasePrice = () => {
+        if (!currentRequest || tiers.length === 0) return 0;
+        const tierObj = tiers.find(t => t.name === currentRequest.tier);
+        if (!tierObj) return 0;
+
+        // Try to find specific service price
+        if (tierObj.prices && tierObj.prices[currentRequest.services]) {
+            return Number(tierObj.prices[currentRequest.services]);
+        }
+
+        // Fallback to default price
+        return Number(tierObj.price || 0);
+    };
+
+    const calculateTotal = () => {
+        const basePrice = getBasePrice();
+        const addOnsPrice = addOns.reduce((total, addOn) => {
+            const unitPrice = addOn.pricePerUnit || addOn.price || 0;
+            const quantity = addOn.quantity || 1;
+            return total + (unitPrice * quantity);
+        }, 0);
+        return basePrice + addOnsPrice;
+    };
 
     useEffect(() => {
         if (params.id) {
@@ -151,7 +228,7 @@ export default function RequestDetailPage() {
                 {canPay && (
                     <div className="mt-6 pt-6 border-t border-zinc-700/50">
                         <button
-                            onClick={() => router.push(`/artists/checkout/${params.id}`)}
+                            onClick={() => router.push(`/artists/payment/${params.id}`)}
                             className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold py-3 px-6 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2"
                         >
                             <CreditCard className="w-5 h-5" />
@@ -190,8 +267,8 @@ export default function RequestDetailPage() {
                     )}
 
                     {/* Files */}
-                    {currentRequest.files && currentRequest.files.length > 0 && (
-                        <Section title="Files">
+                    <Section title="Files">
+                        {currentRequest.files && currentRequest.files.length > 0 ? (
                             <div className="space-y-2">
                                 {currentRequest.files.map((file) => (
                                     <div
@@ -205,7 +282,7 @@ export default function RequestDetailPage() {
                                                     {file.name}
                                                 </p>
                                                 <p className="text-xs text-gray-500">
-                                                    {new Date(file.createdAt).toLocaleDateString()}
+                                                    {new Date(file.createdAt).toLocaleDateString()} • {file.owner?.name || 'Unknown'} ({file.owner?.role || 'User'})
                                                 </p>
                                             </div>
                                         </div>
@@ -221,8 +298,10 @@ export default function RequestDetailPage() {
                                     </div>
                                 ))}
                             </div>
-                        </Section>
-                    )}
+                        ) : (
+                            <p className="text-gray-500 text-sm italic">No files attached to this request.</p>
+                        )}
+                    </Section>
 
                     {/* Creator Info */}
                     {currentRequest.creator && (
@@ -255,8 +334,40 @@ export default function RequestDetailPage() {
                     )}
                 </div>
 
-                {/* Timeline Sidebar */}
-                <div className="lg:col-span-1">
+                {/* Financial Summary Sidebar */}
+                <div className="lg:col-span-1 space-y-6">
+                    <Section title="Financial Details">
+                        <div className="space-y-3">
+                            <div className="flex justify-between text-gray-300">
+                                <span>{currentRequest.tier} Tier ({currentRequest.services})</span>
+                                <span>${getBasePrice()}</span>
+                            </div>
+
+                            {addOns.length > 0 && (
+                                <div className="space-y-2 pt-2 border-t border-zinc-700/50">
+                                    <p className="text-xs text-gray-500 uppercase tracking-wider">Add-ons</p>
+                                    {addOns.map((addOn, idx) => {
+                                        const unitPrice = addOn.pricePerUnit || addOn.price || 0;
+                                        const quantity = addOn.quantity || 1;
+                                        return (
+                                            <div key={idx} className="flex justify-between text-gray-400 text-sm">
+                                                <span>{addOn.name} {quantity > 1 && `(x${quantity})`}</span>
+                                                <span>${(unitPrice * quantity).toFixed(2)}</span>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            <div className="pt-3 border-t-2 border-amber-500/20 mt-2">
+                                <div className="flex justify-between items-center">
+                                    <span className="font-bold text-white">Total Estimate</span>
+                                    <span className="text-xl font-bold text-amber-400">${calculateTotal()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </Section>
+
                     <Section title="Timeline">
                         {currentRequest.events && currentRequest.events.length > 0 ? (
                             <div className="space-y-4">
@@ -276,15 +387,17 @@ export default function RequestDetailPage() {
             </div>
 
             {/* Cancel Modal */}
-            {showCancelModal && (
-                <CancelModal
-                    onClose={() => setShowCancelModal(false)}
-                    onConfirm={handleCancel}
-                    reason={cancellationReason}
-                    setReason={setCancellationReason}
-                    cancelling={cancelling}
-                />
-            )}
+            {
+                showCancelModal && (
+                    <CancelModal
+                        onClose={() => setShowCancelModal(false)}
+                        onConfirm={handleCancel}
+                        reason={cancellationReason}
+                        setReason={setCancellationReason}
+                        cancelling={cancelling}
+                    />
+                )
+            }
         </div>
     );
 }

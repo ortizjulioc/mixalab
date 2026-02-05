@@ -9,7 +9,7 @@ import { AlertCircle, CheckCircle2, Clock, XCircle, ShieldAlert, Loader2 } from 
 function CreatorSecurityPassSkeleton() {
     return (
         <div className="px-4 sm:px-6 lg:px-8 my-12">
-            <div className="bg-gray-800/40 border-2 border-gray-700 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-6 shadow-2xl backdrop-blur-sm animate-pulse">
+            <div className="liquid-glass border-2 border-gray-700 rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-6 shadow-2xl animate-pulse">
                 <div className="flex items-center space-x-4 flex-grow">
                     <div className="w-10 h-10 bg-gray-700 rounded-full flex-shrink-0"></div>
                     <div className="flex-1">
@@ -149,7 +149,7 @@ export default function CreatorSecurityPass({ creatorProfile, loading }) {
 
     return (
         <div className="px-4 sm:px-6 lg:px-8 my-12">
-            <div className={`${config.bgColor} border-2 ${config.borderColor} rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-6 shadow-2xl backdrop-blur-sm transition-all duration-300 hover:shadow-3xl`}>
+            <div className={`liquid-glass ${config.bgColor} border-2 ${config.borderColor} rounded-3xl p-6 flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-6 shadow-2xl transition-all duration-300 hover:shadow-3xl`}>
 
                 <div className="flex items-center space-x-4 flex-grow text-center md:text-left">
                     {/* Icon */}

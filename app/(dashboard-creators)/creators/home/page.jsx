@@ -1,14 +1,15 @@
 'use client'
 import CreatorSecurityPass from '@/components/CreatorSecurityPass'
 import useCreatorProfile from '@/hooks/useCreatorProfile'
+import useCreatorProjects from '@/hooks/useCreatorProjects'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import React, { useEffect, useState } from 'react'
-import { Sparkles, TrendingUp, Clock, CheckCircle2, User, Inbox, Music, Award, Zap, ArrowRight, Wallet } from 'lucide-react'
+import { Sparkles, TrendingUp, Clock, CheckCircle2, User, Inbox, Music, Award, Zap, ArrowRight, Wallet, PlayCircle } from 'lucide-react'
 
 // ... Keep WelcomeMessage or similar logic but styled ...
 
-function DashboardStats({ creatorProfile, stats }) {
+function DashboardStats({ creatorProfile, stats, activeProjectsCount }) {
   if (!creatorProfile || creatorProfile.status !== 'APPROVED') return null
 
   // Determine active services
@@ -34,7 +35,7 @@ function DashboardStats({ creatorProfile, stats }) {
     {
       icon: Zap,
       label: 'Active Projects',
-      value: stats.active.toString(),
+      value: activeProjectsCount.toString(),
       sub: 'In progress',
       color: 'text-cyan-400',
       bg: 'bg-cyan-500/10',
@@ -91,34 +92,35 @@ export default function Home() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const { creatorProfile, getCreatorProfileByUserId, loading } = useCreatorProfile()
+  const { projects: activeProjects, getCreatorProjectsByUserId, loading: projectsLoading } = useCreatorProjects()
   const [requestStats, setRequestStats] = useState({ available: 0, active: 0 })
-  const [activeProjects, setActiveProjects] = useState([]);
+  const [availableRequests, setAvailableRequests] = useState([]);
 
   useEffect(() => {
     if (session?.user?.id) {
       getCreatorProfileByUserId(session.user.id)
+      getCreatorProjectsByUserId(session.user.id)
       fetchStats();
     }
-  }, [session?.user?.id, getCreatorProfileByUserId])
+  }, [session?.user?.id, getCreatorProfileByUserId, getCreatorProjectsByUserId])
 
   const fetchStats = async () => {
     try {
       const res = await fetch('/api/creator/available-requests?filter=ALL');
       const data = await res.json();
       if (data.requests) {
-        // Assume 'creatorId' in request object is the CreatorProfile ID. 
-        // We need to compare it with fetched creatorProfile ID, but we might not have it yet inside this effect if it's separated.
-        // For simplicity, let's trust the filter=ALL logic from API which returns relevant requests.
-        // We need to distinguish available vs active.
+        // Filter out requests that are completed/cancelled
+        const filteredRequests = data.requests.filter(r =>
+          !['PAID', 'IN_PROGRESS', 'COMPLETED', 'DELIVERED', 'CANCELLED'].includes(r.status)
+        );
 
-        // This logic is slightly approximate without full profile loaded in this scope, 
-        // but 'creatorId' being null usually means available (if it matched tier).
-        const available = data.requests.filter(r => !r.creatorId && r.status === 'PENDING').length;
-        const activeList = data.requests.filter(r => r.creatorId);
-        const active = activeList.length;
+        const available = filteredRequests.length;
 
-        setRequestStats({ available, active });
-        setActiveProjects(activeList);
+        // Count matches: assigned to me (creatorId exists/not null) and status is IN_REVIEW
+        const matches = filteredRequests.filter(r => r.creatorId && r.status === 'IN_REVIEW').length;
+
+        setRequestStats({ available, active: activeProjects?.length || 0, matches });
+        setAvailableRequests(filteredRequests.slice(0, 3));
       }
     } catch (e) {
       console.error("Error fetching stats:", e);
@@ -167,54 +169,131 @@ export default function Home() {
             </div>
           </div>
 
-          <DashboardStats creatorProfile={creatorProfile} stats={requestStats} />
+          <DashboardStats creatorProfile={creatorProfile} stats={requestStats} activeProjectsCount={activeProjects?.length || 0} />
+
+          {/* Alert Banner for Matches */}
+          {requestStats.matches > 0 && (
+            <div
+              onClick={() => router.push('/creators/requests')}
+              className="mb-8 cursor-pointer relative overflow-hidden bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-transparent border border-amber-500/30 rounded-xl p-6 hover:border-amber-500/50 transition-all group"
+            >
+              <div className="absolute top-0 left-0 w-1 h-full bg-amber-500"></div>
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-amber-500/20 rounded-full animate-pulse group-hover:scale-110 transition-transform">
+                  <Sparkles className="w-6 h-6 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white group-hover:text-amber-300 transition-colors">
+                    You have {requestStats.matches} New Match{requestStats.matches !== 1 ? 'es' : ''}!
+                  </h3>
+                  <p className="text-gray-400 text-sm mt-1">
+                    Congratulations! You've been matched with new artists. Tap here to review.
+                  </p>
+                </div>
+                <div className="ml-auto">
+                  <ArrowRight className="w-6 h-6 text-amber-500 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Quick Actions & Recent */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-8">
+
+              {/* ACTIVE PROJECTS SECTION */}
               <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-white">Recent Projects</h2>
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <PlayCircle className="w-6 h-6 text-cyan-400" /> Your Active Projects
+                  </h2>
+                </div>
+
+                {projectsLoading ? (
+                  <div className="text-gray-400">Loading projects...</div>
+                ) : activeProjects && activeProjects.length > 0 ? (
+                  <div className="space-y-4">
+                    {activeProjects.map((project) => (
+                      <div
+                        key={project.id}
+                        onClick={() => router.push(`/creators/projects/${project.id}`)}
+                        className="group relative overflow-hidden bg-gradient-to-r from-cyan-900/20 to-gray-800 border border-cyan-500/30 hover:border-cyan-400/50 rounded-xl p-5 cursor-pointer transition-all"
+                      >
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-cyan-500/10 rounded-lg group-hover:bg-cyan-500/20 transition-colors">
+                              <Music className="w-6 h-6 text-cyan-400" />
+                            </div>
+                            <div>
+                              <h4 className="font-bold text-white text-lg group-hover:text-cyan-300 transition-colors">{project.projectName}</h4>
+                              <p className="text-sm text-gray-400">{project.projectType} • {project.tier}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 text-xs font-bold border border-cyan-500/20">
+                              IN PROGRESS
+                            </span>
+                            <ArrowRight className="w-5 h-5 text-gray-500 group-hover:text-white transition-colors" />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 border border-dashed border-gray-700 rounded-lg">
+                    <p className="text-gray-400">No active projects at the moment.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* AVAILABLE REQUESTS SECTION */}
+              <div className="bg-gray-800/40 border border-gray-700/50 rounded-xl p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                    <Inbox className="w-6 h-6 text-amber-400" /> Requests
+                  </h2>
                   <button
-                    onClick={() => router.push('/creators/requests?filter=ACCEPTED')}
+                    onClick={() => router.push('/creators/requests')}
                     className="text-indigo-400 hover:text-indigo-300 text-sm font-medium flex items-center gap-1"
                   >
                     View All <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
 
-                {activeProjects.length > 0 ? (
+                {availableRequests.length > 0 ? (
                   <div className="space-y-4">
-                    {activeProjects.map((project) => (
+                    {availableRequests.map((request) => (
                       <div
-                        key={project.id}
-                        onClick={() => router.push(`/creators/projects/${project.id}`)}
-                        className="bg-gray-800/60 border border-gray-700 hover:border-indigo-500/50 rounded-xl p-4 flex items-center justify-between cursor-pointer transition-all group"
+                        key={request.id}
+                        onClick={() => router.push('/creators/requests')}
+                        className="bg-gray-800/60 border border-gray-700 hover:border-amber-500/50 rounded-xl p-4 flex items-center justify-between transition-all group cursor-pointer hover:bg-gray-800"
                       >
                         <div className="flex items-center gap-4">
-                          <div className="p-3 bg-gray-700/50 rounded-lg group-hover:bg-indigo-500/10 transition-colors">
-                            <Music className="w-6 h-6 text-gray-400 group-hover:text-indigo-400" />
+                          <div className="p-3 bg-gray-700/50 rounded-lg group-hover:bg-amber-500/10 transition-colors">
+                            <Sparkles className="w-6 h-6 text-gray-400 group-hover:text-amber-400" />
                           </div>
                           <div>
-                            <h4 className="font-bold text-white group-hover:text-indigo-300 transition-colors">{project.projectName}</h4>
+                            <h4 className="font-bold text-white group-hover:text-amber-300 transition-colors">{request.projectName}</h4>
                             <div className="flex items-center gap-2 text-xs text-gray-500 mt-1">
-                              <span className={`px-2 py-0.5 rounded-full bg-gray-700 ${project.status === 'ACCEPTED' || project.status === 'AWAITING_PAYMENT' ? 'text-amber-400' : 'text-emerald-400'}`}>
-                                {project.status.replace('_', ' ')}
-                              </span>
-                              <span>• {project.tier}</span>
+                              <span className="text-gray-400">{request.artistName}</span>
+                              <span>• {request.tier}</span>
                             </div>
                           </div>
                         </div>
-                        <ArrowRight className="w-5 h-5 text-gray-600 group-hover:text-white transition-colors" />
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold border ${request.status === 'ACCEPTED' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                          request.status === 'PAID' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                            'bg-gray-500/10 text-gray-400 border-gray-500/20'
+                          }`}>
+                          {request.status.replace('_', ' ')}
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  /* Placeholder for empty projects list */
                   <div className="text-center py-12 bg-gray-900/30 rounded-lg border border-gray-800 border-dashed">
                     <Music className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-                    <p className="text-gray-300 font-medium">No active projects yet</p>
-                    <p className="text-gray-500 text-sm mt-1">Start by finding a request that matches your skills.</p>
+                    <p className="text-gray-300 font-medium">No new requests found</p>
+                    <p className="text-gray-500 text-sm mt-1">Check back later for new opportunities.</p>
                   </div>
                 )}
               </div>

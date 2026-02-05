@@ -137,14 +137,16 @@ export default function CreatorProfilePage() {
                         { label: 'Profile' },
                     ]}
                 />
-                <div className="p-8 border border-white/20 rounded-2xl liquid-glass text-center">
-                    <AlertCircle className="w-16 h-16 mx-auto mb-4 text-yellow-500" />
+                <div className="p-8 rounded-2xl liquid-glass text-center relative overflow-hidden">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 blur-3xl rounded-full -mr-10 -mt-10"></div>
+                    <AlertCircle className="w-16 h-16 mx-auto mb-4 text-indigo-500/50" />
                     <h2 className="text-2xl font-bold text-white mb-2">No Profile Found</h2>
                     <p className="text-gray-400 mb-6">You haven't created a creator profile yet.</p>
-                    <Button color="blue" onClick={() => router.push('/creators/profile/create')}>
+                    <Button color="blue" className="bg-indigo-600 hover:bg-indigo-500" onClick={() => router.push('/creators/profile/create')}>
                         Create Profile
                     </Button>
                 </div>
+
             </div>
         )
     }
@@ -194,7 +196,9 @@ export default function CreatorProfilePage() {
             />
 
             {/* Status Banner */}
-            <div className={`p-6 border rounded-2xl liquid-glass ${getStatusColor(profile.status)}`}>
+            <div className={`p-6 border rounded-2xl shadow-xl backdrop-blur-md relative overflow-hidden group ${getStatusColor(profile.status)}`}>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-current opacity-[0.03] blur-3xl rounded-full -mr-10 -mt-10"></div>
+
                 <div className="flex items-center gap-3">
                     {getStatusIcon(profile.status)}
                     <div className="flex-1">
@@ -220,7 +224,9 @@ export default function CreatorProfilePage() {
 
             {/* Tier Information */}
             {currentTier && tierConfig && (
-                <div className={`p-8 border-2 rounded-2xl liquid-glass shadow-xl ${tierConfig.borderColor} ${tierConfig.bgColor} ${tierConfig.glowColor}`}>
+                <div className={`p-8 border-2 rounded-2xl liquid-glass shadow-2xl relative overflow-hidden group transition-all duration-500 hover:shadow-indigo-500/10 ${tierConfig.borderColor} ${tierConfig.bgColor} ${tierConfig.glowColor}`}>
+                    <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 blur-[100px] rounded-full -mr-32 -mt-32 transition-all duration-500 group-hover:bg-white/10"></div>
+
                     <div className="flex items-center gap-4 mb-6">
                         <div className={`p-3 rounded-xl ${tierConfig.badgeBg} border ${tierConfig.badgeBorder}`}>
                             <TierIcon className={`w-8 h-8 ${tierConfig.color}`} />
@@ -252,86 +258,93 @@ export default function CreatorProfilePage() {
             )}
 
             {/* Profile Information */}
-            <div className="p-6 border border-white/20 rounded-2xl liquid-glass">
-                <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-3">
-                        <User className="w-6 h-6 text-blue-400" />
-                        <h2 className="text-xl font-bold text-white">Profile Information</h2>
-                    </div>
-                    <Button
-                        color="blue"
-                        onClick={() => router.push(`/creators/profile/edit`)}
-                        disabled={profile.status === 'SUSPENDED'}
-                    >
-                        Edit Profile
-                    </Button>
-                </div>
+            <div className="rounded-2xl liquid-glass shadow-2xl shadow-indigo-500/5 overflow-hidden relative group">
+                <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] rounded-full -mr-32 -mt-32 transition-all duration-500 group-hover:bg-indigo-500/10"></div>
+                <div className="p-8">
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="text-sm text-gray-400">Brand Name</label>
-                        <p className="text-white font-medium mt-1">{profile.brandName}</p>
+                    <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                            <User className="w-6 h-6 text-blue-400" />
+                            <h2 className="text-xl font-bold text-white">Profile Information</h2>
+                        </div>
+                        <Button
+                            color="blue"
+                            onClick={() => router.push(`/creators/profile/edit`)}
+                            disabled={profile.status === 'SUSPENDED'}
+                        >
+                            Edit Profile
+                        </Button>
                     </div>
-                    <div>
-                        <label className="text-sm text-gray-400">Country</label>
-                        <p className="text-white font-medium mt-1">{formatCountry(profile.country) || 'Not specified'}</p>
-                    </div>
-                    <div>
-                        <label className="text-sm text-gray-400">Years of Experience</label>
-                        <p className="text-white font-medium mt-1">{profile.yearsOfExperience} {profile.yearsOfExperience === 1 ? 'year' : 'years'}</p>
-                    </div>
-                    <div>
-                        <label className="text-sm text-gray-400">Main DAW</label>
-                        <p className="text-white font-medium mt-1">{formatDAW(profile.mainDaw)}</p>
-                    </div>
-                    <div>
-                        <label className="text-sm text-gray-400">Availability</label>
-                        <p className="text-white font-medium mt-1">{formatAvailability(profile.availability)}</p>
-                    </div>
-                    <div>
-                        <label className="text-sm text-gray-400">Portfolio</label>
-                        {profile.portfolio ? (
-                            <a
-                                href={profile.portfolio}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-400 hover:text-blue-300 mt-1 block"
-                            >
-                                View Portfolio
-                            </a>
-                        ) : (
-                            <p className="text-gray-500 mt-1">Not specified</p>
-                        )}
-                    </div>
-                </div>
 
-                {/* Genres */}
-                <div className="mt-6 pt-6 border-t border-white/10">
-                    <label className="text-sm text-gray-400 block mb-3">Genres & Styles</label>
-                    <div className="flex flex-wrap gap-2">
-                        {profile.genders?.map((g) => (
-                            <span key={g.id || Math.random()} className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-300 text-sm border border-blue-500/20">
-                                {g.genre?.name || 'Unknown'}
-                            </span>
-                        ))}
-                        {(!profile.genders || profile.genders.length === 0) && (
-                            <p className="text-gray-500 italic">No genres specified</p>
-                        )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="text-sm text-gray-400">Brand Name</label>
+                            <p className="text-white font-medium mt-1">{profile.brandName}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-gray-400">Country</label>
+                            <p className="text-white font-medium mt-1">{formatCountry(profile.country) || 'Not specified'}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-gray-400">Years of Experience</label>
+                            <p className="text-white font-medium mt-1">{profile.yearsOfExperience} {profile.yearsOfExperience === 1 ? 'year' : 'years'}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-gray-400">Main DAW</label>
+                            <p className="text-white font-medium mt-1">{formatDAW(profile.mainDaw)}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-gray-400">Availability</label>
+                            <p className="text-white font-medium mt-1">{formatAvailability(profile.availability)}</p>
+                        </div>
+                        <div>
+                            <label className="text-sm text-gray-400">Portfolio</label>
+                            {profile.portfolio ? (
+                                <a
+                                    href={profile.portfolio}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 mt-1 block"
+                                >
+                                    View Portfolio
+                                </a>
+                            ) : (
+                                <p className="text-gray-500 mt-1">Not specified</p>
+                            )}
+                        </div>
                     </div>
-                </div>
 
-                {profile.gearList && (
+                    {/* Genres */}
                     <div className="mt-6 pt-6 border-t border-white/10">
-                        <label className="text-sm text-gray-400">Gear List</label>
-                        <p className="text-white mt-1">{profile.gearList}</p>
+                        <label className="text-sm text-gray-400 block mb-3">Genres & Styles</label>
+                        <div className="flex flex-wrap gap-2">
+                            {profile.genders?.map((g) => (
+                                <span key={g.id || Math.random()} className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-300 text-sm border border-blue-500/20">
+                                    {g.genre?.name || 'Unknown'}
+                                </span>
+                            ))}
+                            {(!profile.genders || profile.genders.length === 0) && (
+                                <p className="text-gray-500 italic">No genres specified</p>
+                            )}
+                        </div>
                     </div>
-                )}
+
+                    {profile.gearList && (
+                        <div className="mt-6 pt-6 border-t border-white/10">
+                            <label className="text-sm text-gray-400">Gear List</label>
+                            <p className="text-white mt-1">{profile.gearList}</p>
+                        </div>
+                    )}
+                </div>
             </div>
+
 
             {/* Services */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {profile.mixing && (
-                    <div className="p-6 border border-white/20 rounded-2xl liquid-glass">
+                    <div className="p-6 rounded-2xl liquid-glass relative overflow-hidden group hover:translate-y-[-2px] transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 blur-2xl rounded-full -mr-12 -mt-12"></div>
+
                         <h3 className="text-lg font-bold text-white mb-4">Mixing Services</h3>
                         <div className="space-y-3">
                             <div>
@@ -351,7 +364,9 @@ export default function CreatorProfilePage() {
                 )}
 
                 {profile.masteringEngineerProfile && (
-                    <div className="p-6 border border-white/20 rounded-2xl liquid-glass">
+                    <div className="p-6 rounded-2xl liquid-glass relative overflow-hidden group hover:translate-y-[-2px] transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 blur-2xl rounded-full -mr-12 -mt-12"></div>
+
                         <h3 className="text-lg font-bold text-white mb-4">Mastering Services</h3>
                         <div className="space-y-3">
                             <div>
@@ -367,7 +382,9 @@ export default function CreatorProfilePage() {
                 )}
 
                 {profile.instrumentalist && (
-                    <div className="p-6 border border-white/20 rounded-2xl liquid-glass">
+                    <div className="p-6 rounded-2xl liquid-glass relative overflow-hidden group hover:translate-y-[-2px] transition-all duration-300">
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/5 blur-2xl rounded-full -mr-12 -mt-12"></div>
+
                         <h3 className="text-lg font-bold text-white mb-4">Recording Services</h3>
                         <div className="space-y-3">
                             <div>

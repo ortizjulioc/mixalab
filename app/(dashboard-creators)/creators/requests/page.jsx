@@ -1,6 +1,8 @@
 'use client';
 
+
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useSession } from 'next-auth/react';
 import {
     Music,
@@ -50,6 +52,17 @@ export default function CreatorRequestsPage() {
     const [filter, setFilter] = useState('ACCEPTED'); // Show My Projects by default
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [showDetails, setShowDetails] = useState(false);
+    const [tiers, setTiers] = useState([]);
+
+    useEffect(() => {
+        // Fetch tiers for pricing
+        fetch('/api/tiers')
+            .then(res => res.json())
+            .then(data => {
+                if (data.tiers) setTiers(data.tiers);
+            })
+            .catch(err => console.error('Error fetching tiers:', err));
+    }, []);
 
     useEffect(() => {
         if (session?.user?.id) {
@@ -205,6 +218,7 @@ export default function CreatorRequestsPage() {
             {showDetails && selectedRequest && (
                 <RequestDetailsModal
                     request={selectedRequest}
+                    tiers={tiers}
                     onClose={() => setShowDetails(false)}
                     onAccept={() => handleAcceptRequest(selectedRequest.id)}
                     onDecline={() => handleDeclineRequest(selectedRequest.id)}
@@ -271,14 +285,103 @@ function RequestCard({ request, onView }) {
     );
 }
 
-function RequestDetailsModal({ request, onClose, onAccept, onDecline }) {
+function RequestDetailsModal({ request, tiers, onClose, onAccept, onDecline }) {
     const tierStyle = TIER_STYLES[request.tier] || TIER_STYLES.BRONZE;
+    const [mounted, setMounted] = useState(false);
+    const [processing, setProcessing] = useState(false);
 
-    return (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={onClose}
+    useEffect(() => {
+        setMounted(true);
+        return () => setMounted(false);
+    }, []);
+
+    const handleAction = async (actionFn) => {
+        if (processing) return;
+        setProcessing(true);
+        try {
+            await actionFn();
+        } catch (error) {
+            console.error(error);
+            setProcessing(false);
+        }
+    };
+
+
+
+    const [detailedAddOns, setDetailedAddOns] = useState([]);
+
+    useEffect(() => {
+        const fetchAddOns = async () => {
+            if (!request.addOns || Object.keys(request.addOns).length === 0) {
+                setDetailedAddOns([]);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/add-ons?serviceType=${request.services}`);
+                const data = await response.json();
+                const addOnsArray = Array.isArray(data) ? data : (data.addOns || []);
+
+                if (addOnsArray.length > 0) {
+                    let selectedItems = [];
+                    if (Array.isArray(request.addOns)) {
+                        selectedItems = request.addOns;
+                    } else {
+                        selectedItems = Object.entries(request.addOns).map(([id, val]) => ({ id, ...val }));
+                    }
+
+                    const mapping = selectedItems.map(item => {
+                        const original = addOnsArray.find(a => a.id === item.id);
+                        if (original) {
+                            return {
+                                ...original,
+                                quantity: item.quantity || 1,
+                                selectedOptions: item.selectedOptions || []
+                            };
+                        }
+                        return null;
+                    }).filter(Boolean);
+                    setDetailedAddOns(mapping);
+                }
+            } catch (error) {
+                console.error("Error fetching add-ons", error);
+            }
+        };
+
+        fetchAddOns();
+    }, [request]);
+
+    const getBasePrice = () => {
+        if (!tiers || tiers.length === 0) return 0;
+        const tierObj = tiers.find(t => t.name === request.tier);
+        if (!tierObj) return 0;
+
+        // Try specific service price
+        if (tierObj.prices && tierObj.prices[request.services]) {
+            return Number(tierObj.prices[request.services]);
+        }
+        return Number(tierObj.price || 0);
+    };
+
+    const calculateTotal = () => {
+        const base = getBasePrice();
+        const extras = detailedAddOns.reduce((sum, item) => {
+            const price = item.pricePerUnit || item.price || 0;
+            return sum + (price * item.quantity);
+        }, 0);
+        return base + extras;
+    };
+
+    const totalPrice = calculateTotal();
+    const price = totalPrice; // Compatibility alias if needed, or just use totalPrice in JSX
+
+
+
+    const modalContent = (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4"
+            onClick={() => !processing && onClose()}
         >
-            <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+            <div className={`bg-gradient-to-br from-zinc-900 to-zinc-950 border border-zinc-700 rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto ${processing ? 'pointer-events-none opacity-80' : ''}`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
@@ -290,7 +393,8 @@ function RequestDetailsModal({ request, onClose, onAccept, onDecline }) {
                         </div>
                         <button
                             onClick={onClose}
-                            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+                            disabled={processing}
+                            className="p-2 hover:bg-zinc-800 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <XCircle className="w-6 h-6 text-gray-400" />
                         </button>
@@ -317,7 +421,49 @@ function RequestDetailsModal({ request, onClose, onAccept, onDecline }) {
                             <p className="text-xs text-gray-500 mb-1">Status</p>
                             <p className="font-bold text-amber-400">{request.status}</p>
                         </div>
+
                     </div>
+
+                    {/* Price / Earnings */}
+                    <div className="flex items-center justify-between bg-gradient-to-r from-emerald-900/20 to-emerald-800/20 border border-emerald-500/20 rounded-xl p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-emerald-500/20 rounded-lg">
+                                <DollarSign className="w-6 h-6 text-emerald-400" />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-400">Total Value</p>
+                                <p className="text-xl font-bold text-white">${totalPrice.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        {request.creatorId && (
+                            <div className="text-right">
+                                <p className="text-xs text-emerald-400 font-medium">Est. Earnings (90%)</p>
+                                <p className="text-sm font-bold text-emerald-300">
+                                    ${(totalPrice * 0.9).toFixed(2)}
+                                </p>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Add-ons List */}
+                    {detailedAddOns.length > 0 && (
+                        <div>
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Included Add-ons</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                {detailedAddOns.map((addon, idx) => (
+                                    <div key={idx} className="bg-zinc-800/60 border border-zinc-700 rounded-lg p-3 flex justify-between items-center">
+                                        <div>
+                                            <p className="text-sm font-bold text-white">{addon.name}</p>
+                                            <p className="text-xs text-gray-500">{addon.quantity > 1 ? `Quantity: ${addon.quantity}` : 'Single item'}</p>
+                                        </div>
+                                        <span className="text-amber-400 font-bold text-sm">
+                                            +${((addon.pricePerUnit || addon.price || 0) * addon.quantity).toFixed(2)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Description */}
                     {request.description && (
@@ -342,26 +488,36 @@ function RequestDetailsModal({ request, onClose, onAccept, onDecline }) {
                     )}
 
                     {/* Files */}
-                    {request.files && request.files.length > 0 && (
-                        <div>
-                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Files</h3>
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Files</h3>
+                        {request.files && request.files.length > 0 ? (
                             <div className="space-y-2">
                                 {request.files.map((file) => (
-                                    <div key={file.id} className="flex items-center justify-between bg-zinc-800/40 rounded-lg p-3 border border-zinc-700/50">
-                                        <span className="text-sm text-gray-300">{file.name}</span>
+                                    <div key={file.id} className="flex items-center justify-between bg-zinc-800/40 rounded-lg p-3 border border-zinc-700/50 hover:border-zinc-600 transition-colors">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className="p-2 bg-zinc-700/50 rounded">
+                                                <Music className="w-4 h-4 text-gray-400" />
+                                            </div>
+                                            <span className="text-sm text-gray-300 truncate">{file.name}</span>
+                                        </div>
                                         <a
                                             href={file.url}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="text-amber-400 hover:text-amber-300 text-sm font-semibold"
+                                            className="text-amber-400 hover:text-amber-300 text-sm font-semibold whitespace-nowrap px-3 py-1 rounded-md hover:bg-amber-500/10 transition-colors"
+                                            onClick={(e) => e.stopPropagation()}
                                         >
                                             Download
                                         </a>
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <div className="text-center p-6 border border-dashed border-zinc-800 rounded-lg bg-zinc-900/30">
+                                <p className="text-gray-500 text-sm italic">No files attached to this request.</p>
+                            </div>
+                        )}
+                    </div>
 
                     {/* Artist Info */}
                     {request.user && (
@@ -391,18 +547,28 @@ function RequestDetailsModal({ request, onClose, onAccept, onDecline }) {
                     {['PENDING', 'IN_REVIEW'].includes(request.status) ? (
                         <div className="flex gap-3">
                             <button
-                                onClick={onDecline}
-                                className="flex-1 bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2"
+                                onClick={() => handleAction(onDecline)}
+                                disabled={processing}
+                                className="flex-1 bg-zinc-800/80 hover:bg-zinc-700/80 border border-zinc-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <XCircle className="w-5 h-5" />
-                                Decline
+                                {processing ? (
+                                    <Clock className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <XCircle className="w-5 h-5" />
+                                )}
+                                {processing ? 'Processing...' : 'Decline'}
                             </button>
                             <button
-                                onClick={onAccept}
-                                className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 flex items-center justify-center gap-2"
+                                onClick={() => handleAction(onAccept)}
+                                disabled={processing}
+                                className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black font-bold py-3 px-6 rounded-xl transition-all duration-300 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <CheckCircle2 className="w-5 h-5" />
-                                Accept Project
+                                {processing ? (
+                                    <Clock className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <CheckCircle2 className="w-5 h-5" />
+                                )}
+                                {processing ? 'Accepting...' : 'Accept Project'}
                             </button>
                         </div>
                     ) : ['ACCEPTED', 'AWAITING_PAYMENT'].includes(request.status) ? (
@@ -412,11 +578,16 @@ function RequestDetailsModal({ request, onClose, onAccept, onDecline }) {
                                 Waiting for Artist Payment
                             </div>
                             <button
-                                onClick={onDecline}
-                                className="px-6 py-3 rounded-xl border border-zinc-700 hover:border-red-500/50 hover:bg-red-500/10 text-gray-400 hover:text-red-400 font-medium transition-all flex items-center gap-2"
+                                onClick={() => handleAction(onDecline)}
+                                disabled={processing}
+                                className="px-6 py-3 rounded-xl border border-zinc-700 hover:border-red-500/50 hover:bg-red-500/10 text-gray-400 hover:text-red-400 font-medium transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                <XCircle className="w-5 h-5" />
-                                Cancel Request
+                                {processing ? (
+                                    <Clock className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <XCircle className="w-5 h-5" />
+                                )}
+                                {processing ? 'Processing...' : 'Cancel Request'}
                             </button>
                         </div>
                     ) : (
@@ -434,4 +605,8 @@ function RequestDetailsModal({ request, onClose, onAccept, onDecline }) {
             </div>
         </div>
     );
+
+    if (!mounted) return null;
+
+    return createPortal(modalContent, document.body);
 }

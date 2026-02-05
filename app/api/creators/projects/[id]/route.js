@@ -16,8 +16,17 @@ export async function GET(request, { params }) {
 
         const { id } = params;
 
-        // Verify creator owns this project (assigned to it)
-        const project = await prisma.serviceRequest.findUnique({
+        // 1. Get the current user's Creator Profile
+        const currentCreator = await prisma.creatorProfile.findUnique({
+            where: { userId: session.user.id }
+        });
+
+        if (!currentCreator) {
+            return NextResponse.json({ error: 'Creator profile not found' }, { status: 403 });
+        }
+
+        // 2. Fetch Project (New Model)
+        const project = await prisma.project.findUnique({
             where: { id },
             include: {
                 user: {
@@ -28,24 +37,10 @@ export async function GET(request, { params }) {
                         image: true,
                     }
                 },
-                genres: {
-                    include: { genre: true }
-                },
+                services: true,
                 files: true,
-                events: {
-                    orderBy: { createdAt: 'desc' },
-                    include: {
-                        user: {
-                            select: { name: true, image: true }
-                        }
-                    }
-                },
-                creator: {
-                    select: {
-                        id: true,
-                        userId: true
-                    }
-                }
+                // Note: Project model doesn't have events or separate creator field like ServiceRequest
+                // Access is determined by services.creatorId
             }
         });
 
@@ -53,13 +48,22 @@ export async function GET(request, { params }) {
             return NextResponse.json({ error: 'Project not found' }, { status: 404 });
         }
 
-        // Check if the logged in user is the creator assigned
-        // We need to match session.user.id with project.creator.userId
-        if (project.creator?.userId !== session.user.id) {
+        // 3. Verify Ownership
+        // Creator must be assigned to at least one service in this project
+        const hasAccess = project.services.some(service => service.creatorId === currentCreator.id);
+
+        if (!hasAccess) {
+            console.error(`Unauthorized: Creator (${currentCreator.id}) is not assigned to any service in Project (${project.id})`);
             return NextResponse.json({ error: 'Unauthorized access to project' }, { status: 403 });
         }
 
-        return NextResponse.json({ project });
+        // Inject a simulated 'status' for frontend compatibility or handle in frontend
+        const projectWithStatus = {
+            ...project,
+            status: 'IN_PROGRESS' // Projects are active by definition
+        };
+
+        return NextResponse.json({ project: projectWithStatus });
 
     } catch (error) {
         console.error('Error fetching project:', error);
