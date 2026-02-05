@@ -45,6 +45,9 @@ export async function uploadFile(file, options) {
       "audio/acc",
       "audio/ogg",
       "application/pdf",
+      "application/zip",
+      "application/x-zip-compressed",
+      "application/x-rar-compressed"
     ],
   } = options;
 

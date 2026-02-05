@@ -113,7 +113,7 @@ export async function POST(request) {
       if (value instanceof File && value.size > 0) {
         fileKeys.push(key);
         fileUploadPromises.push(
-          uploadFile(value, userId, projectName).then(metadata => ({
+          uploadFile(value, { username: userId, project: projectName }).then(metadata => ({
             key,
             metadata
           }))

@@ -117,7 +117,7 @@ export async function PUT(request) {
 
             // Se asume que uploadFile gestiona el almacenamiento y devuelve metadatos
             fileUploadPromises.push(
-                uploadFile(fileObject, userId, project).then(metadata => ({
+                uploadFile(fileObject, { username: userId, project: project }).then(metadata => ({
                     fileKey,
                     metadata,
                 }))

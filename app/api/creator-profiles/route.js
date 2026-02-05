@@ -113,7 +113,7 @@ export async function POST(request) {
 
             // uploadFile must be able to handle the Web API File object (which supports methods like .stream() or .arrayBuffer())
             fileUploadPromises.push(
-                uploadFile(fileObject, userId, project).then(metadata => ({
+                uploadFile(fileObject, { username: userId, project: project }).then(metadata => ({
                     fileKey,
                     metadata,
                 }))
