@@ -123,6 +123,8 @@ model User {
   ProjectEvent    ProjectEvent[]
   Notification    Notification[]
   messages        Message[]
+  chatsAsArtist   ChatRoom[]       @relation("ChatArtist")
+  chatsAsCreator  ChatRoom[]       @relation("ChatCreator")
 
   @@map("users")
 }
@@ -392,6 +394,9 @@ model File {
   serviceRequestId String?
   serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
 
+  messageId String?  @map("message_id")
+  message   Message? @relation(fields: [messageId], references: [id])
+
   @@map("files")
 }
 
@@ -597,6 +602,10 @@ model Notification {
 // MODELOS PARA CHAT EN VIVO (TEXTO)
 // ---------------------------------------------------------
 
+// ---------------------------------------------------------
+// MODELOS PARA CHAT EN VIVO (TEXTO & ARCHIVOS)
+// ---------------------------------------------------------
+
 model ChatRoom {
   id               String         @id @default(uuid())
   // Relacionamos el chat con una solicitud de servicio específica
@@ -605,7 +614,11 @@ model ChatRoom {
 
   // Participantes para facilitar queries de "mis chats"
   artistId  String @map("artist_id")
-  creatorId String @map("creator_id")
+  creatorId String @map("creator_id") // ID del User (Productor)
+
+  // Relaciones directas para facilitar acceso a datos de usuario
+  artist  User @relation("ChatArtist", fields: [artistId], references: [id])
+  creator User @relation("ChatCreator", fields: [creatorId], references: [id])
 
   messages Message[]
 
@@ -616,13 +629,17 @@ model ChatRoom {
 }
 
 model Message {
-  id         String @id @default(uuid())
-  chatRoomId String @map("chat_room_id")
-  senderId   String @map("sender_id") // ID del User que envía
-  content    String @db.Text
+  id         String      @id @default(uuid())
+  chatRoomId String      @map("chat_room_id")
+  senderId   String      @map("sender_id") // ID del User que envía
+  content    String      @db.Text
+  type       MessageType @default(TEXT)
 
   // Para saber si el otro usuario ya leyó el mensaje
   isRead Boolean @default(false) @map("is_read")
+
+  // Adjuntos
+  files File[]
 
   // Relaciones
   chatRoom ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
@@ -631,6 +648,12 @@ model Message {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("messages")
+}
+
+enum MessageType {
+  TEXT   @map("text")
+  FILE   @map("file")
+  SYSTEM @map("system")
 }
 
 // ---------------------------------------------------------

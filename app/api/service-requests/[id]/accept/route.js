@@ -138,6 +138,22 @@ export async function POST(request, { params }) {
           link: `/artists/my-requests/${id}`,
         },
       }),
+
+      // 4. Create Chat Room
+      prisma.chatRoom.create({
+        data: {
+          serviceRequestId: id,
+          artistId: serviceRequest.userId,
+          creatorId: userId, // Creator's User ID
+          messages: {
+            create: {
+              senderId: userId,
+              content: "I've accepted your request! Let's get started.",
+              type: "TEXT",
+            },
+          },
+        },
+      }),
     ]);
 
     // 4. Send Email to Artist
