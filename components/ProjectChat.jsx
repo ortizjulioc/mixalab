@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Send, Paperclip, Loader2 } from "lucide-react";
+import {
+  Send,
+  Paperclip,
+  Loader2,
+  Minimize2,
+  MessageSquare,
+} from "lucide-react";
 import { useSocket } from "@/hooks/useSocket";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -13,6 +19,7 @@ export default function ProjectChat({ project, currentUser }) {
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
   const [typingUser, setTypingUser] = useState(null); // Simple: assume 1 other person
+  const [isOpen, setIsOpen] = useState(true); // State for chat visibility
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
@@ -27,12 +34,14 @@ export default function ProjectChat({ project, currentUser }) {
 
   // Scroll to bottom on new message
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, typingUser]);
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, typingUser, isOpen]);
 
   // Mark messages as read when they appear and are not mine
   useEffect(() => {
-    if (!chatRoomId || !currentUser?.id) return;
+    if (!chatRoomId || !currentUser?.id || !isOpen) return;
 
     const unreadMessages = messages.filter(
       (m) => !m.isRead && m.senderId !== currentUser.id,
@@ -58,7 +67,7 @@ export default function ProjectChat({ project, currentUser }) {
         }),
       );
     }
-  }, [messages, chatRoomId, currentUser]);
+  }, [messages, chatRoomId, currentUser, isOpen]);
 
   // Socket Connection & Events
   useEffect(() => {
@@ -172,14 +181,34 @@ export default function ProjectChat({ project, currentUser }) {
     );
   }
 
+  // MINIMIZED STATE
+  if (!isOpen) {
+    return (
+      <div className="flex flex-col items-end justify-end h-full pointer-events-none">
+        <button
+          onClick={() => setIsOpen(true)}
+          className="pointer-events-auto bg-indigo-600 hover:bg-indigo-500 text-white p-4 rounded-full shadow-lg transition-all hover:scale-105 flex items-center justify-center"
+        >
+          <MessageSquare className="w-6 h-6" />
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full bg-zinc-900/95 border border-zinc-800 rounded-xl">
       {/* Chat Header */}
-      <div className="p-4 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
+      <div className="p-4 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-sm flex justify-between items-center rounded-t-xl">
         <h3 className="font-bold text-white flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-green-500"></span>
           Project Chat
         </h3>
+        <button
+          onClick={() => setIsOpen(false)}
+          className="text-gray-400 hover:text-white transition-colors p-1 hover:bg-zinc-800 rounded-md"
+        >
+          <Minimize2 className="w-4 h-4" />
+        </button>
       </div>
 
       {/* Messages Area */}
