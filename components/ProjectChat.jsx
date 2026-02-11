@@ -7,11 +7,13 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 
 export default function ProjectChat({ project, currentUser }) {
-  const { socket, joinRoom, leaveRoom, listenEvent } = useSocket();
+  const { socket, joinRoom, leaveRoom, listenEvent, emitEvent } = useSocket();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
+  const [typingUser, setTypingUser] = useState(null); // Simple: assume 1 other person
   const messagesEndRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
 
   const chatRoomId = project?.chatRoom?.id;
 
@@ -25,35 +27,106 @@ export default function ProjectChat({ project, currentUser }) {
   // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, typingUser]);
 
-  // Socket Connection
+  // Mark messages as read when they appear and are not mine
   useEffect(() => {
-    if (chatRoomId) {
-      console.log("Joining room:", chatRoomId);
-      joinRoom(chatRoomId);
+    if (!chatRoomId || !currentUser?.id) return;
 
-      const removeListener = listenEvent("receive-message", (newMessage) => {
-        console.log("New message received:", newMessage);
-        setMessages((prev) => {
-          // Avoid duplicates
-          if (prev.some((m) => m.id === newMessage.id)) return prev;
-          return [...prev, newMessage];
-        });
-      });
+    const unreadMessages = messages.filter(
+      (m) => !m.isRead && m.senderId !== currentUser.id,
+    );
 
-      return () => {
-        leaveRoom(chatRoomId);
-        removeListener();
-      };
+    if (unreadMessages.length > 0) {
+      // Mark as read API call
+      fetch("/api/messages/read", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ chatRoomId }),
+      }).catch((err) => console.error("Error marking read:", err));
+
+      // Optimistically update local state to avoid repeated calls?
+      // Actually, better to just let the socket confirmation handle it or do it once.
+      // But if we do it here, we should update state to prevent loop.
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (!m.isRead && m.senderId !== currentUser.id) {
+            return { ...m, isRead: true };
+          }
+          return m;
+        }),
+      );
     }
-  }, [chatRoomId, joinRoom, leaveRoom, listenEvent]);
+  }, [messages, chatRoomId, currentUser]);
+
+  // Socket Connection & Events
+  useEffect(() => {
+    if (!chatRoomId) return;
+
+    joinRoom(chatRoomId);
+
+    // Listen for new messages
+    const removeMsgListener = listenEvent("receive-message", (newMessage) => {
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === newMessage.id)) return prev;
+        return [...prev, newMessage];
+      });
+    });
+
+    // Listen for read receipts
+    const removeReadListener = listenEvent(
+      "messages-read",
+      ({ readerId, count }) => {
+        if (readerId !== currentUser?.id) {
+          // Someone else read my messages
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.senderId === currentUser?.id ? { ...m, isRead: true } : m,
+            ),
+          );
+        }
+      },
+    );
+
+    // Listen for typing
+    const removeTypingListener = listenEvent("typing", ({ user }) => {
+      setTypingUser(user);
+    });
+
+    const removeStopTypingListener = listenEvent("stop-typing", () => {
+      setTypingUser(null);
+    });
+
+    return () => {
+      leaveRoom(chatRoomId);
+      removeMsgListener();
+      removeReadListener();
+      removeTypingListener();
+      removeStopTypingListener();
+    };
+  }, [chatRoomId, joinRoom, leaveRoom, listenEvent, currentUser]);
+
+  const handleTyping = () => {
+    if (!socket || !chatRoomId) return;
+
+    emitEvent("typing", { room: chatRoomId, user: currentUser?.name });
+
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+
+    typingTimeoutRef.current = setTimeout(() => {
+      emitEvent("stop-typing", { room: chatRoomId });
+    }, 2000);
+  };
 
   const handleSend = async () => {
     if (!message.trim() || !chatRoomId) return;
 
-    const tempMessage = message; // Keep ref in case we need to revert or use
+    const tempMessage = message;
     setSending(true);
+    // Stop typing immediately on send
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    emitEvent("stop-typing", { room: chatRoomId });
+
     try {
       const res = await fetch("/api/messages", {
         method: "POST",
@@ -69,7 +142,6 @@ export default function ProjectChat({ project, currentUser }) {
       const responseData = await res.json();
       const newMessage = responseData.data;
 
-      // Update state immediately if successful, preventing duplicates is handled in setMessages setter or below
       setMessages((prev) => {
         if (prev.some((m) => m.id === newMessage.id)) return prev;
         return [...prev, newMessage];
@@ -78,7 +150,6 @@ export default function ProjectChat({ project, currentUser }) {
       setMessage("");
     } catch (error) {
       console.error(error);
-      // Optional: Show error to user
     } finally {
       setSending(false);
     }
@@ -93,7 +164,7 @@ export default function ProjectChat({ project, currentUser }) {
   }
 
   return (
-    <div className="flex flex-col h-full bg-zinc-900/50 border border-zinc-800 rounded-xl">
+    <div className="flex flex-col h-full bg-zinc-900/95 border border-zinc-800 rounded-xl">
       {/* Chat Header */}
       <div className="p-4 border-b border-zinc-800 bg-zinc-900/80 backdrop-blur-sm">
         <h3 className="font-bold text-white flex items-center gap-2">
@@ -129,7 +200,6 @@ export default function ProjectChat({ project, currentUser }) {
               key={msg.id}
               className={`flex ${isMe ? "justify-end" : "justify-start"}`}
             >
-              {/* Avatar for other users */}
               {!isMe && (
                 <div className="w-8 h-8 rounded-full bg-zinc-700 overflow-hidden mr-2 flex-shrink-0 relative">
                   {msg.sender?.image ? (
@@ -148,25 +218,89 @@ export default function ProjectChat({ project, currentUser }) {
               )}
 
               <div
-                className={`max-w-[75%] rounded-2xl px-4 py-2 ${
+                className={`max-w-[75%] rounded-2xl px-4 py-2 relative group ${
                   isMe
                     ? "bg-indigo-600 text-white rounded-br-none"
                     : "bg-zinc-800 text-gray-200 rounded-bl-none"
                 }`}
               >
                 <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                <p
-                  className={`text-[10px] mt-1 ${isMe ? "text-indigo-200" : "text-gray-500"} text-right`}
-                >
-                  {new Date(msg.createdAt).toLocaleTimeString([], {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </p>
+                <div className={`flex items-center justify-end gap-1 mt-1`}>
+                  <span
+                    className={`text-[10px] ${isMe ? "text-indigo-200" : "text-gray-500"}`}
+                  >
+                    {new Date(msg.createdAt).toLocaleTimeString([], {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                  {isMe && (
+                    <span className="ml-1">
+                      {msg.isRead ? (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-blue-500"
+                        >
+                          <path d="M18 6L7 17l-5-5" />
+                          <path d="m22 10-7.5 7.5L13 16" />
+                        </svg>
+                      ) : (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="text-white/70"
+                        >
+                          <path d="M18 6L7 17l-5-5" />
+                          <path d="m22 10-7.5 7.5L13 16" />
+                        </svg>
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
+
+        {typingUser && (
+          <div className="flex justify-start ml-10 mb-2">
+            <div className="bg-zinc-800/80 px-3 py-1.5 rounded-full flex items-center gap-2">
+              <div className="flex gap-1">
+                <span
+                  className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "0ms" }}
+                ></span>
+                <span
+                  className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "150ms" }}
+                ></span>
+                <span
+                  className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                  style={{ animationDelay: "300ms" }}
+                ></span>
+              </div>
+              {typingUser && typeof typingUser === "string" && (
+                <span className="text-xs text-gray-400 italic">typing...</span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -179,7 +313,10 @@ export default function ProjectChat({ project, currentUser }) {
           <input
             type="text"
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              handleTyping();
+            }}
             onKeyDown={(e) => e.key === "Enter" && !sending && handleSend()}
             placeholder="Type a message..."
             className="flex-1 bg-transparent border-none outline-none text-white placeholder-gray-500 text-sm"
