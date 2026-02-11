@@ -61,6 +61,8 @@ model Project {
   services ProjectService[]
   files    ProjectFile[]
 
+  chatRoom ChatRoom?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -607,10 +609,14 @@ model Notification {
 // ---------------------------------------------------------
 
 model ChatRoom {
-  id               String         @id @default(uuid())
-  // Relacionamos el chat con una solicitud de servicio específica
-  serviceRequestId String         @unique @map("service_request_id")
-  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  id               String          @id @default(uuid())
+  // Relacionamos el chat con una solicitud de servicio específica (Legacy)
+  serviceRequestId String?         @unique @map("service_request_id")
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+
+  // Relacionamos el chat con un Proyecto (Nuevo)
+  projectId String?  @unique @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   // Participantes para facilitar queries de "mis chats"
   artistId  String @map("artist_id")

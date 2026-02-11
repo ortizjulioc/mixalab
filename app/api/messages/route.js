@@ -25,13 +25,6 @@ export async function POST(request) {
 
     const chatRoom = await prisma.chatRoom.findUnique({
       where: { id: chatRoomId },
-      include: {
-        serviceRequest: {
-          include: {
-            creator: true,
-          },
-        },
-      },
     });
 
     if (!chatRoom) {
@@ -41,13 +34,13 @@ export async function POST(request) {
       );
     }
 
-    // Access check
-    const isArtist = chatRoom.serviceRequest.userId === session.user.id;
-    const isCreator =
-      chatRoom.serviceRequest.creator?.userId === session.user.id;
+    // Access check using direct participant fields
+    const isParticipant =
+      chatRoom.artistId === session.user.id ||
+      chatRoom.creatorId === session.user.id;
     const isAdmin = session.user.role === "ADMIN";
 
-    if (!isArtist && !isCreator && !isAdmin) {
+    if (!isParticipant && !isAdmin) {
       return NextResponse.json(
         { error: "You are not a participant of this chat" },
         { status: 403 },
@@ -133,13 +126,6 @@ export async function GET(request) {
 
     const chatRoom = await prisma.chatRoom.findUnique({
       where: { id: chatRoomId },
-      include: {
-        serviceRequest: {
-          include: {
-            creator: true,
-          },
-        },
-      },
     });
 
     if (!chatRoom) {
@@ -149,13 +135,13 @@ export async function GET(request) {
       );
     }
 
-    // Access check
-    const isArtist = chatRoom.serviceRequest.userId === session.user.id;
-    const isCreator =
-      chatRoom.serviceRequest.creator?.userId === session.user.id;
+    // Access check using direct participant fields
+    const isParticipant =
+      chatRoom.artistId === session.user.id ||
+      chatRoom.creatorId === session.user.id;
     const isAdmin = session.user.role === "ADMIN";
 
-    if (!isArtist && !isCreator && !isAdmin) {
+    if (!isParticipant && !isAdmin) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 

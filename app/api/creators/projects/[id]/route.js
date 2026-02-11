@@ -74,17 +74,28 @@ export async function GET(request, props) {
           user: { select: { id: true, name: true, email: true, image: true } },
           services: true,
           files: true,
-          // No ChatRoom relation yet on Project model, so chatRoom will be undefined
+          // Now we can directly include chatRoom!
+          chatRoom: {
+            include: {
+              messages: {
+                orderBy: { createdAt: "asc" },
+                include: {
+                  sender: {
+                    select: { id: true, name: true, image: true },
+                  },
+                  files: true,
+                },
+              },
+            },
+          },
         },
       });
 
       if (projectV2) {
-        // Check access for Project model (creatorId is usually in services)
+        // Check access for Project model
         const hasAccessV2 = projectV2.services.some(
           (s) => s.creatorId === currentCreator.id,
         );
-        // Also allow if creator is userId (creator creating their own project?) NO.
-        // Or if unassigned and creator can see available?
 
         if (!hasAccessV2 && projectV2.userId !== session.user.id) {
           return NextResponse.json(
@@ -93,12 +104,69 @@ export async function GET(request, props) {
           );
         }
 
+        // --- AUTO-FIX: Create ChatRoom for Project V2 if Missing ---
+        if (!projectV2.chatRoom) {
+          console.log(
+            `[Auto-Fix] ChatRoom missing for Project V2 ${id}. Creating now...`,
+          );
+          try {
+            // Determine Creator User ID
+            let creatorUserId = null;
+            if (hasAccessV2) {
+              // If current user is the creator (via services check)
+              creatorUserId = session.user.id;
+            } else {
+              // Try to find from services
+              const service = projectV2.services.find((s) => s.creatorId);
+              if (service?.creatorId) {
+                const assignedCreator = await prisma.creatorProfile.findUnique({
+                  where: { id: service.creatorId },
+                  select: { userId: true },
+                });
+                creatorUserId = assignedCreator?.userId;
+              }
+            }
+
+            if (creatorUserId) {
+              const newChatRoom = await prisma.chatRoom.create({
+                data: {
+                  projectId: id, // Link to Project
+                  artistId: projectV2.userId,
+                  creatorId: creatorUserId,
+                  messages: {
+                    create: {
+                      senderId: creatorUserId,
+                      content: "Channel created. Start chatting!",
+                      type: "SYSTEM",
+                    },
+                  },
+                },
+                include: {
+                  messages: {
+                    include: { sender: true, files: true },
+                    orderBy: { createdAt: "asc" },
+                  },
+                },
+              });
+              projectV2.chatRoom = newChatRoom;
+              console.log(
+                `[Auto-Fix] ChatRoom created for Project V2: ${newChatRoom.id}`,
+              );
+            }
+          } catch (err) {
+            console.error(
+              "[Auto-Fix] Failed to create chatroom for Project V2:",
+              err,
+            );
+          }
+        }
+
         // Map Project V2 to expected format
         const mappedProject = {
           ...projectV2,
-          creatorId: currentCreator.id, // Or find from services
-          status: "IN_PROGRESS", // Default
-          chatRoom: null, // No chat yet
+          creatorId: currentCreator.id, // Or find from services context
+          status: "IN_PROGRESS",
+          chatRoom: projectV2.chatRoom || null,
         };
         return NextResponse.json({ project: mappedProject });
       }

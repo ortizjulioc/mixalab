@@ -31,7 +31,7 @@ export async function GET(request, props) {
         },
         services: true,
         files: true,
-        // Include serviceRequest to get the linked chatRoom
+        // Include serviceRequest to get the linked chatRoom (Legacy)
         serviceRequest: {
           include: {
             chatRoom: {
@@ -45,6 +45,20 @@ export async function GET(request, props) {
                     files: true,
                   },
                 },
+              },
+            },
+          },
+        },
+        // Include direct chatRoom (New Project Model)
+        chatRoom: {
+          include: {
+            messages: {
+              orderBy: { createdAt: "asc" },
+              include: {
+                sender: {
+                  select: { id: true, name: true, image: true },
+                },
+                files: true,
               },
             },
           },
@@ -64,8 +78,8 @@ export async function GET(request, props) {
       );
     }
 
-    // Attach chatRoom to the top-level project object if it exists in serviceRequest
-    if (project.serviceRequest?.chatRoom) {
+    // Normalize chatRoom: distinct preference for Project-linked chat, fallback to ServiceRequest-linked
+    if (!project.chatRoom && project.serviceRequest?.chatRoom) {
       project.chatRoom = project.serviceRequest.chatRoom;
     }
 
