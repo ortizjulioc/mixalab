@@ -1,27 +1,31 @@
-import { useEffect, useCallback } from 'react';
-import io from 'socket.io-client';
+import { useEffect, useCallback } from "react";
+import io from "socket.io-client";
 
 let socket;
 
 export const useSocket = () => {
+  // Initialize socket if it doesn't exist or is disconnected
+  if (!socket || socket.disconnected) {
+    socket = io();
+  }
+
   useEffect(() => {
-    if (!socket) {
-      socket = io();
-    }
+    // Connection logic is handled by the singleton 'socket' variable above.
+    // We do not disconnect on unmount to keep the connection alive across components.
 
     return () => {
-      socket?.disconnect(); // Cierra la conexión al desmontar el componente
+      // Optional: Cleanup listeners if needed, but socket instance persists
     };
   }, []);
 
   // Función para unirse a una sala
   const joinRoom = useCallback((room) => {
-    socket?.emit('join-room', { room });
+    socket?.emit("join-room", { room });
   }, []);
 
   // Función para salir de una sala
   const leaveRoom = useCallback((room) => {
-    socket?.emit('leave-room', { room });
+    socket?.emit("leave-room", { room });
   }, []);
 
   // Función genérica para emitir cualquier evento

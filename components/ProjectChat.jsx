@@ -52,6 +52,7 @@ export default function ProjectChat({ project, currentUser }) {
   const handleSend = async () => {
     if (!message.trim() || !chatRoomId) return;
 
+    const tempMessage = message; // Keep ref in case we need to revert or use
     setSending(true);
     try {
       const res = await fetch("/api/messages", {
@@ -65,18 +66,19 @@ export default function ProjectChat({ project, currentUser }) {
 
       if (!res.ok) throw new Error("Failed to send message");
 
-      const data = await res.json();
+      const responseData = await res.json();
+      const newMessage = responseData.data;
 
-      // Optimistic update or wait for socket?
-      // Since we receive socket event, we can maybe wait, but optimistic is better UX.
-      // However, to avoid duplicate with socket, let's just clear input and wait for socket
-      // OR append if we can handle ID deduplication.
-      // For now, let's rely on the socket event to append the message to state to ensure single source of truth.
-      // Actually, for better UX locally, we might want to append immediately.
+      // Update state immediately if successful, preventing duplicates is handled in setMessages setter or below
+      setMessages((prev) => {
+        if (prev.some((m) => m.id === newMessage.id)) return prev;
+        return [...prev, newMessage];
+      });
 
       setMessage("");
     } catch (error) {
       console.error(error);
+      // Optional: Show error to user
     } finally {
       setSending(false);
     }
