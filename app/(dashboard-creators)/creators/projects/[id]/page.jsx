@@ -18,6 +18,7 @@ export default function CreatorProjectPage() {
     const [project, setProject] = useState(null);
     const [tiers, setTiers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const [uploading, setUploading] = useState(false);
 
     // Fetch Project Data and Tiers
@@ -25,16 +26,31 @@ export default function CreatorProjectPage() {
         const fetchData = async () => {
             if (session?.user?.id && params.id) {
                 try {
-                    const [projectRes, tiersRes] = await Promise.all([
-                        fetch(`/api/creators/projects/${params.id}`).then(res => res.json()),
-                        fetch('/api/tiers').then(res => res.json())
-                    ]);
+                    // Fetch project first to handle 403/404 explicitly
+                    const res = await fetch(`/api/creators/projects/${params.id}`);
+                    const projectRes = await res.json();
 
-                    if (projectRes.project) setProject(projectRes.project);
+                    if (!res.ok) {
+                        throw new Error(projectRes.error || 'Failed to load project');
+                    }
+
+                    const tiersRes = await fetch('/api/tiers').then(r => r.json());
+
+                    if (projectRes.project) {
+                        // Fix for services being a string (enum) instead of array
+                        const fixedProject = { ...projectRes.project };
+                        if (fixedProject.services && !Array.isArray(fixedProject.services)) {
+                            // Convert single enum string to array of objects for UI compatibility
+                            fixedProject.services = [{ type: fixedProject.services }];
+                        }
+                        setProject(fixedProject);
+                    }
+
                     if (tiersRes.tiers) setTiers(tiersRes.tiers);
                 } catch (error) {
                     console.error(error);
-                    openNotification('error', 'Error loading project details');
+                    setError(error.message);
+                    openNotification('error', error.message);
                 } finally {
                     setLoading(false);
                 }
@@ -77,11 +93,13 @@ export default function CreatorProjectPage() {
         </div>
     );
 
-    if (!project) return (
+    if (error || !project) return (
         <div className="min-h-screen bg-black flex items-center justify-center p-8 text-white">
             <div className="text-center">
-                <h1 className="text-2xl font-bold mb-4">Project Not Found</h1>
-                <button onClick={() => router.back()} className="text-indigo-400 hover:text-indigo-300">Go Back</button>
+                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                <h1 className="text-2xl font-bold mb-2">Project Not Found</h1>
+                <p className="text-gray-400 mb-6">{error || "The project you are looking for does not exist or you don't have permission to view it."}</p>
+                <button onClick={() => router.back()} className="px-4 py-2 bg-zinc-800 rounded-lg text-white hover:bg-zinc-700 transition-colors">Go Back</button>
             </div>
         </div>
     );

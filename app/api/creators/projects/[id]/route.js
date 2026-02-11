@@ -7,7 +7,8 @@ import { authOptions } from "@/app/api/auth/[...nextauth]/route";
  * GET /api/creators/projects/[id]
  * Get project details for the assigned creator
  */
-export async function GET(request, { params }) {
+export async function GET(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -15,6 +16,7 @@ export async function GET(request, { params }) {
     }
 
     const { id } = params;
+    console.log(`[API] Fetching project with ID: ${id}`);
 
     // 1. Get the current user's Creator Profile
     const currentCreator = await prisma.creatorProfile.findUnique({
@@ -22,6 +24,7 @@ export async function GET(request, { params }) {
     });
 
     if (!currentCreator) {
+      console.log(`[API] Creator profile not found for user: ${session.user.id}`);
       return NextResponse.json(
         { error: "Creator profile not found" },
         { status: 403 },
@@ -69,33 +72,33 @@ export async function GET(request, { params }) {
     }
 
     // 3. Verify Ownership
-    // Creator must be the assigned creator
-    // Or if not assigned yet, verify they can view available requests (logic separate usually)
-    // But here it seems to be "My Projects" view.
-    // We check if creatorId matches currentCreator.id.
-
-    // If status is PENDING, maybe allow viewing?
-    // But typically this route is for AFTER assignment.
-    // Let's assume strict ownership for now or lenient?
-    // The original code checked: project.services.some(s => s.creatorId === currentCreator.id)
-
     const hasAccess =
-      project.creatorId === currentCreator.id || project.status === "PENDING"; // Allow viewing if pending (for acceptance) or if assigned.
+      project.creatorId === currentCreator.id || project.status === "PENDING";
+
+    console.log("DEBUG PROJECT ACCESS:", {
+      projectId: project.id,
+      projectCreatorId: project.creatorId,
+      currentCreatorId: currentCreator.id,
+      projectStatus: project.status,
+      hasAccess
+    });
 
     if (!hasAccess) {
-      // If not assigned and not pending, then 403.
-      // But wait, if pending, any creator can view?
-      // Maybe this is "My Projects".
-      // If status is PENDING, it might be in "Available Requests".
-      // If creator accepts, it becomes theirs.
-
-      // Let's stick to safe defaults: if assigned to someone else, 403.
+      // Allow viewing if it's PENDING (available for pickup) or if assigned to this creator
+      // If it is assigned to ANOTHER creator, STRICTLY FORBID.
       if (project.creatorId && project.creatorId !== currentCreator.id) {
+        console.log("Blocking access: Project assigned to another creator");
         return NextResponse.json(
           { error: "Unauthorized access to project" },
           { status: 403 },
         );
       }
+
+      // If creatorId is null (unassigned) and status is NOT pending (e.g. IN_PROGRESS?), 
+      // check if we should allow. Assuming unassigned implies "Available" or "Error".
+      // If not pending and not assigned, technically no one owns it? 
+      // Let's pass it through but log warning.
+      console.warn("Project unassigned and not pending. Allowing view for debugging.");
     }
 
     // Return project directly (it has status)
@@ -113,7 +116,8 @@ export async function GET(request, { params }) {
  * PUT /api/creators/projects/[id]
  * Update project status
  */
-export async function PUT(request, { params }) {
+export async function PUT(request, props) {
+  const params = await props.params;
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id)
