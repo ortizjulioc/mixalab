@@ -7,7 +7,8 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 
 export default function ProjectChat({ project, currentUser }) {
-  const { socket, joinRoom, leaveRoom, listenEvent, emitEvent } = useSocket();
+  const { socket, isConnected, joinRoom, leaveRoom, listenEvent, emitEvent } =
+    useSocket();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState([]);
   const [sending, setSending] = useState(false);
@@ -61,7 +62,7 @@ export default function ProjectChat({ project, currentUser }) {
 
   // Socket Connection & Events
   useEffect(() => {
-    if (!chatRoomId) return;
+    if (!chatRoomId || !isConnected) return; // Wait for connection
 
     joinRoom(chatRoomId);
 
@@ -104,7 +105,15 @@ export default function ProjectChat({ project, currentUser }) {
       removeTypingListener();
       removeStopTypingListener();
     };
-  }, [chatRoomId, joinRoom, leaveRoom, listenEvent, currentUser]);
+  }, [
+    chatRoomId,
+    joinRoom,
+    leaveRoom,
+    listenEvent,
+    currentUser,
+    isConnected,
+    socket,
+  ]);
 
   const handleTyping = () => {
     if (!socket || !chatRoomId) return;
@@ -294,9 +303,9 @@ export default function ProjectChat({ project, currentUser }) {
                   style={{ animationDelay: "300ms" }}
                 ></span>
               </div>
-              {typingUser && typeof typingUser === "string" && (
+              {/* {typingUser && typeof typingUser === "string" && (
                 <span className="text-xs text-gray-400 italic">typing...</span>
-              )}
+              )} */}
             </div>
           </div>
         )}
