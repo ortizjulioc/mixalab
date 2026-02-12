@@ -161,13 +161,23 @@ export async function GET(request, props) {
           }
         }
 
+        // --- Fetch Tier Details ---
+        let tierDetails = null;
+        if (projectV2.tier) {
+          tierDetails = await prisma.tier.findUnique({
+            where: { name: projectV2.tier },
+          });
+        }
+
         // Map Project V2 to expected format
         const mappedProject = {
           ...projectV2,
           creatorId: currentCreator.id, // Or find from services context
           status: "IN_PROGRESS",
           chatRoom: projectV2.chatRoom || null,
+          tierDetails: tierDetails, // Include full tier model
         };
+
         return NextResponse.json({ project: mappedProject });
       }
 
@@ -255,8 +265,21 @@ export async function GET(request, props) {
       }
     }
 
-    // Return project directly (it has status)
-    return NextResponse.json({ project });
+    // --- Fetch Tier Details for Service Request ---
+    let tierDetails = null;
+    if (project.tier) {
+      tierDetails = await prisma.tier.findUnique({
+        where: { name: project.tier },
+      });
+    }
+
+    // Return project directly (it has status) with tier details
+    return NextResponse.json({
+      project: {
+        ...project,
+        tierDetails
+      }
+    });
   } catch (error) {
     console.error("Error fetching project:", error);
     return NextResponse.json(

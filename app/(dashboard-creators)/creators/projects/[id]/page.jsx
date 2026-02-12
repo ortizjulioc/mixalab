@@ -259,20 +259,28 @@ export default function CreatorProjectPage() {
                                 <div className="space-y-4">
                                     <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
                                         <span className="text-gray-500">Tier Level</span>
-                                        <span className="text-amber-400 font-bold">{project.tier}</span>
+                                        <span className={`font-bold ${project.tier === 'PLATINUM' ? 'text-cyan-400' :
+                                                project.tier === 'GOLD' ? 'text-yellow-400' :
+                                                    project.tier === 'SILVER' ? 'text-gray-300' :
+                                                        'text-orange-400'
+                                            }`}>{project.tier}</span>
                                     </div>
                                     <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
                                         <span className="text-gray-500">Delivery Time</span>
                                         <div className="flex items-center gap-1">
                                             <Clock className="w-3 h-3 text-gray-400" />
-                                            <span className="text-white">{currentTierInfo?.deliveryDays || 'N/A'} Days</span>
+                                            <span className="text-white">
+                                                {project.tierDetails?.deliveryDays || currentTierInfo?.deliveryDays || 'N/A'} Days
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
                                         <span className="text-gray-500">Revisions</span>
                                         <div className="flex items-center gap-1">
                                             <RefreshCw className="w-3 h-3 text-gray-400" />
-                                            <span className="text-white">{currentTierInfo?.numberOfRevisions || 'Unlimited'}</span>
+                                            <span className="text-white">
+                                                {project.tierDetails?.numberOfRevisions !== undefined ? project.tierDetails.numberOfRevisions : (currentTierInfo?.numberOfRevisions || 'Unlimited')}
+                                            </span>
                                         </div>
                                     </div>
                                     <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
@@ -281,13 +289,33 @@ export default function CreatorProjectPage() {
                                     </div>
                                     <div className="flex justify-between py-2 border-b border-zinc-800/50 text-sm">
                                         <span className="text-gray-500">Genre</span>
-                                        <span className="text-white">{project.genre || 'N/A'}</span>
+                                        <span className="text-white">{project.genre || 'Not specified'}</span>
                                     </div>
                                     <div className="flex justify-between py-2 text-sm">
                                         <span className="text-gray-500">BPM</span>
-                                        <span className="text-white">{project.bpm || 'N/A'}</span>
+                                        <span className="text-white">{project.bpm || 'Not specified'}</span>
                                     </div>
                                 </div>
+
+                                {/* Service Features from Tier Details */}
+                                {project.tierDetails?.serviceDescriptions && project.services?.[0]?.type && (
+                                    <div className="mt-6 pt-6 border-t border-zinc-800/50">
+                                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                            {project.tierDetails.serviceDescriptions[project.services[0].type]?.title || 'Package Features'}
+                                        </h3>
+                                        <div className="space-y-3">
+                                            {project.tierDetails.serviceDescriptions[project.services[0].type]?.features?.map((feature, idx) => (
+                                                <div key={idx} className="flex gap-2 text-sm">
+                                                    <span className="text-green-400 font-bold">✓</span>
+                                                    <div>
+                                                        <span className="text-white font-medium block">{feature.title}</span>
+                                                        <span className="text-gray-500 text-xs block">{feature.desc}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Client Info Card */}
