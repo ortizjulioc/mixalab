@@ -31,24 +31,6 @@ export async function GET(request, props) {
         },
         services: true,
         files: true,
-        // Include serviceRequest to get the linked chatRoom (Legacy)
-        serviceRequest: {
-          include: {
-            chatRoom: {
-              include: {
-                messages: {
-                  orderBy: { createdAt: "asc" },
-                  include: {
-                    sender: {
-                      select: { id: true, name: true, image: true },
-                    },
-                    files: true,
-                  },
-                },
-              },
-            },
-          },
-        },
         // Include direct chatRoom (New Project Model)
         chatRoom: {
           include: {
@@ -76,11 +58,6 @@ export async function GET(request, props) {
         { error: "Unauthorized access to project" },
         { status: 403 },
       );
-    }
-
-    // Normalize chatRoom: distinct preference for Project-linked chat, fallback to ServiceRequest-linked
-    if (!project.chatRoom && project.serviceRequest?.chatRoom) {
-      project.chatRoom = project.serviceRequest.chatRoom;
     }
 
     return NextResponse.json({ project });

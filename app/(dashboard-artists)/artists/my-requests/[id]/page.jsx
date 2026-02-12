@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import useMyRequests from "@/hooks/useMyRequests";
-import ProjectChat from "@/components/ProjectChat";
+
 import {
   ArrowLeft,
   Music,
@@ -172,7 +172,7 @@ export default function RequestDetailPage() {
   );
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-8 max-w-7xl mx-auto lg:pr-[380px] 2xl:pr-[420px]">
+    <div className="px-4 sm:px-6 lg:px-8 py-8 w-full max-w-[1600px] mx-auto">
       {/* Back Button */}
       <button
         onClick={() => router.push("/artists/my-requests")}
@@ -417,20 +417,7 @@ export default function RequestDetailPage() {
         />
       )}
       {/* Fixed Chat */}
-      <div
-        className="
-                          fixed
-                          top-25
-                          right-6
-                          h-[calc(90vh-3rem)]
-                          w-[360px]
-                          xl:w-[380px]
-                          2xl:w-[420px]
-                          z-50
-                        "
-      >
-        <ProjectChat project={currentRequest} currentUser={session?.user} />
-      </div>
+
     </div>
   );
 }

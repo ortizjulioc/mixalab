@@ -10,37 +10,43 @@ import {
 import { openNotification } from '@/utils/open-notification';
 import ProjectChat from '@/components/ProjectChat';
 
+import useProjectDetails from '@/hooks/useProjectDetails';
+
 export default function ArtistProjectPage() {
     const params = useParams();
     const router = useRouter();
     const { data: session } = useSession();
-    const [project, setProject] = useState(null);
+
+    // Use the new hook to fetch project details (works for ARTIST and CREATOR)
+    const { project, loading: projectLoading, error: projectError } = useProjectDetails(params.id);
+
     const [tiers, setTiers] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [tiersLoading, setTiersLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
 
-    // Fetch Project Data and Tiers
+    // Fetch Tiers separately
     useEffect(() => {
-        const fetchData = async () => {
-            if (session?.user?.id && params.id) {
-                try {
-                    const [projectRes, tiersRes] = await Promise.all([
-                        fetch(`/api/artists/projects/${params.id}`).then(res => res.json()),
-                        fetch('/api/tiers').then(res => res.json())
-                    ]);
-
-                    if (projectRes.project) setProject(projectRes.project);
-                    if (tiersRes.tiers) setTiers(tiersRes.tiers);
-                } catch (error) {
-                    console.error(error);
-                    openNotification('error', 'Error loading project details');
-                } finally {
-                    setLoading(false);
-                }
+        const fetchTiers = async () => {
+            try {
+                const res = await fetch('/api/tiers');
+                const data = await res.json();
+                if (data.tiers) setTiers(data.tiers);
+            } catch (error) {
+                console.error("Error fetching tiers:", error);
+            } finally {
+                setTiersLoading(false);
             }
         };
-        fetchData();
-    }, [params.id, session]);
+        fetchTiers();
+    }, []);
+
+    const loading = projectLoading || tiersLoading;
+
+    if (projectError) {
+        // Handle error state gracefully or let the user try again
+        // For now, we can just log it or show the error message in the UI if desired
+        console.error("Project Error:", projectError);
+    }
 
     const handleFileUpload = async (fileData) => {
         setUploading(true);
