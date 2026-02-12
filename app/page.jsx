@@ -159,10 +159,10 @@ const FinalCTA = ({ onScroll }) => (
       </p>
       <div className="flex justify-center space-x-6">
         {/* Scroll Suave aplicado aquí */}
-        <Link href="/login" className="bg-white text-black px-10 py-4 rounded-xl text-lg font-bold hover:bg-gray-200 transition transform hover:scale-105 shadow-xl glow-border">
+        <Link href="/login?role=ARTIST" className="bg-white text-black px-10 py-4 rounded-xl text-lg font-bold hover:bg-gray-200 transition transform hover:scale-105 shadow-xl glow-border">
           Join as Artist
         </Link>
-        <Link href="/login" className="bg-transparent text-white px-10 py-4 rounded-xl text-lg font-bold border border-white/40 hover:bg-white/10 transition transform hover:scale-105">
+        <Link href="/login?role=CREATOR" className="bg-transparent text-white px-10 py-4 rounded-xl text-lg font-bold border border-white/40 hover:bg-white/10 transition transform hover:scale-105">
           Join as Creator
         </Link>
       </div>
@@ -266,10 +266,10 @@ const App = () => {
         {/* Botones de acción subidos */}
         <div className="flex justify-center space-x-6 mb-16">
           {/* Scroll Suave aplicado aquí */}
-          <Link href="/login" className="bg-white text-black px-10 py-4 rounded-xl text-lg font-bold hover:bg-gray-200 transition transform hover:scale-105 shadow-xl glow-border">
+          <Link href="/login?role=ARTIST" className="bg-white text-black px-10 py-4 rounded-xl text-lg font-bold hover:bg-gray-200 transition transform hover:scale-105 shadow-xl glow-border">
             Join as Artist
           </Link>
-          <Link href="/login" className="bg-transparent text-white px-10 py-4 rounded-xl text-lg font-bold border border-white/40 hover:bg-white/10 transition transform hover:scale-105">
+          <Link href="/login?role=CREATOR" className="bg-transparent text-white px-10 py-4 rounded-xl text-lg font-bold border border-white/40 hover:bg-white/10 transition transform hover:scale-105">
             Join as Creator
           </Link>
         </div>

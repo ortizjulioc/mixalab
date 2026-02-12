@@ -1,12 +1,13 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import Link from "next/link";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [mode, setMode] = useState("ARTIST"); // ARTIST or CREATOR
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -19,6 +20,16 @@ export default function LoginPage() {
   useEffect(() => {
     setError("");
   }, [mode, email, password]);
+
+  // Handle automatic role selection via query params
+  useEffect(() => {
+    const slug = searchParams.get("slug") || searchParams.get("role") || searchParams.get("mode");
+    if (slug) {
+      const upperSlug = slug.toUpperCase();
+      if (upperSlug === "ARTIST") setMode("ARTIST");
+      else if (upperSlug === "CREATOR") setMode("CREATOR");
+    }
+  }, [searchParams]);
 
   // --- Lightweight animated musical-notes background (2D canvas) ---
   useEffect(() => {
