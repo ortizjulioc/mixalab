@@ -75,6 +75,7 @@ export async function GET(request, props) {
           services: true,
           files: true,
           // Now we can directly include chatRoom!
+          // Now we can directly include chatRoom!
           chatRoom: {
             include: {
               messages: {
@@ -88,6 +89,11 @@ export async function GET(request, props) {
               },
             },
           },
+          serviceRequest: {
+            include: {
+              files: true
+            }
+          }
         },
       });
 
@@ -176,6 +182,7 @@ export async function GET(request, props) {
           status: "IN_PROGRESS",
           chatRoom: projectV2.chatRoom || null,
           tierDetails: tierDetails, // Include full tier model
+          files: [...(projectV2.files || []), ...(projectV2.serviceRequest?.files || [])],
         };
 
         return NextResponse.json({ project: mappedProject });
@@ -330,8 +337,21 @@ export async function PUT(request, props) {
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
 
-    const project = await prisma.serviceRequest.update({
+    // Check if ID is ServiceRequest or Project
+    let serviceRequestId = id;
+
+    // Try to find project first to see if it's a Project ID
+    const projectRecord = await prisma.project.findUnique({
       where: { id },
+      select: { serviceRequestId: true }
+    });
+
+    if (projectRecord) {
+      serviceRequestId = projectRecord.serviceRequestId;
+    }
+
+    const project = await prisma.serviceRequest.update({
+      where: { id: serviceRequestId },
       data: {
         status: status,
         ...(status === "COMPLETED" ? { completedAt: new Date() } : {}),

@@ -241,6 +241,19 @@ export default function RequestDetailPage() {
             </button>
           </div>
         )}
+
+        {/* Project Navigation */}
+        {currentRequest.project && (
+          <div className="mt-6 pt-6 border-t border-zinc-700/50">
+            <button
+              onClick={() => router.push(`/artists/projects/${currentRequest.project.id}`)}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2"
+            >
+              <Music className="w-5 h-5" />
+              Go to Project Dashboard
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

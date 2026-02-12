@@ -149,7 +149,7 @@ export async function POST(request) {
         fileRecords.push(fileRecord);
       }
 
-      // Create service request
+      // Create service request AND Project
       const serviceRequest = await tx.serviceRequest.create({
         data: {
           user: {
@@ -173,6 +173,20 @@ export async function POST(request) {
             create: genreIds.map(genreId => ({
               genreId: genreId
             }))
+          },
+          // Create the Project entity immediately
+          project: {
+            create: {
+              userId: userId,
+              projectName: projectName,
+              artistName: artistName,
+              projectType: projectType,
+              tier: tier,
+              // services: ... (Need to map services string to enum if needed, or separate table)
+              // For now, simpler fields:
+              references: description, // or separate field if available
+              // Initialize technical fields as null/default
+            }
           }
         },
         include: {
@@ -189,12 +203,10 @@ export async function POST(request) {
             include: {
               genre: true
             }
-          }
+          },
+          project: true // Return project info
         }
       });
-      // (No need for separate createMany anymore)
-
-      return serviceRequest;
 
       return serviceRequest;
     });

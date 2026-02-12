@@ -48,20 +48,40 @@ model Project {
   id     String @id @default(uuid())
   userId String
 
+  serviceRequestId String         @unique
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
+
+  // Technical production info
+  key             String?
+  bpm             Int?
+  timeSignature   String?
+  durationSeconds Int?
+
+  recordingQuality RecordingQuality?
+  stemsIncluded    Boolean           @default(false)
+  vocalTracksCount Int?
+  instrumentalType String?
+
+  currentPhase     ProjectPhase @default(PRE_PRODUCTION)
+  deliveryDeadline DateTime?
+  revisionCount    Int          @default(0)
+
+  notes         String? @db.Text
+  internalNotes String? @db.Text
+
   projectName String
   artistName  String
   projectType ProjectType
   tier        TierName
   genre       String?
-  bpm         Int?
   references  String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   services ProjectService[]
   files    ProjectFile[]
-
   chatRoom ChatRoom?
+  events   ProjectEvent[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -511,6 +531,7 @@ model ServiceRequest {
   files   File[]
   genres  ServiceRequestGenre[]
   events  ProjectEvent[] // Timeline of events
+  project Project?
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -582,6 +603,8 @@ model ProjectEvent {
   user        User           @relation(fields: [userId], references: [id])
   metadata    Json? // Additional data based on event type
   createdAt   DateTime       @default(now()) @map("created_at")
+  project     Project?       @relation(fields: [projectId], references: [id])
+  projectId   String?
 
   @@map("project_events")
 }
@@ -851,4 +874,18 @@ enum TransferStatus {
   PROCESSING
   COMPLETED
   FAILED
+}
+
+enum ProjectPhase {
+  PRE_PRODUCTION
+  PRODUCTION
+  POST_PRODUCTION
+  REVIEW
+  COMPLETED
+}
+
+enum RecordingQuality {
+  DEMO
+  PROFESSIONAL
+  STUDIO
 }

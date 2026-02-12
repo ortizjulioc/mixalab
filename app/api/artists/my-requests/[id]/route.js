@@ -84,6 +84,7 @@ export async function GET(request, props) {
             },
           },
         },
+        project: true,
       },
     });
 
