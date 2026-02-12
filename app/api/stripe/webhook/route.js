@@ -155,6 +155,7 @@ async function handleCheckoutSessionCompleted(session) {
       await tx.chatRoom.create({
         data: {
           projectId: newProject.id,
+          serviceRequestId: requestId, // Link to ServiceRequest too
           artistId: serviceRequest.userId,
           creatorId: creatorUserId,
           messages: {
