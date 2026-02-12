@@ -12,6 +12,7 @@ import {
   HiOutlineStar,
   HiOutlineClipboardCheck,
   HiOutlineCreditCard,
+  HiOutlineFolder,
 } from 'react-icons/hi'
 import { MdLibraryMusic, MdExtension } from "react-icons/md";  // food icon
 
@@ -31,6 +32,8 @@ const navigationIcon = {
   'upgrade-requirements': <HiOutlineTrendingUp size={32} />,   // Subir de nivel
   'downgrade-triggers': <HiOutlineArrowDown size={32} />,
   'creator-profiles': <HiOutlineUserGroup size={32} />,
+  folder: <HiOutlineFolder size={32} />,
+  settings: <HiOutlineCog size={32} />,
 
 }
 

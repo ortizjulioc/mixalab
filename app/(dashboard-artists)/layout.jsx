@@ -8,8 +8,8 @@ const navItems = [
     { iconKey: 'home', label: 'Dashboard', href: '/artists/home' },
     { iconKey: 'product', label: 'New Request', href: '/artists/order' },
     { iconKey: 'service', label: 'My Requests', href: '/artists/my-requests' },
+    { iconKey: 'folder', label: 'Projects', href: '/artists/projects' },
     { iconKey: 'customer', label: 'Profile', href: '/artists/profile' },
-
 ];
 
 /**
