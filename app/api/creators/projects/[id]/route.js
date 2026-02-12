@@ -15,7 +15,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // Get creator profile of logged-in user
     const currentCreator = await prisma.creatorProfile.findUnique({
@@ -199,7 +199,7 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const updateData = await request.json();
 
     // Get creator profile of logged-in user
@@ -253,10 +253,28 @@ export async function PATCH(request, { params }) {
       'internalNotes'
     ];
 
+    const numericFields = ['bpm', 'durationSeconds', 'vocalTracksCount'];
+
     const filteredData = Object.keys(updateData)
       .filter(key => allowedFields.includes(key))
       .reduce((obj, key) => {
-        obj[key] = updateData[key];
+        let value = updateData[key];
+
+        // Handle numeric fields
+        if (numericFields.includes(key)) {
+          if (value === "" || value === null || value === undefined) {
+            value = null;
+          } else {
+            const intVal = parseInt(value, 10);
+            value = isNaN(intVal) ? null : intVal;
+          }
+        }
+        // Handle strings/nullables (empty string -> null)
+        else if (typeof value === 'string' && value.trim() === "") {
+          value = null;
+        }
+
+        obj[key] = value;
         return obj;
       }, {});
 
@@ -276,3 +294,4 @@ export async function PATCH(request, { params }) {
     );
   }
 }
+

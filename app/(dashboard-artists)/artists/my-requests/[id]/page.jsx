@@ -40,6 +40,10 @@ export default function RequestDetailPage() {
   const [addOns, setAddOns] = useState([]);
   const [tiers, setTiers] = useState([]);
 
+  // Review Logic
+  const [reviewAction, setReviewAction] = useState(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+
   useEffect(() => {
     if (params.id) {
       fetchRequestById(params.id);
@@ -131,6 +135,41 @@ export default function RequestDetailPage() {
       setShowCancelModal(false);
       // Refresh the request data
       fetchRequestById(params.id);
+    }
+  };
+
+  const handleProjectStatusUpdate = async (message) => {
+    if (!currentRequest?.project?.id || !reviewAction) return;
+
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch(`/api/creators/projects/${currentRequest.project.id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: reviewAction.type,
+          message
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        if (data.code === 'REVISION_LIMIT_REACHED') {
+          throw new Error(data.error || "You have reached the revision limit.");
+        }
+        throw new Error(data.error || "Failed to update project status");
+      }
+
+      // Success
+      setReviewAction(null);
+      fetchRequestById(params.id); // Refresh
+      alert(`Project marked as ${reviewAction.type === 'COMPLETED' ? 'Completed' : 'Changes Requested'}`);
+
+    } catch (err) {
+      console.error(err);
+      alert(err.message);
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -254,7 +293,49 @@ export default function RequestDetailPage() {
             </button>
           </div>
         )}
+
+        {/* REVIEW ACTIONS (When Project is IN_REVIEW) */}
+        {currentRequest.project?.currentPhase === 'IN_REVIEW' && (
+          <div className="mt-6 pt-6 border-t border-zinc-700/50">
+            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertCircle className="w-6 h-6 text-amber-500" />
+                <div>
+                  <h3 className="text-lg font-bold text-white">Review Required</h3>
+                  <p className="text-sm text-gray-400">The creator has submitted work for your review.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setReviewAction({ type: 'CHANGES_REQUESTED' })}
+                  className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-600 text-white font-bold py-3 px-6 rounded-lg transition-all flex items-center justify-center gap-2"
+                >
+                  <XCircle className="w-5 h-5 text-gray-400" />
+                  Request Revisions
+                </button>
+                <button
+                  onClick={() => setReviewAction({ type: 'COMPLETED' })}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 px-6 rounded-lg transition-all shadow-lg flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-5 h-5" />
+                  Accept & Complete
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Review Action Modal */}
+      {reviewAction && (
+        <ReviewModal
+          action={reviewAction}
+          onClose={() => setReviewAction(null)}
+          onConfirm={handleProjectStatusUpdate}
+          loading={updatingStatus}
+        />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
@@ -495,6 +576,51 @@ function TimelineEvent({ event, isLast }) {
         {event.user && (
           <p className="text-xs text-gray-600 mt-1">by {event.user.name}</p>
         )}
+      </div>
+    </div>
+  );
+}
+
+function ReviewModal({ action, onClose, onConfirm, loading }) {
+  const [message, setMessage] = useState("");
+  const isRejection = action?.type === 'CHANGES_REQUESTED';
+
+  return (
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+        <h3 className="text-xl font-bold text-white mb-2">
+          {isRejection ? 'Request Revisions' : 'Accept & Complete'}
+        </h3>
+        <p className="text-gray-400 mb-6 text-sm">
+          {isRejection
+            ? 'Please describe exactly what needs to be changed. This will count towards the revision limit.'
+            : 'Are you satisfied with the work? This will mark the project as completed and release payment to the creator.'}
+        </p>
+
+        {isRejection && (
+          <textarea
+            className="w-full bg-black/40 border border-zinc-700 rounded-lg p-3 text-white mb-6 focus:outline-none focus:border-amber-500"
+            placeholder="Detailed feedback..."
+            rows={4}
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+          />
+        )}
+
+        <div className="flex gap-3 justify-end">
+          <button onClick={onClose} disabled={loading} className="px-4 py-2 text-gray-400 hover:text-white transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={() => onConfirm(message)}
+            disabled={loading || (isRejection && !message.trim())}
+            className={`px-6 py-2 rounded-lg font-bold text-white transition-all flex items-center gap-2 ${isRejection ? 'bg-amber-600 hover:bg-amber-500' : 'bg-emerald-600 hover:bg-emerald-500'
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {isRejection ? 'Submit Request' : 'Confirm Acceptance'}
+          </button>
+        </div>
       </div>
     </div>
   );

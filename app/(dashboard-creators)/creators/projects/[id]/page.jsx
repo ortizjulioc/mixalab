@@ -20,6 +20,7 @@ import {
     Lock
 } from 'lucide-react';
 
+import Modal from '@/components/Modal';
 import { openNotification } from '@/utils/open-notification';
 import ProjectChat from '@/components/ProjectChat';
 
@@ -33,6 +34,7 @@ export default function CreatorProjectPage() {
     const [error, setError] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [statusModalOpen, setStatusModalOpen] = useState(false);
 
     // Editable Technical Fields
     const [techDetails, setTechDetails] = useState({
@@ -161,7 +163,8 @@ export default function CreatorProjectPage() {
     };
 
     const handleStatusUpdate = async (newStatus) => {
-        if (!confirm(`Are you sure you want to change status to ${newStatus}?`)) return;
+        // Confirmation is now handled by Modal
+
 
         try {
             const res = await fetch(`/api/creators/projects/${params.id}/status`, {
@@ -225,14 +228,16 @@ export default function CreatorProjectPage() {
                             <div>
                                 <div className="flex flex-wrap items-center gap-3 mb-2">
                                     <span className={`px-3 py-1 text-xs rounded-full border uppercase font-bold tracking-wider ${project.currentPhase === 'COMPLETED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                            project.currentPhase === 'REVIEW' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
+                                            project.currentPhase === 'IN_REVIEW' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                project.currentPhase === 'CHANGES_REQUESTED' ? 'bg-orange-500/10 text-orange-400 border-orange-500/20' :
+                                                    project.currentPhase === 'CANCELLED' ? 'bg-red-500/10 text-red-400 border-red-500/20' :
+                                                        'bg-indigo-500/10 text-indigo-400 border-indigo-500/20'
                                         }`}>
-                                        {project.currentPhase?.replace('_', ' ') || 'PRE PRODUCTION'}
+                                        {project.currentPhase?.replace('_', ' ') || 'IN PROGRESS'}
                                     </span>
                                     <span className={`px-3 py-1 text-xs rounded-full border uppercase font-bold tracking-wider ${project.tier === 'PLATINUM' ? 'bg-cyan-900/20 text-cyan-400 border-cyan-800' :
-                                        project.tier === 'GOLD' ? 'bg-amber-900/20 text-amber-400 border-amber-800' :
-                                            'bg-zinc-800 text-gray-300 border-zinc-700'
+                                            project.tier === 'GOLD' ? 'bg-amber-900/20 text-amber-400 border-amber-800' :
+                                                'bg-zinc-800 text-gray-300 border-zinc-700'
                                         }`}>
                                         {project.tier}
                                     </span>
@@ -398,20 +403,46 @@ export default function CreatorProjectPage() {
                                 <span className="text-sm text-white font-medium">{uploading ? 'Uploading...' : 'Upload Deliverable'}</span>
                             </button>
                             <button
-                                onClick={() => handleStatusUpdate('REVIEW')}
-                                className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg p-3 flex items-center justify-center gap-2 transition-all hover:scale-[1.02]"
+                                onClick={() => setStatusModalOpen(true)}
+                                disabled={project.currentPhase === 'IN_REVIEW' || project.currentPhase === 'COMPLETED' || project.currentPhase === 'CANCELLED'}
+                                className="bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 rounded-lg p-3 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 <Send className="w-4 h-4 text-amber-400" />
-                                <span className="text-sm text-white font-medium">Send for Review</span>
-                            </button>
-                            <button
-                                onClick={() => handleStatusUpdate('COMPLETED')}
-                                className="col-span-2 bg-emerald-900/10 hover:bg-emerald-900/20 border border-emerald-900/30 rounded-lg p-3 flex items-center justify-center gap-2 transition-all hover:scale-[1.02] group"
-                            >
-                                <CheckCircle2 className="w-4 h-4 text-emerald-500 group-hover:text-emerald-400" />
-                                <span className="text-sm text-emerald-500 group-hover:text-emerald-400 font-bold">Mark Project Complete</span>
+                                <span className="text-sm text-white font-medium">
+                                    {project.currentPhase === 'IN_REVIEW' ? 'In Review' :
+                                        project.currentPhase === 'COMPLETED' ? 'Completed' :
+                                            project.currentPhase === 'CANCELLED' ? 'Cancelled' :
+                                                'Send for Review'}
+                                </span>
                             </button>
                         </div>
+
+                        <Modal open={statusModalOpen} onClose={() => setStatusModalOpen(false)} title="Send for Review">
+                            <div className="space-y-4">
+                                <p className="text-gray-300">
+                                    Are you sure you want to change status to <span className="text-white font-bold">IN REVIEW</span>?
+                                    <br />
+                                    This will notify the client that the project is ready for review.
+                                </p>
+                                <div className="flex justify-end gap-3 mt-6">
+                                    <button
+                                        onClick={() => setStatusModalOpen(false)}
+                                        className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            handleStatusUpdate('IN_REVIEW');
+                                            setStatusModalOpen(false);
+                                        }}
+                                        className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold rounded-lg transition-colors"
+                                    >
+                                        Confirm & Send
+                                    </button>
+                                </div>
+                            </div>
+                        </Modal>
 
                         {/* Deliverables List */}
                         <div className="mt-6 pt-6 border-t border-zinc-800">

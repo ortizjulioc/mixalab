@@ -12,7 +12,7 @@ export async function POST(request, { params }) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { id: projectId } = params;
+        const { id: projectId } = await params;
 
         // 1. Verify Project Access
         const project = await prisma.project.findUnique({

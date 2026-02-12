@@ -11,7 +11,7 @@ export async function PATCH(request, { params }) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { id: projectId } = params;
+        const { id: projectId } = await params;
         const { status, message } = await request.json(); // message optional for logs
 
         // 1. Verify Project Access
@@ -28,59 +28,84 @@ export async function PATCH(request, { params }) {
             where: { userId: session.user.id }
         });
 
-        // Permission check: Who can change status?
-        // - Creator can move to REVIEW
-        // - Artist (Owner) can move to REVISION_REQUESTED or COMPLETED
-        // - Admin can do anything
-
-        // Simplification for now: Creator can trigger REVIEW.
-
         const isOwner = project.userId === session.user.id;
         const isAssignedCreator = currentCreator && project.services.some(s => s.creatorId === currentCreator.id);
 
-        if (!isOwner && !isAssignedCreator) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
+        // Permission check: Who can change status?
+        // - Creator can move to IN_REVIEW
+        // - Artist (Owner) can move to CHANGES_REQUESTED or COMPLETED
 
-        // 2. Validate Transition (Basic State Machine)
-        const validTransitions = {
-            'PRE_PRODUCTION': ['PRODUCTION'],
-            'PRODUCTION': ['REVIEW'],
-            'REVIEW': ['PRODUCTION', 'COMPLETED'], // Back to PROD means revision
-            'COMPLETED': [], // End state
+        // 3. Strict State Machine & Role Validation
+        const allowedTransitions = {
+            'IN_PROGRESS': ['IN_REVIEW', 'CANCELLED'],
+            'IN_REVIEW': ['CHANGES_REQUESTED', 'COMPLETED'],
+            'CHANGES_REQUESTED': ['IN_REVIEW'],
+            'COMPLETED': [],
+            'CANCELLED': []
         };
 
-        // Note: ProjectPhase enum: PRE_PRODUCTION, PRODUCTION, POST_PRODUCTION, REVIEW, COMPLETED
-        // Mapping simplification: treat POST_PRODUCTION as PRODUCTION equivalent for now or just allow it
+        const currentPhase = project.currentPhase;
+        const potentialNextPhases = allowedTransitions[currentPhase] || [];
 
-        // Strict check disabled for flexibility during dev, but logic should guide UI
+        if (!potentialNextPhases.includes(status)) {
+            // Allow admin override or force update if needed, but for now strict
+            if (status === currentPhase) {
+                return NextResponse.json(project); // No change
+            }
+            return NextResponse.json({
+                error: `Invalid status transition from ${currentPhase} to ${status}`
+            }, { status: 400 });
+        }
+
+        // Role-based Action Validation
+        if (status === 'IN_REVIEW') {
+            if (!isAssignedCreator) {
+                return NextResponse.json({ error: "Only the assigned creator can submit for review" }, { status: 403 });
+            }
+        }
+
+        if (status === 'CHANGES_REQUESTED' || status === 'COMPLETED') {
+            if (!isOwner) {
+                return NextResponse.json({ error: "Only the artist (client) can accept or request changes" }, { status: 403 });
+            }
+        }
+
+        // 4. Revision Logic
+        let updateData = { currentPhase: status };
+
+        if (status === 'CHANGES_REQUESTED') {
+            // Check limits
+            const limit = project.revisionLimit || project.tierDetails?.numberOfRevisions || 0;
+
+            if (project.revisionCount >= limit) {
+                return NextResponse.json({
+                    error: "Revision limit reached. You cannot request more changes.",
+                    code: "REVISION_LIMIT_REACHED"
+                }, { status: 400 });
+            }
+
+            // Increment count
+            updateData.revisionCount = { increment: 1 };
+        }
 
         // Update Phase
         const updatedProject = await prisma.project.update({
             where: { id: projectId },
-            data: {
-                currentPhase: status
-            }
+            data: updateData
         });
 
-        // 3. Log Event
+        // 5. Log Event
         await prisma.projectEvent.create({
             data: {
                 projectId,
                 requestId: project.serviceRequestId,
-                type: "STATUS_CHANGED",
-                description: `Status changed to ${status}${message ? `: ${message}` : ''}`,
+                type: status === 'CHANGES_REQUESTED' ? 'REVISION_REQUESTED' :
+                    status === 'COMPLETED' ? 'MILESTONE_COMPLETED' :
+                        'STATUS_CHANGED',
+                description: `Status changed from ${currentPhase} to ${status}${message ? `: ${message}` : ''}`,
                 userId: session.user.id
             }
         });
-
-        // 4. Update Revision Count if re-entering PRODUCTION from REVIEW (Revision loop)
-        if (status === 'PRODUCTION' && project.currentPhase === 'REVIEW') {
-            await prisma.project.update({
-                where: { id: projectId },
-                data: { revisionCount: { increment: 1 } }
-            });
-        }
 
         return NextResponse.json(updatedProject);
 

@@ -64,7 +64,7 @@ model Project {
   // -----------------------------
   // Production Configuration
   // -----------------------------
-  currentPhase       ProjectPhase @default(PRE_PRODUCTION)
+  currentPhase       ProjectPhase @default(IN_PROGRESS)
   deliveryDeadline   DateTime?
   revisionCount      Int          @default(0)
   revisionLimit      Int
@@ -905,11 +905,11 @@ enum TransferStatus {
 }
 
 enum ProjectPhase {
-  PRE_PRODUCTION
-  PRODUCTION
-  POST_PRODUCTION
-  REVIEW
-  COMPLETED
+  IN_PROGRESS       @map("in_progress")
+  IN_REVIEW         @map("in_review")
+  CHANGES_REQUESTED @map("changes_requested")
+  COMPLETED         @map("completed")
+  CANCELLED         @map("cancelled")
 }
 
 enum RecordingQuality {
