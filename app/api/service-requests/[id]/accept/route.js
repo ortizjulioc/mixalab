@@ -77,25 +77,6 @@ export async function POST(request, { params }) {
       );
     }
 
-    // Ensure Project Exists (Legacy Support)
-    let projectId = serviceRequest.project?.id;
-    if (!projectId) {
-      console.log("No project found for request, creating one...");
-      const newProject = await prisma.project.create({
-        data: {
-          serviceRequestId: id,
-          userId: serviceRequest.userId,
-          projectName: serviceRequest.projectName,
-          artistName: serviceRequest.artistName,
-          projectType: serviceRequest.projectType,
-          tier: serviceRequest.tier,
-          // Default values
-          currentPhase: 'PRE_PRODUCTION'
-        }
-      });
-      projectId = newProject.id;
-    }
-
     // Update service request
     const updateData = {
       status: "ACCEPTED", // Creator accepted, project initiated
@@ -108,12 +89,6 @@ export async function POST(request, { params }) {
         connect: { id: creatorProfile.id },
       };
     }
-
-    // Map Service Type
-    let projectServiceType = 'PRODUCTION'; // Default/Fallback
-    if (serviceRequest.services === 'MIXING') projectServiceType = 'MIXING';
-    if (serviceRequest.services === 'MASTERING') projectServiceType = 'MASTERING';
-    if (serviceRequest.services === 'RECORDING') projectServiceType = 'PRODUCTION';
 
     // Transaction to update request, create event, and create notification
     const [updatedRequest] = await prisma.$transaction([
@@ -180,15 +155,6 @@ export async function POST(request, { params }) {
           },
         },
       }),
-
-      // 5. Create Project Service (Link Project to Creator)
-      prisma.projectService.create({
-        data: {
-          projectId: projectId,
-          type: projectServiceType,
-          creatorId: creatorProfile.id
-        }
-      })
     ]);
 
     // 4. Send Email to Artist

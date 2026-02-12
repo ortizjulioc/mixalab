@@ -11,113 +11,159 @@ export async function GET(req) {
             return new NextResponse('Missing session_id', { status: 400 });
         }
 
-        // 1. Retrieve the session from Stripe
+        // 1️⃣ Retrieve Stripe session
         const session = await stripe.checkout.sessions.retrieve(sessionId);
 
-        // 2. Check if payment was successful
-        if (session.payment_status === 'paid') {
-            const requestId = session.metadata.requestId;
-
-            // 3. Check if Project has been created
-            // We search for a project linked to this request (implicitly via logic or explicit link if we had one)
-            // For now, based on our logic: Project is created with same data as Request.
-            // A precise way is to look for a project with this requestId if we stored it, 
-            // OR find by serviceRequestID if we added a relation (which we didn't explicitly in schema, 
-            // but we did via events or manually).
-
-            // Wait, we didn't add requestId to Project model directly in the previous step?
-            // Let's check Schema... Project has userId, ArtistName... 
-            // In webhook we created it. 
-            // Let's Find the latest project for this user created in the last minute matching the request name?
-            // OR better: The webhook updates ServiceRequest status to PAID. 
-
-            const serviceRequest = await prisma.serviceRequest.findUnique({
-                where: { id: requestId }
-            });
-
-            // 4. Find the project created for this user with this name
-            // (Assuming unique project names or fuzzy match for safety, or better:
-            // The webhook runs quickly. If we find a project with same ServiceRequest properties created recently.)
-
-            // To make this robust, we should probably start storing requestId in Project or use a more direct link.
-            // But for now, let's find the most recent project for this user.
-
-            let project = await prisma.project.findFirst({
-                where: {
-                    userId: session.metadata.userId,
-                    projectName: serviceRequest.projectName
-                },
-                orderBy: { createdAt: 'desc' }
-            });
-
-            // FALLBACK: If project not found (webhook missed), create it here manually
-            if (!project) {
-                console.log(`[VERIFY_SESSION] Project not found for paid session ${sessionId}. Creating manually.`);
-
-                // Need to import mapping function or duplicate small logic
-                const mapServiceTypeToProjectService = (type) => {
-                    const map = { 'MIXING': 'MIXING', 'MASTERING': 'MASTERING', 'RECORDING': 'PRODUCTION' };
-                    return map[type] || 'MIXING';
-                };
-
-                // Run transaction to ensure consistency similar to webhook
-                const result = await prisma.$transaction(async (tx) => {
-                    // Update Request
-                    await tx.serviceRequest.update({
-                        where: { id: requestId },
-                        data: { status: 'PAID', statusUpdatedAt: new Date() }
-                    });
-
-                    // Create Payment if not exists
-                    const existingPayment = await tx.payment.findUnique({ where: { stripeSessionId: session.id } });
-                    if (!existingPayment) {
-                        await tx.payment.create({
-                            data: {
-                                serviceRequestId: requestId,
-                                stripeSessionId: session.id,
-                                stripePaymentIntentId: session.payment_intent,
-                                totalAmount: session.amount_total,
-                                platformFee: Math.round(session.amount_total * 0.15), // Fallback 15%
-                                creatorAmount: Math.round(session.amount_total * 0.85),
-                                currency: session.currency,
-                                status: 'COMPLETED',
-                            }
-                        });
-                    }
-
-                    // Create Project
-                    return await tx.project.create({
-                        data: {
-                            userId: serviceRequest.userId,
-                            projectName: serviceRequest.projectName,
-                            artistName: serviceRequest.artistName,
-                            projectType: serviceRequest.projectType,
-                            tier: serviceRequest.tier,
-                            services: {
-                                create: {
-                                    type: mapServiceTypeToProjectService(serviceRequest.services),
-                                    creatorId: session.metadata.creatorId // Assign creator ID from metadata
-                                }
-                            }
-                        }
-                    });
-                });
-
-                project = result;
-            }
-
+        if (session.payment_status !== 'paid') {
             return NextResponse.json({
-                status: 'paid',
-                paymentStatus: session.payment_status,
-                requestId: requestId,
-                projectId: project ? project.id : null,
-                isProcessed: !!project
+                status: session.payment_status,
+                paymentStatus: session.payment_status
             });
         }
 
+        const requestId = session.metadata?.requestId;
+
+        if (!requestId) {
+            return new NextResponse('Missing requestId metadata', { status: 400 });
+        }
+
+        // 2️⃣ Get ServiceRequest
+        const serviceRequest = await prisma.serviceRequest.findUnique({
+            where: { id: requestId },
+            include: { genres: true }
+        });
+
+        if (!serviceRequest) {
+            return new NextResponse('ServiceRequest not found', { status: 404 });
+        }
+
+        // 3️⃣ Get Tier rules
+        const tierData = await prisma.tier.findUnique({
+            where: { name: serviceRequest.tier }
+        });
+
+        if (!tierData) {
+            return new NextResponse('Tier not found', { status: 500 });
+        }
+
+        // 4️⃣ Check if project already exists
+        let project = await prisma.project.findFirst({
+            where: {
+                userId: session.metadata.userId,
+                projectName: serviceRequest.projectName
+            },
+            orderBy: { createdAt: 'desc' },
+            include: { genres: true }
+        });
+
+        if (!project) {
+            console.log(`[VERIFY_SESSION] Creating missing project for session ${sessionId}`);
+
+            const mapServiceTypeToProjectService = (type) => {
+                const map = {
+                    MIXING: 'MIXING',
+                    MASTERING: 'MASTERING',
+                    RECORDING: 'PRODUCTION'
+                };
+                return map[type] || 'MIXING';
+            };
+
+            const result = await prisma.$transaction(async (tx) => {
+
+                // 1️⃣ Update ServiceRequest status
+                await tx.serviceRequest.update({
+                    where: { id: requestId },
+                    data: {
+                        status: 'PAID',
+                        statusUpdatedAt: new Date()
+                    }
+                });
+
+                // 2️⃣ Create Payment if not exists
+                const existingPayment = await tx.payment.findUnique({
+                    where: { stripeSessionId: session.id }
+                });
+
+                if (!existingPayment) {
+                    await tx.payment.create({
+                        data: {
+                            serviceRequestId: requestId,
+                            stripeSessionId: session.id,
+                            stripePaymentIntentId: session.payment_intent,
+                            totalAmount: session.amount_total,
+                            platformFee: Math.round(
+                                session.amount_total * (tierData.commissionPercentage / 100)
+                            ),
+                            creatorAmount: Math.round(
+                                session.amount_total * (1 - tierData.commissionPercentage / 100)
+                            ),
+                            currency: session.currency,
+                            status: 'COMPLETED',
+                        }
+                    });
+                }
+
+                // 3️⃣ Create Project with many-to-many genres
+                return await tx.project.create({
+                    data: {
+                        user: {
+                            connect: { id: serviceRequest.userId }
+                        },
+
+                        serviceRequest: {
+                            connect: { id: requestId }
+                        },
+
+                        projectName: serviceRequest.projectName,
+                        artistName: serviceRequest.artistName,
+                        projectType: serviceRequest.projectType,
+                        tier: serviceRequest.tier,
+
+                        // 🔥 Technical metadata
+                        bpm: serviceRequest.bpm ?? null,
+                        timeSignature: serviceRequest.timeSignature ?? null,
+                        durationSeconds: serviceRequest.durationSeconds ?? null,
+                        recordingQuality: serviceRequest.recordingQuality ?? null,
+                        vocalTracksCount: serviceRequest.vocalTracksCount ?? null,
+                        instrumentalType: serviceRequest.instrumentalType ?? null,
+
+                        // 🔥 Commercial rules
+                        revisionLimit: tierData.numberOfRevisions,
+                        deliveryDeadline: new Date(
+                            Date.now() + tierData.deliveryDays * 24 * 60 * 60 * 1000
+                        ),
+                        stemsIncluded: tierData.stems > 0,
+
+                        // 🔥 MANY-TO-MANY GENRES
+                        genres: serviceRequest.genres?.length
+                            ? {
+                                create: serviceRequest.genres.map((sg) => ({
+                                    genre: {
+                                        connect: { id: sg.genreId }
+                                    }
+                                }))
+                            }
+                            : undefined,
+
+                        services: {
+                            create: {
+                                type: mapServiceTypeToProjectService(serviceRequest.services),
+                                creatorId: session.metadata.creatorId
+                            }
+                        }
+                    }
+                });
+            });
+
+            project = result;
+        }
+
         return NextResponse.json({
-            status: session.payment_status,
-            paymentStatus: session.payment_status
+            status: 'paid',
+            paymentStatus: session.payment_status,
+            requestId,
+            projectId: project?.id ?? null,
+            isProcessed: !!project
         });
 
     } catch (error) {

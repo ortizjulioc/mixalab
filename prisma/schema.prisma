@@ -48,10 +48,33 @@ model Project {
   id     String @id @default(uuid())
   userId String
 
+  // Relation to original request (contract snapshot source)
   serviceRequestId String         @unique
   serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id])
 
-  // Technical production info
+  // -----------------------------
+  // Commercial Snapshot
+  // -----------------------------
+  projectName String
+  artistName  String
+  projectType ProjectType
+  tier        TierName
+  references  String?     @db.Text
+
+  // -----------------------------
+  // Production Configuration
+  // -----------------------------
+  currentPhase       ProjectPhase @default(PRE_PRODUCTION)
+  deliveryDeadline   DateTime?
+  revisionCount      Int          @default(0)
+  revisionLimit      Int
+  commercialSnapshot Json?
+  tierSnapshot       Json?
+
+  // -----------------------------
+  // Technical Production Info
+  // (Filled during production)
+  // -----------------------------
   key             String?
   bpm             Int?
   timeSignature   String?
@@ -62,20 +85,12 @@ model Project {
   vocalTracksCount Int?
   instrumentalType String?
 
-  currentPhase     ProjectPhase @default(PRE_PRODUCTION)
-  deliveryDeadline DateTime?
-  revisionCount    Int          @default(0)
-
   notes         String? @db.Text
   internalNotes String? @db.Text
 
-  projectName String
-  artistName  String
-  projectType ProjectType
-  tier        TierName
-  genre       String?
-  references  String?
-
+  // -----------------------------
+  // Relations
+  // -----------------------------
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   services ProjectService[]
@@ -83,10 +98,22 @@ model Project {
   chatRoom ChatRoom?
   events   ProjectEvent[]
 
+  genres ProjectGenre[] // Many-to-many with Genre
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("projects")
+}
+
+model ProjectGenre {
+  projectId String
+  genreId   String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  genre   Genre   @relation(fields: [genreId], references: [id], onDelete: Cascade)
+
+  @@id([projectId, genreId])
 }
 
 model ProjectService {
@@ -357,6 +384,7 @@ model Genre {
   createdAt       DateTime              @default(now()) @map("created_at")
   updatedAt       DateTime              @updatedAt @map("updated_at")
   serviceRequests ServiceRequestGenre[]
+  projectGenres   ProjectGenre[]
 
   @@map("genres")
 }

@@ -35,44 +35,48 @@ function RoleSwitchContent() {
                 return;
             }
 
-            console.log("🔄 Role switch page:", {
-                targetRole,
-                currentRole: session?.user?.role,
+            const currentRole = session?.user?.role;
+            const targetRoleFixed = targetRole ? targetRole.toUpperCase() : null;
+
+            // 1. Check if we already have the correct role
+            if (currentRole === targetRoleFixed || !targetRoleFixed) {
+                console.log("✅ Role matched/not required, redirecting...");
+
+                if (targetRoleFixed === "ARTIST" || currentRole === "ARTIST") {
+                    router.push("/artists/home");
+                } else if (targetRoleFixed === "CREATOR" || currentRole === "CREATOR") {
+                    router.push("/creators/home");
+                } else {
+                    router.push("/");
+                }
+                return;
+            }
+
+            // 2. If attempts exhausted, force redirect
+            if (attempts >= MAX_ATTEMPTS) {
+                console.log("⚠️ Max attempts reached, forcing redirect...");
+                if (targetRoleFixed === "ARTIST") {
+                    router.push("/artists/home");
+                } else if (targetRoleFixed === "CREATOR") {
+                    router.push("/creators/home");
+                } else {
+                    router.push("/");
+                }
+                return;
+            }
+
+            // 3. Otherwise, try to update
+            console.log("🔄 Role mismatch, updating session...", {
+                targetRole: targetRoleFixed,
+                currentRole: currentRole,
                 attempts
             });
 
             // Force session update
             await update();
 
-            // Wait a moment for token update
-            await new Promise(resolve => setTimeout(resolve, 300));
-
-            // Check if role updated
-            const currentRole = session?.user?.role;
-
-            if (currentRole === targetRole || !targetRole) {
-                console.log("✅ Role updated successfully, redirecting...");
-
-                if (targetRole === "ARTIST" || currentRole === "ARTIST") {
-                    router.push("/artists/home");
-                } else if (targetRole === "CREATOR" || currentRole === "CREATOR") {
-                    router.push("/creators/home");
-                } else {
-                    router.push("/");
-                }
-            } else if (attempts < MAX_ATTEMPTS) {
-                console.log(`⏳ Role not updated yet, retrying... (${attempts + 1}/${MAX_ATTEMPTS})`);
-                setAttempts(prev => prev + 1);
-            } else {
-                console.log("⚠️ Max attempts reached, forcing redirect...");
-                if (targetRole === "ARTIST") {
-                    router.push("/artists/home");
-                } else if (targetRole === "CREATOR") {
-                    router.push("/creators/home");
-                } else {
-                    router.push("/");
-                }
-            }
+            // Increment attempts after update
+            setAttempts(prev => prev + 1);
         };
 
         handleRoleSwitch();

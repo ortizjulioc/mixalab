@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import prisma from "@/utils/lib/prisma";
-import {
-  stripe,
-  calculatePlatformFee,
-  calculateCreatorPayout,
-} from "@/utils/stripe/server";
+import { stripe } from "@/utils/stripe/server";
 
 /**
  * POST /api/stripe/webhook
@@ -35,14 +31,16 @@ export async function POST(req) {
       case "checkout.session.completed":
         await handleCheckoutSessionCompleted(event.data.object);
         break;
+
       case "account.updated":
         await handleAccountUpdated(event.data.object);
         break;
+
       case "transfer.paid":
-        // Handle transfer paid logic if needed
         break;
+
       default:
-      // console.log(`Unhandled event type ${event.type}`);
+        break;
     }
   } catch (error) {
     console.error(
@@ -60,60 +58,71 @@ export async function POST(req) {
 // ---------------------------------------------------------
 
 async function handleCheckoutSessionCompleted(session) {
-  const requestId = session.metadata.requestId;
-  const creatorId = session.metadata.creatorId;
-  const totalAmount = session.amount_total; // in cents
+  const requestId = session.metadata?.requestId;
+  const creatorId = session.metadata?.creatorId;
+  const artistUserId = session.metadata?.userId;
+  const totalAmount = session.amount_total; // cents
 
-  if (!requestId) {
-    console.error("Missing requestId in session metadata");
+  if (!requestId || !creatorId) {
+    console.error("Missing metadata in Stripe session");
     return;
   }
 
-  // 1. Calculate Fees (Dynamic logic based on your needs)
-  // For now assuming we can fetch the percentage from DB or use default since we are in webhook
-  // Ideally we would have stored the snapshot of fees in metadata or DB before
-  // Using default/global logic or fetching from related entities if needed.
-  // For simplicity, we use the server utility's default (which defaults to 10 if not provided)
-  // Real implementation: Fetch Tier/Addon specific commission if needed.
-
-  // Let's fetch the project to see which tier/addons were used if we really want 100% precision
-  // allowing us to pass the specific percentage.
-  const serviceRequest = await prisma.serviceRequest.findUnique({
-    where: { id: requestId },
-    include: { genres: true },
-  });
-
-  // TODO: Fetch specific commission percentage from Tier table if needed
-  // const tier = await prisma.tier.findUnique(...)
-  // const commission = tier.commissionPercentage
-
-  // Using default logic from utility for now
-  const platformFee = calculatePlatformFee(totalAmount);
-  const creatorAmount = calculateCreatorPayout(totalAmount);
-
-  // Fetch Creator User ID for Chat Room
+  // Fetch creator profile outside transaction (read-only)
   const creatorProfile = await prisma.creatorProfile.findUnique({
     where: { id: creatorId },
     select: { userId: true },
   });
+
   const creatorUserId = creatorProfile?.userId;
 
   await prisma.$transaction(async (tx) => {
-    // 1. Create Payment Record
+    // 1️⃣ Prevent duplicate processing
+    const existingPayment = await tx.payment.findUnique({
+      where: { stripeSessionId: session.id },
+    });
+
+    if (existingPayment) return;
+
+    // 2️⃣ Fetch ServiceRequest
+    const serviceRequest = await tx.serviceRequest.findUnique({
+      where: { id: requestId },
+      include: { genres: true },
+    });
+
+    if (!serviceRequest) {
+      throw new Error("ServiceRequest not found");
+    }
+
+    // 3️⃣ Fetch Tier
+    const tier = await tx.tier.findUnique({
+      where: { name: serviceRequest.tier },
+    });
+
+    if (!tier) {
+      throw new Error("Tier not found");
+    }
+
+    // 4️⃣ Calculate commission
+    const commission = tier.commissionPercentage ?? 10;
+    const platformFee = Math.round((totalAmount * commission) / 100);
+    const creatorAmount = totalAmount - platformFee;
+
+    // 5️⃣ Create Payment
     await tx.payment.create({
       data: {
         serviceRequestId: requestId,
         stripeSessionId: session.id,
         stripePaymentIntentId: session.payment_intent,
-        totalAmount: totalAmount,
-        platformFee: platformFee,
-        creatorAmount: creatorAmount,
+        totalAmount,
+        platformFee,
+        creatorAmount,
         currency: session.currency,
         status: "COMPLETED",
       },
     });
 
-    // 2. Update Request Status
+    // 6️⃣ Update ServiceRequest
     await tx.serviceRequest.update({
       where: { id: requestId },
       data: {
@@ -122,40 +131,86 @@ async function handleCheckoutSessionCompleted(session) {
       },
     });
 
-    // 3. Create Timeline Event
+    // 7️⃣ Create Timeline Event
     await tx.projectEvent.create({
       data: {
-        requestId: requestId,
+        requestId,
         type: "PAYMENT_COMPLETED",
         description: "Payment processed successfully via Stripe",
-        userId: session.metadata.userId, // Artist User ID
+        userId: artistUserId,
       },
     });
 
-    // 4. Create Project (New)
+    // 8️⃣ Prevent duplicate project
+    const existingProject = await tx.project.findUnique({
+      where: { serviceRequestId: requestId },
+    });
+
+    if (existingProject) return;
+
+    // 9️⃣ Calculate delivery deadline
+    const deliveryDeadline = new Date(
+      Date.now() + tier.deliveryDays * 24 * 60 * 60 * 1000
+    );
+
+    // 🔟 Create Project
     const newProject = await tx.project.create({
       data: {
         userId: serviceRequest.userId,
+        serviceRequestId: requestId,
+
+        // Commercial snapshot
         projectName: serviceRequest.projectName,
         artistName: serviceRequest.artistName,
         projectType: serviceRequest.projectType,
-        tier: serviceRequest.tier,
-        // Map ServiceType to ProjectServiceType
+        tier: tier.name,
+        references: serviceRequest.description,
+
+        deliveryDeadline,
+        currentPhase: "PRE_PRODUCTION",
+        stemsIncluded: tier.stems > 0,
+
+        commercialSnapshot: {
+          basePrice: totalAmount,
+          commissionPercentage: commission,
+          platformFee,
+          creatorAmount,
+          currency: session.currency,
+        },
+
+        tierSnapshot: {
+          name: tier.name,
+          deliveryDays: tier.deliveryDays,
+          numberOfRevisions: tier.numberOfRevisions,
+          stemsLimit: tier.stems,
+        },
+
+        // 🔥 MANY-TO-MANY GENRES
+        genres: serviceRequest.genres?.length
+          ? {
+            create: serviceRequest.genres.map((sg) => ({
+              genre: {
+                connect: { id: sg.genreId },
+              },
+            })),
+          }
+          : undefined,
+
         services: {
           create: {
             type: mapServiceTypeToProjectService(serviceRequest.services),
-            creatorId: creatorId, // Assign creator ID
+            creatorId: creatorId,
           },
         },
       },
     });
 
-    // 5. Create ChatRoom (New)
+    // 1️⃣1️⃣ Create Chat Room
     if (creatorUserId) {
       await tx.chatRoom.create({
         data: {
           projectId: newProject.id,
-          serviceRequestId: requestId, // Link to ServiceRequest too
+          serviceRequestId: requestId,
           artistId: serviceRequest.userId,
           creatorId: creatorUserId,
           messages: {
@@ -177,25 +232,26 @@ function mapServiceTypeToProjectService(serviceType) {
   const map = {
     MIXING: "MIXING",
     MASTERING: "MASTERING",
-    RECORDING: "PRODUCTION", // Mapping RECORDING to PRODUCTION as per schema availability
+    RECORDING: "PRODUCTION",
   };
-  return map[serviceType] || "MIXING"; // Fallback
+
+  return map[serviceType] || "MIXING";
 }
 
 async function handleAccountUpdated(account) {
-  // Sync onboarding status
   const creator = await prisma.creatorProfile.findFirst({
     where: { stripeConnectAccountId: account.id },
   });
 
-  if (creator) {
-    await prisma.creatorProfile.update({
-      where: { id: creator.id },
-      data: {
-        stripeOnboardingComplete: account.details_submitted,
-        stripePayoutsEnabled: account.payouts_enabled,
-      },
-    });
-    console.log(`✅ Account status synced for creator ${creator.id}`);
-  }
+  if (!creator) return;
+
+  await prisma.creatorProfile.update({
+    where: { id: creator.id },
+    data: {
+      stripeOnboardingComplete: account.details_submitted,
+      stripePayoutsEnabled: account.payouts_enabled,
+    },
+  });
+
+  console.log(`✅ Account status synced for creator ${creator.id}`);
 }

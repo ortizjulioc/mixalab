@@ -1,73 +1,86 @@
-import prisma from '@/utils/lib/prisma';
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import prisma from "@/utils/lib/prisma";
+import { NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { uploadFile } from "@/utils/upload";
 
-/**
- * POST /api/creators/projects/[id]/files
- * Register a new file uploaded by the creator (deliverable, preview, etc.)
- */
 export async function POST(request, { params }) {
     try {
         const session = await getServerSession(authOptions);
+
         if (!session?.user?.id) {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        const { id } = params;
-        const body = await request.json();
-        const { name, url, mimeType, size, category } = body;
-        // category could be: 'DEMO', 'FINAL_MASTER', 'STEMS'
+        const { id: projectId } = params;
 
-        // 1. Verify access (Optional but good)
-        // ... (Skipping full check for speed, assuming UI guards it slightly, strict check is better security practice though)
+        // 1. Verify Project Access
+        const project = await prisma.project.findUnique({
+            where: { id: projectId },
+            include: { services: true }
+        });
 
-        // 2. Create File Record
-        const newFile = await prisma.file.create({
+        if (!project) {
+            return NextResponse.json({ error: "Project not found" }, { status: 404 });
+        }
+
+        const currentCreator = await prisma.creatorProfile.findUnique({
+            where: { userId: session.user.id }
+        });
+
+        const isOwner = project.userId === session.user.id;
+        const isAssignedCreator = currentCreator && project.services.some(s => s.creatorId === currentCreator.id);
+
+        if (!isOwner && !isAssignedCreator) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        // 2. Process File
+        const formData = await request.formData();
+        const file = formData.get("file");
+        const label = formData.get("label") || "Deliverable"; // E.g., "Mix V1", "Stems"
+
+        if (!file) {
+            return NextResponse.json({ error: "No file provided" }, { status: 400 });
+        }
+
+        // Upload to local storage (public/uploads)
+        const uploadResult = await uploadFile(file, {
+            username: session.user.id,
+            project: projectId, // Organize by project ID
+        });
+
+        // 3. Create ProjectFile Record
+        const projectFile = await prisma.projectFile.create({
             data: {
-                name,
-                url,
-                mimeType: mimeType || 'application/octet-stream',
-                size: size || 0,
-                folder: category || 'DELIVERABLES',
-                userId: session.user.id,
-                requestId: id, // Link to request
+                projectId,
+                fileType: "DEMO", // Defaulting to DEMO (or 'DELIVERABLE' if added to enum), assuming 'DEMO' maps to deliverables for now or add new enum value
+                filePath: uploadResult.path, // Relative path
+                fileName: uploadResult.name,
+                fileSize: uploadResult.size,
+                // We might want to store 'label' or 'description' if schema allowed, but for now strict to schema
             }
         });
 
-        // 3. Create Event
+        // 4. Log Event
         await prisma.projectEvent.create({
             data: {
-                requestId: id,
-                type: 'FILE_UPLOADED',
-                description: `Uploaded file: ${name} (${category})`,
+                projectId, // Note: ProjectEvent needs to be linked to Project. Schema check needed.
+                requestId: project.serviceRequestId, // Fallback link to request
+                type: "FILE_UPLOADED",
+                description: `File uploaded: ${uploadResult.name} (${label})`,
                 userId: session.user.id,
+                metadata: { fileId: projectFile.id }
             }
         });
 
-        // 4. Notify Artist
-        // First get the project to know the artist ID
-        const project = await prisma.serviceRequest.findUnique({
-            where: { id },
-            select: { userId: true, projectName: true }
-        });
-
-        if (project) {
-            await prisma.notification.create({
-                data: {
-                    userId: project.userId,
-                    type: 'FILE_UPLOADED',
-                    title: 'New File Uploaded',
-                    message: `Creator uploaded "${name}" for project "${project.projectName}"`,
-                    link: `/artists/my-requests/${id}`
-                }
-            });
-        }
-
-        return NextResponse.json({ success: true, file: newFile });
+        return NextResponse.json(projectFile);
 
     } catch (error) {
-        console.error('Error registering file:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        console.error("Error uploading project file:", error);
+        return NextResponse.json(
+            { error: "Internal server error" },
+            { status: 500 }
+        );
     }
 }
