@@ -592,13 +592,7 @@ function RequestDetailsModal({ request, tiers, onClose, onAccept, onDecline }) {
                         </div>
                     ) : (
                         <div className="flex justify-end">
-                            <a
-                                href={`/creators/projects/${request.id}`}
-                                className="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-8 rounded-xl transition-all shadow-lg shadow-indigo-500/20 hover:shadow-indigo-500/30 flex items-center justify-center gap-2"
-                            >
-                                <Sparkles className="w-5 h-5" />
-                                Manage Project
-                            </a>
+
                         </div>
                     )}
                 </div>
