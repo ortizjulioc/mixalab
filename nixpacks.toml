@@ -1,0 +1,14 @@
+[variables]
+PORT = "3001"
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm install --legacy-peer-deps"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npm start -- -H 0.0.0.0 -p ${PORT:-3001}"
