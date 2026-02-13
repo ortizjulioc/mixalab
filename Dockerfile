@@ -21,6 +21,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV PORT=3001
+ENV HOSTNAME="0.0.0.0"
 
 # Copiamos los archivos generados por el modo standalone
 COPY --from=builder /app/public ./public
