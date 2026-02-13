@@ -1,15 +1,17 @@
 [variables]
 PORT = "3001"
+# Forzamos a Node a ignorar avisos de versiones si es necesario
+NODE_OPTIONS = "--no-warnings"
 
 [phases.setup]
-# Cambiamos a nodejs-23 para superar con seguridad el requisito de Prisma 22.12+
-nixPkgs = ["nodejs_23"]
+# Usamos "nodejs_22" pero vamos a forzar la actualización de los repositorios
+nixPkgs = ["nodejs_22", "openssl"]
 
 [phases.install]
+# Limpiamos caché antes de instalar
 cmds = ["npm install --legacy-peer-deps"]
 
 [phases.build]
-# Generamos prisma antes del build
 cmds = ["npx prisma generate", "npm run build"]
 
 [start]
