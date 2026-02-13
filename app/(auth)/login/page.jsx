@@ -1,11 +1,29 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
+
+export const dynamic = 'force-dynamic';
+
+import React, { useEffect, useRef, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { FaGoogle, FaFacebook } from "react-icons/fa";
 import Link from "next/link";
 
-export default function LoginPage() {
+// Loading component for Suspense fallback
+function LoadingUI() {
+  return (
+    <div className="relative min-h-screen overflow-hidden">
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white mb-4"></div>
+          <p className="text-white text-lg">Loading...</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Main login content component
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState("ARTIST"); // ARTIST or CREATOR
@@ -348,5 +366,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Default export wraps content in Suspense
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<LoadingUI />}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

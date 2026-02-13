@@ -1,9 +1,11 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Loader2, CheckCircle2, AlertCircle, ExternalLink } from 'lucide-react';
-import { openNotification } from '@/utils/notifications';
+import { openNotification } from '@/utils/open-notification';
 
 export default function StripeSettingsPage() {
     const router = useRouter();
@@ -110,8 +112,8 @@ export default function StripeSettingsPage() {
                         onClick={handleConnect}
                         disabled={connecting || (status.isConnected && status.onboardingComplete && status.payoutsEnabled)}
                         className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all shadow-lg ${status.isConnected && status.onboardingComplete
-                                ? 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
-                                : 'bg-[#635BFF] hover:bg-[#5851E3] text-white hover:scale-105'
+                            ? 'bg-zinc-700 text-gray-300 hover:bg-zinc-600'
+                            : 'bg-[#635BFF] hover:bg-[#5851E3] text-white hover:scale-105'
                             }`}
                     >
                         {connecting ? (
