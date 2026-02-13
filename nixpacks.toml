@@ -2,14 +2,15 @@
 PORT = "3001"
 
 [phases.setup]
-# Cambiamos a nodejs_22 para cumplir con los requisitos de Prisma 7.3.0
-nixPkgs = ["nodejs_22"]
+# Cambiamos a nodejs-23 para superar con seguridad el requisito de Prisma 22.12+
+nixPkgs = ["nodejs_23"]
 
 [phases.install]
 cmds = ["npm install --legacy-peer-deps"]
 
 [phases.build]
-cmds = ["npm run build"]
+# Generamos prisma antes del build
+cmds = ["npx prisma generate", "npm run build"]
 
 [start]
 cmd = "npm start -- -H 0.0.0.0 -p ${PORT:-3001}"
