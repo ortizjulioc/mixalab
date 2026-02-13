@@ -31,6 +31,11 @@ export async function GET(request, props) {
         },
         services: true,
         files: true,
+        serviceRequest: {
+          include: {
+            files: true,
+          },
+        },
         // Include direct chatRoom (New Project Model)
         chatRoom: {
           include: {
