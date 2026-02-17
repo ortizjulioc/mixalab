@@ -20,7 +20,7 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3001
+ENV PORT=3005
 ENV HOSTNAME="0.0.0.0"
 
 # Copiamos los archivos generados por el modo standalone
@@ -35,7 +35,7 @@ COPY --from=builder /app/server.mjs ./server.mjs
 # Instalar socket.io explícitamente ya que no es rastreado por el modo standalone
 RUN npm install socket.io
 
-EXPOSE 3001
+EXPOSE 3005
 
 # Ejecutamos tu servidor de sockets personalizado
 CMD ["node", "server.mjs"]
