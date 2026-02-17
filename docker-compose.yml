@@ -59,8 +59,8 @@ services:
       - MYSQL_ROOT_PASSWORD=${DATABASE_PASSWORD:-12345678}
       - MYSQL_DATABASE=${DATABASE_NAME:-mixalab}
     ports:
-      # Exponemos el puerto solo si necesitas acceso externo (ej: Workbench)
-      - "${DATABASE_PORT:-3306}:3306"
+      # Exponemos el puerto 3307 en el host para evitar conflictos con 3306
+      - "${DATABASE_PORT:-3307}:3306"
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
