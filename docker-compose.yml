@@ -9,6 +9,7 @@ services:
     container_name: mixa-lab-app
     build:
       context: .
+      dockerfile: Dockerfile
       # Usamos el target 'runner' definido en tu Dockerfile para producción
       target: runner
     restart: always
@@ -36,6 +37,7 @@ services:
     container_name: mixa-lab-migrate
     build:
       context: .
+      dockerfile: Dockerfile
       target: builder
     command: npx prisma migrate deploy
     env_file:
