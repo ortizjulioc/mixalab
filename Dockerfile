@@ -35,11 +35,8 @@ COPY --from=builder /app/server.mjs ./server.mjs
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.mjs ./prisma.config.mjs
 
-# Eliminar la dependencia de dotenv en producción ya que las variables de entorno se inyectan por Docker
-RUN sed -i "s/import 'dotenv\/config'/\/\/ import 'dotenv\/config'/g" prisma.config.mjs
-
-# Instalar socket.io y prisma explícitamente (prisma para poder ejecutar migraciones sin descargas)
-RUN npm install socket.io prisma
+# Instalar socket.io, prisma y dotenv (necesario para prisma.config.mjs)
+RUN npm install socket.io prisma dotenv
 
 EXPOSE 3001
 
