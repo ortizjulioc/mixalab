@@ -36,7 +36,7 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.mjs ./prisma.config.mjs
 
 # Instalar socket.io explícitamente ya que no es rastreado por el modo standalone
-RUN npm install socket.io
+RUN npm install socket.io dotenv
 
 EXPOSE 3001
 
