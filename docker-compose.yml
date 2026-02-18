@@ -75,4 +75,4 @@ services:
 
 volumes:
   db_data:
-    name: mixa-lab-mysql-data
+    name: mixa-lab-mysql-data-v2
