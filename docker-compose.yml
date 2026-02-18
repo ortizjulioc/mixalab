@@ -1,9 +1,5 @@
 version: '3.8'
 
-networks:
-  mixalab_net:
-    driver: bridge
-
 services:
   app:
     container_name: mixa-lab-app
@@ -23,5 +19,3 @@ services:
       - HOSTNAME=0.0.0.0
       # Variables públicas necesarias
       - NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL:-http://localhost:3001/api}
-    networks:
-      - mixalab_net
