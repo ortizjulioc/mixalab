@@ -36,11 +36,11 @@
     "stripe": "^20.3.0",
     "sweetalert2": "^11.26.3",
     "three": "^0.180.0",
+    "dotenv": "^17.3.1",
     "yup": "^1.7.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "dotenv": "^17.2.3",
     "prisma": "^7.3.0",
     "tailwindcss": "^4",
     "typescript": "5.9.3"
