@@ -11,7 +11,8 @@ RUN apk add --no-cache openssl
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN npx prisma generate
+# Definimos una variable dummy para que prisma generate funcione (validación de config)
+RUN DATABASE_URL="mysql://dummy:dummy@localhost:3306/dummy" npx prisma generate
 RUN npm run build
 
 # Etapa 3: Producción (Runner)
