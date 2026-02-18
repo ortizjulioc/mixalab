@@ -35,8 +35,8 @@ COPY --from=builder /app/server.mjs ./server.mjs
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.mjs ./prisma.config.mjs
 
-# Instalar socket.io, prisma y dotenv (necesario para prisma.config.mjs)
-RUN npm install socket.io prisma dotenv
+# Instalar dependencias necesarias para producción
+RUN npm install socket.io prisma dotenv pg @prisma/adapter-pg
 
 EXPOSE 3001
 
