@@ -5,7 +5,7 @@
 
 */
 -- DropTable
-DROP TABLE `verificationtoken`;
+DROP TABLE `VerificationToken`;
 
 -- CreateTable
 CREATE TABLE `verification_tokens` (
