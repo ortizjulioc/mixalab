@@ -32,6 +32,7 @@ COPY --from=builder /app/.next/static ./.next/static
 # Asegúrate de que este archivo esté en la raíz de tu proyecto
 COPY --from=builder /app/server.mjs ./server.mjs
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.mjs ./prisma.config.mjs
 
 # Instalar socket.io explícitamente ya que no es rastreado por el modo standalone
 RUN npm install socket.io
