@@ -5,6 +5,9 @@
   "prisma": {
     "seed": "node prisma/seed.mjs"
   },
+  "engines": {
+    "node": "22.14"
+  },
   "scripts": {
     "dev": "node server.mjs",
     "build": "next build --turbopack",
