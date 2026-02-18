@@ -40,6 +40,7 @@ services:
       dockerfile: Dockerfile
       target: builder
     command: npx prisma migrate deploy
+    restart: on-failure
     env_file:
       - .env
     environment:
@@ -68,6 +69,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
     networks:
       - mixalab_net
 
